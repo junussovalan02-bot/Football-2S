@@ -42,6 +42,13 @@
       gk: gk('#ffd23a','#e0a020','#2a4ab8','#1a3488','#c8202e'),
       looks: [{ ...LOOK.east, ...hair('#141018','#3a3a4a','crop') }],
       names: ['ГАНБААТАР','БОЛД','ДОРЖ','ЭНХ','ОЧИР','ТУМЭН','НЭРГУЙ','МУНХ','ЖАРГАЛ','ЦЭРЭН','БАТАР'] }),
+    // Италия: every stereotype at once — gel, moustaches, sunglasses, falling over at a breath of wind
+    ita: Object.assign(kit('#2a6ad8','#1a4aa8','#2a6ad8','#1a4aa8','#ffffff','#ffffff','#c8d0e4','#2a6ad8','#1a4aa8','#4a8af0','#1a4aa8'), {
+      code:'ITA', mascot:['ПИЦЦЕТТА','pizza','МАМА МИА!'], skill:'bus', name:'ИТАЛИЯ', home:'piazza', emo:['pinch','pizza','volcano'], flag:['#2a9a3a','#ffffff','#d8243a'], dir:'v', drama:true,
+      gk: gk('#202030','#101018','#202030','#101018','#ffd23a'),
+      looks: [{ ...LOOK.tan, ...hair(BLACK,BLACKHI,'pomp') }, { ...LOOK.light, ...hair('#2a1a10','#5a3a20','pomp') }, { ...LOOK.tan, ...hair(BLACK,BLACKHI,'long') }],
+      special: { 1: 'mus glasses', 2: 'mus', 4: 'mus', 6: 'beard', 8: 'mus', 9: 'glasses band', 10: 'mus' },
+      names: ['МАКАРОНИ','СПАГЕТТИНИ','ДРАМАТИКО','ЭСПРЕССИНИ','МАМАМИЯ','ЛАЗАНЬЕТТИ','ПЕЦЦЕРИНИ','КАПУЧЧИНИ','ДЖЕЛАТИНИ','ЖЕСТИКУЛИ','ПАДАЛЕТТИ'] }),
     fra: Object.assign(kit('#2a3a9a','#1a2470','#2a3a9a','#1a2470','#ffffff','#ffffff','#c8d0e4','#e8243a','#a8141e','#6a8aff','#1a2470'), {
       code:'FRA', mascot:['БАГЕТТО','baguette','ОН-ЛЯ-ЛЯ!'], skill:'strike', name:'ФРАНЦИЯ', home:'stadium', emo:['baguette','croissant','beret'], flag:['#2a3a9a','#ffffff','#e8243a'], dir:'v',
       gk: gk('#9ae04a','#6ab02a','#202030','#101018','#202030'),
@@ -94,12 +101,20 @@
       gk: gk('#ff8a6a','#d8604a','#1a5a8a','#0e3a62','#ffe14a'),
       looks: [{ ...LOOK.sea, ...hair('#2a8a3a','#5ac86a','long') }, { ...LOOK.sea, ...hair('#1a5a6a','#3a8a9a','spiky') }, { ...LOOK.sea, ...hair('#ffe14a','#fff4b0','long') }],
       names: ['КРАБОС','НЕПТУНИС','ТРИТОНОС','КОРАЛЛИС','МЕДУЗИС','ЖЕМЧУГОС','ПРИЛИВИС','РИФОС','СКАТОС','АКВАРИС','ОСЬМИНОС'] }),
+    // Амазонки: the legendary warrior women — tall, strong, war paint, a battle cry that knocks people over
+    amz: Object.assign(kit('#2a8a3a','#1a6a2a','#c8903a','#9a6a20','#ffd23a','#6a4a2a','#4a2e18','#2a8a3a','#1a6a2a','#5ac86a','#1a5a24', { pattern:'sash', stripe:'#ffd23a' }), {
+      code:'AMZ', mascot:['ПОПУГАЙ АРА','parrot','КРА-А-А!'], skill:'warcry', name:'АМАЗОНКИ', home:'jungle', emo:['bow','parrot'], flag:['#2a8a3a','#ffd23a','#2a8a3a'], dir:'h',
+      gk: gk('#d8243a','#a8141e','#6a4a2a','#4a2e18','#ffd23a'),
+      looks: [{ ...LOOK.tan, ...hair(BLACK,BLACKHI,'long') }, { ...LOOK.dark, ...hair(BLACK,BLACKHI,'long') }, { ...LOOK.light, ...hair('#a8381c','#d8622e','long') }, { ...LOOK.tan, ...hair('#3a2414','#6a4428','long') }],
+      feat: 'fem paint band',
+      names: ['ИППОЛИТА','ПЕНТЕСИЛЕЯ','АНТИОПА','МЕЛАНИППА','ОТРЕРА','ЛАМПАДО','МАРПЕСИЯ','ОРИФИЯ','АНДРОМАХА','АЭЛЛА','ТОМИРИС'] }),
     // Агарта: the legendary civilisation inside the hollow Earth (entrance at the poles, an inner sun, mammoths).
     agh: Object.assign(kit('#5a2a9a','#3a1a6a','#2ad8c8','#1aa098','#ffd23a','#2a1a3a','#180e24','#5a2a9a','#3a1a6a','#b86aff','#3a1a6a'), {
       code:'AGA', mascot:['МАМОНТ ГЕНА','mammoth','МЫ СНИЗУ!'], skill:'hole', name:'АГАРТА', home:'cavern', emo:['crystal','innersun'], flag:['#5a2a9a','#ffd23a','#100810'], dir:'sun',
       gk: gk('#ffd23a','#d8a020','#2a1a3a','#180e24','#5a2a9a'),
-      looks: [{ ...LOOK.agh, ...hair('#e8e8f4','#ffffff','long') }, { ...LOOK.agh, ...hair('#b86aff','#e0b8ff','spiky') }, { ...LOOK.agh, ...hair('#2ad8c8','#8ff8f0','pomp') }, { ...LOOK.agh, ...hair('#e8e8f4','#ffffff','crop') }],
-      special: { 1: 'bald beard', 9: 'glasses', 6: 'long band' },
+      // tall blue-eyed people with long blond hair, as in the hollow-Earth legends
+      looks: [{ ...LOOK.pale, eye:'#2a8af0', ...hair('#ffe48a','#fff6c8','long') }, { ...LOOK.pale, eye:'#2a8af0', ...hair('#f0d070','#fff0b0','long') }, { ...LOOK.light, eye:'#4ab8ff', ...hair('#fff0b0','#ffffff','long') }],
+      uniform: true,
       names: ['ШАМБАЛОВ','ПОЛЫЙ','КРИСТАЛЛОВ','ГЛУБИНИН','ЯДРОВ','МАНТИЕВ','СТАЛАКТИТ','ПОДЗЕМНЫЙ','ЛАВОВ','МАГМИН','ПОЛЮСОВ'] }),
   };
 
@@ -160,6 +175,10 @@
       '.....c......','....clc.....','....clc..c..','...clwlc.cl.','...clllc.cl.','.c.cllld.cl.','cl.clldd.cd.','cl.clldd.cd.','cd.clddd.dd.','cdccdddddd..','.dddddddd...','............']),
     innersun: P({ k:'#3a2a4a', r:'#6a5a7a', y:'#ffd23a', o:'#ff9a1a', w:'#fff6b0' }, [
       '...kkkkkk...','..kkrrrrkk..','.kkr....rkk.','kkr..yy..rkk','kr..ywwy..rk','kr.ywwwwy.rk','kr.yowwoy.rk','kr..yooy..rk','kkr..yy..rkk','.kkr....rkk.','..kkrrrrkk..','...kkkkkk...']),
+    pinch: P({ s:'#ffb88a', d:'#e0845a', c:'#2a6ad8' }, [
+      '.....ss.....','....ssss....','....sdss....','...ssdsss...','...sssdss...','..ssssssss..','..sdsssdss..','..ssssssss..','...ssssss...','....ssss....','....cccc....','....cccc....']),
+    parrot: P({ r:'#e8243a', y:'#ffd23a', b:'#2a6ad8', k:'#141010', w:'#ffffff' }, [
+      '....rrr.....','...rrrrr....','...rwkrry...','...rrrryyy..','...rrrr.yy..','..rrrrr.....','..rrbrrr....','.rrbbbrr....','.rbbybbr....','..bbyybr....','...yy.yy....','..b...b.....']),
     goose: P({ w:'#f4f4f4', s:'#c8c8d0', o:'#ff9a1a', k:'#141010' }, [
       '....www.....','...wwkw.....','...wwwwoo...','....ww.oo...','....ww......','....ww......','...wwww.....','.wwwwwwwww..','wwwwwwwwwsw.','.wwwwwwwsw..','..sssssss...','...o...o....']),
     mic: P({ k:'#3a3a48', s:'#8a8a9a', w:'#d8d8e4', r:'#d8243a' }, [
@@ -214,11 +233,38 @@
                  phys:{ bounce:1.5, fric:0.75 }, weather:'clear', critter:'pigeon' },
     gobi:      { name:'ГОБИ', grass:['#e8b870','#dca864','#d09c58','#e4b46c'], line:'#fff4e0', track:['#c88a4a','#b07a40'], back:'dunes',
                  phys:{ fric:1.8, bounce:0.6, speed:0.92 }, weather:'clear', critter:'camel', wind:70, dust:true },
+    jungle:    { name:'ДЖУНГЛИ', grass:['#2a7a2a','#26722a','#226a26','#2c7c2c'], line:'#e8ffe0', track:['#4a3a1a','#3a2e14'], back:'bamboo',
+                 phys:{ speed:0.95, traction:0.9 }, weather:'rain', tint:'rgba(20,80,20,.12)', leaves:true },
     cavern:    { name:'ПОЛАЯ ЗЕМЛЯ', grass:['#3a8a7a','#368070','#327666','#3c8c78'], line:'#9ff8ff', track:['#3a2a4a','#2a1e38'], back:'cavern',
                  phys:{ grav:0.75, speed:1.05 }, weather:'clear', critter:'mammoth', tint:'rgba(90,40,160,.12)', sparks:true },
     underwater:{ name:'ДНО ОКЕАНА', grass:['#d8c890','#ccbc84','#c0b078','#d4c48c'], line:'#ffffff', track:['#2a6a8a','#1a5a7a'], back:'reef',
                  phys:{ grav:0.45, air:0.5, speed:0.9 }, weather:'clear', critter:'shark', tint:'rgba(20,90,160,.22)', bubbles:true },
   };
 
-  window.AZZ_DATA = { LOOK, clubs, icons, themes };
+  // Music: one short original loop per country, in the most stereotypical style we could think of.
+  // beat = steps per bar, step = seconds per step, lead = oscillator, vib = vibrato (accordion / theremin),
+  // mel = MIDI notes (0 = rest), bass = one note per bar, on = bar steps where the bass plays, drum = per-bar
+  // pattern (k kick, s snare, h hat, . nothing).
+  const music = {
+    menu: { name:'ТАРАНТЕЛЛА', beat:6, step:0.145, lead:'square', mel:[69,72,76,81,76,72, 71,74,76,80,76,74, 69,72,76,81,79,77, 76,74,72,71,72,74, 77,76,74,72,71,69, 68,71,74,76,74,71, 69,76,81,76,72,76, 69,0,69,0,69,0], bass:[45,40,45,40,38,40,45,45], on:[0,3], drum:'h..h..' },
+    ita: { name:'ТАРАНТЕЛЛА ДЛЯ МАМЫ', beat:6, step:0.12, lead:'square', mel:[76,0,76,77,76,74, 72,0,72,74,72,71, 69,71,72,74,76,77, 76,0,0,69,0,0, 74,0,74,76,74,72, 71,0,71,72,71,69, 68,69,71,72,74,76, 69,0,69,0,69,0], bass:[45,45,40,45,40,40,45,45], on:[0,3], drum:'k.hs.h' },
+    fra: { name:'МЮЗЕТ С БАГЕТОМ', beat:6, step:0.16, lead:'square', vib:6, mel:[72,0,71,72,76,0, 74,0,72,71,69,0, 67,0,69,71,72,74, 76,0,0,74,0,0, 77,0,76,74,72,0, 71,0,72,74,76,0, 74,0,71,67,69,71, 72,0,0,0,0,0], bass:[48,43,48,43,41,43,43,48], on:[0,2,4], drum:'k.h.h.' },
+    ger: { name:'УМПА-ПОЛЬКА', beat:8, step:0.13, lead:'square', mel:[65,69,72,69,65,69,72,0, 70,69,67,69,70,72,74,0, 72,74,72,70,69,67,65,0, 67,69,70,67,65,0,65,0], bass:[29,36,29,36], on:[0,4], drum:'k.h.k.h.' },
+    eng: { name:'МАРШ К ЧАЮ', beat:8, step:0.15, lead:'square', mel:[62,0,66,0,69,0,74,0, 74,73,71,69,71,0,69,0, 67,0,71,0,69,0,66,0, 64,66,67,64,62,0,0,0], bass:[38,43,45,38], on:[0,4], drum:'k.s.k.ss' },
+    esp: { name:'ПАСОДОБЛЬ С БЫКОМ', beat:6, step:0.13, lead:'sawtooth', mel:[76,77,76,74,72,71, 72,74,72,71,69,68, 69,71,72,71,69,68, 64,0,64,0,0,0], bass:[40,41,45,40], on:[0,3], drum:'k.sk.s' },
+    por: { name:'ФАДО ПРО САРДИНЫ', beat:6, step:0.2, lead:'triangle', mel:[69,72,71,69,68,69, 72,76,74,72,71,0, 71,74,72,71,69,68, 69,0,0,0,0,0], bass:[45,40,45,45], on:[0,2,4], drum:'h.....' },
+    ned: { name:'ШАРМАНКА В ТЮЛЬПАНАХ', beat:6, step:0.15, lead:'square', vib:4, mel:[79,0,78,79,83,0, 81,0,79,78,76,0, 74,76,78,79,81,83, 79,0,0,0,0,0], bass:[43,38,43,43], on:[0,2,4], drum:'k.h.h.' },
+    kaz: { name:'ДОМБРА НА СКАКУ', beat:8, step:0.11, lead:'square', mel:[69,69,72,69,74,72,69,0, 76,76,74,72,74,72,69,0, 79,76,74,76,72,74,69,72, 69,0,69,0,69,0,0,0], bass:[45,45,40,45], on:[0,3,6], drum:'k.kk.k.k' },
+    mng: { name:'ГОРЛОВОЙ ГАЛОП', beat:8, step:0.13, lead:'sawtooth', vib:3, mel:[62,0,65,67,69,0,67,65, 62,0,60,62,65,0,0,0, 69,72,69,67,65,67,62,0, 62,0,0,0,0,0,0,0], bass:[26,26,26,26], on:[0,2,4,6], drum:'k.kk.k.k' },
+    prk: { name:'МАРШ ВЕЛИКИХ ПОБЕД', beat:8, step:0.14, lead:'square', mel:[60,0,64,0,67,0,72,0, 72,71,69,67,69,0,67,0, 65,0,69,0,72,0,77,0, 76,74,72,71,72,0,0,0], bass:[36,43,41,36], on:[0,4], drum:'k.s.k.ss' },
+    rho: { name:'МАРИМБА-ПРИЗРАК', beat:8, step:0.12, lead:'triangle', mel:[72,0,76,79,0,76,74,0, 72,74,0,76,72,0,69,0, 67,0,69,72,0,74,72,0, 76,0,74,0,72,0,0,0], bass:[48,43,45,48], on:[0,3,6], drum:'k..s.k.s' },
+    zim: { name:'ТРИЛЛИОН ЗА НОТУ', beat:8, step:0.12, lead:'triangle', mel:[67,69,72,0,74,72,69,0, 67,0,64,67,69,0,72,0, 74,76,74,72,69,0,67,0, 64,67,69,67,64,0,0,0], bass:[43,48,45,43], on:[0,3,6], drum:'k..s.k.s' },
+    ant: { name:'ВАЛЬС ПИНГВИНОВ', beat:6, step:0.18, lead:'triangle', mel:[84,0,88,91,88,84, 83,0,86,89,86,83, 81,84,88,84,81,79, 84,0,0,0,0,0], bass:[48,47,45,48], on:[0,3], drum:'......' },
+    sea: { name:'ШАНТИ ПРО ПЛАТФОРМУ', beat:6, step:0.14, lead:'square', vib:5, mel:[62,62,62,62,65,69, 67,65,64,62,64,65, 69,69,67,65,64,62, 64,62,61,62,0,0], bass:[38,45,38,38], on:[0,3], drum:'k.hk.h' },
+    vat: { name:'ХОРАЛ ДЛЯ ВРАТАРЯ', beat:4, step:0.32, lead:'square', mel:[72,74,76,77, 76,74,72,0, 71,72,74,72, 72,0,0,0], bass:[48,43,45,48], on:[0], drum:'....' },
+    atl: { name:'БУЛЬ-БУЛЬ ЭМБИЕНТ', beat:8, step:0.14, lead:'triangle', mel:[60,64,67,71,72,71,67,64, 57,60,64,67,69,67,64,60, 53,57,60,64,65,64,60,57, 55,59,62,66,67,0,0,0], bass:[36,33,29,31], on:[0,4], drum:'h...h...' },
+    agh: { name:'СИНТВЕЙВ ИЗ НЕДР', beat:8, step:0.15, lead:'sawtooth', vib:7, mel:[64,0,67,0,70,0,69,67, 64,0,63,0,62,0,0,0, 64,67,70,73,72,70,67,64, 63,0,0,0,62,0,0,0], bass:[40,40,39,38], on:[0,2,4,6], drum:'k.h.s.h.' },
+    amz: { name:'БАРАБАНЫ ДЖУНГЛЕЙ', beat:8, step:0.12, lead:'square', mel:[64,64,67,64,69,67,64,0, 64,64,67,64,62,0,60,0, 67,69,72,69,67,64,62,0, 64,0,64,0,64,0,0,0], bass:[40,40,43,40], on:[0,3,6], drum:'kks.kks.' },
+  };
+  window.AZZ_DATA = { LOOK, clubs, icons, themes, music };
 })();
