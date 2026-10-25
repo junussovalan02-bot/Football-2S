@@ -2376,6 +2376,73 @@ function render() {
     ptext(ctx, a.text, W/2, 42, fits ? Math.round(8 + 8*k) : 8, a.col, 'center', '#100810'); }
 }
 
+// ================== rules screen: looping mini-animations ==================
+// Each card replays its move in an 80x48 scene drawn with the game's own sprites (Napoli vs Roma).
+const HELP = (() => {
+  const P0 = { look: 0, num: 10 }, sp = (team, pose, expr, frame, ssj) => getSprite(team ? CLUBS.rom : CLUBS.nap, pose, expr, frame, 'side', { ...P0, ssj });
+  const grass = g => { for (let y = 0; y < 48; y += 8) { g.fillStyle = (y/8) % 2 ? '#3cbc38' : '#46cf40'; g.fillRect(0, y, 80, 8); } };
+  const put = (g, s, x, y, flip) => { if (flip) { g.save(); g.translate(Math.round(x), 0); g.scale(-1, 1); g.drawImage(s, -20, Math.round(y) - 39); g.restore(); } else g.drawImage(s, Math.round(x) - 20, Math.round(y) - 39); };
+  const ballAt = (g, x, y, t) => g.drawImage(BALLSPR[Math.floor(t*20) % 8], Math.round(x) - 6, Math.round(y) - 12);
+  const dot = (g, x, y, c, s) => { g.fillStyle = c; g.fillRect(Math.round(x), Math.round(y), s || 2, s || 2); };
+  const goal = (g, x) => { g.fillStyle = '#ffffff'; g.fillRect(x, 10, 2, 30); g.fillRect(x, 10, 10, 2); for (let k = 0; k < 5; k++) g.fillRect(x + 2 + k*2, 12, 1, 28); };
+  const run = (t) => Math.floor(t*10) % 3;
+  return {
+    furia(g, t) { grass(g); const on = t > 1.2; put(g, sp(0, on ? 'cheer' : 'idle', on ? 'shout' : 'normal', Math.floor(t*6) % 2, on), 40, 44);
+      g.fillStyle = '#100810'; g.fillRect(10, 2, 60, 6); g.fillStyle = on ? (Math.floor(t*8) % 2 ? '#ffffff' : '#ffd23a') : '#4aa8f0'; g.fillRect(11, 3, Math.min(58, t/1.2*58), 4);
+      if (on) for (let k = 0; k < 6; k++) dot(g, 30 + ((k*13 + t*40) % 22), 40 - ((k*7 + t*60) % 30), k % 2 ? '#ffe14a' : '#fff6b0'); },
+    tiger(g, t) { grass(g); goal(g, 70); const x = Math.min(28, 6 + t*30);
+      put(g, sp(0, t > 0.9 && t < 1.2 ? 'kick' : 'run', 'grit', run(t), true), x, 44);
+      if (t < 1) ballAt(g, x + 9, 44, t); else { const bx = x + 9 + (t - 1)*90; for (let k = 0; k < 6; k++) dot(g, bx - k*5, 37 + (k % 2), k % 2 ? '#100810' : '#ff9a1a', 3);
+        if (bx < 72) ballAt(g, bx, 43, t); if (t > 1.45) put(g, sp(1, 'fall', 'bulge', 0), 66, 44); } },
+    kame(g, t) { grass(g); goal(g, 70); put(g, sp(0, t < 1.2 ? 'charge' : 'kick', 'grit', 0, true), 16, 44);
+      if (t < 1.2) { const r = 1 + t*3; g.fillStyle = 'rgba(120,220,255,.6)'; g.fillRect(24 - r, 26 - r, r*2 + 2, r*2 + 2); dot(g, 24 - r/2, 26 - r/2, '#ffffff', r + 1); }
+      else { const bx = Math.min(70, 26 + (t - 1.2)*120); g.fillStyle = 'rgba(80,190,255,.6)'; g.fillRect(26, 37, bx - 26, 6); g.fillStyle = '#ffffff'; g.fillRect(26, 39, bx - 26, 2); ballAt(g, bx, 45, t); } },
+    rasen(g, t) { grass(g); goal(g, 70); const k = Math.min(1, t/0.9), bx = 8 + k*22, bz = Math.sin(k*Math.PI)*20 + (1 - k)*4;
+      if (t < 1) { put(g, sp(0, 'idle', 'normal', 0, true), 30, 44); ballAt(g, bx, 40 - bz, t); }
+      else { const ft = t - 1; if (ft < 0.3) { g.save(); g.translate(30, 18); g.scale(-1, -1); g.drawImage(sp(0, 'kick', 'shout', 0, true), -20, -20); g.restore(); } else put(g, sp(0, 'idle', 'normal', 0, true), 30, 44);
+        const x = 36 + ft*60, y = 40 + Math.cos(ft*14)*6; for (let i = 0; i < 4; i++) { const a = t*25 + i*1.6; dot(g, x + Math.cos(a)*6 - 3, y - 6 + Math.sin(a)*4, ['#ffffff', '#8fe0ff', '#4ab8ff', '#2a74c4'][i]); } if (x < 72) ballAt(g, x, y, t); } },
+    ora(g, t) { grass(g); const x = Math.min(34, 10 + t*40); put(g, sp(0, t > 0.5 ? 'tackle' : 'run', 'shout', run(t), true), x, 44);
+      if (t < 0.6) { put(g, sp(1, 'run', 'normal', run(t)), 46, 44, true); ballAt(g, 40, 44, t); }
+      else { const ft = t - 0.6; g.save(); g.translate(52 + ft*24, 30 - Math.sin(Math.min(1, ft)*Math.PI)*16); g.rotate((Math.floor(ft*14) % 4)*Math.PI/2); g.drawImage(sp(1, 'idle', 'bulge', 0), -20, -20); g.restore();
+        if (ft < 0.8) for (let k = 0; k < 4; k++) dot(g, 40 + Math.random()*16, 20 + Math.random()*16, k % 2 ? '#ffe14a' : '#ffffff', 2);
+        if (ft < 0.8 && Math.floor(ft*6) % 2) ptext(g, 'ОРА!', 52, 4, 8, '#ff6a9a', 'center', '#100810'); } },
+    pass(g, t) { grass(g); put(g, sp(0, 'idle', 'normal', 0), 12, 44); const k = Math.min(1, Math.max(0, (t - 0.4)/1.2));
+      put(g, sp(0, k < 1 ? 'run' : 'idle', 'normal', run(t)), 60 - (1 - k)*6, 34 + k*4); const tx = 58, ty = 38;
+      if (k < 1) { if (Math.floor(t*8) % 2) { g.fillStyle = '#4aa8f0'; g.fillRect(tx - 6, ty, 12, 1); g.fillRect(tx - 1, ty - 5, 2, 4); } ballAt(g, 20 + (tx - 20)*k, 44 + (ty - 44)*k, t); }
+      else ballAt(g, tx + 6, ty, t); },
+    curve(g, t) { grass(g); goal(g, 70); put(g, sp(1, 'idle', 'normal', 0), 44, 44, true); put(g, sp(0, t < 0.3 ? 'kick' : 'idle', 'grit', 0), 10, 44);
+      const k = Math.min(1, t/1.1), x = 18 + k*52, y = 44 - Math.sin(k*Math.PI)*16;
+      for (let i = 0; i < k*12; i++) { const kk = i/12; dot(g, 18 + kk*52, 44 - Math.sin(kk*Math.PI)*16 - 4, 'rgba(255,255,255,.7)', 1); }
+      if (k < 1) ballAt(g, x, y, t); else if (Math.floor(t*6) % 2) ptext(g, 'ДЗЫНЬ!', 40, 2, 8, '#ffffff', 'center', '#100810'); },
+    sprint(g, t) { grass(g); const x = (t*70) % 110 - 15; put(g, sp(0, 'run', 'grit', Math.floor(t*16) % 3), x, 44);
+      for (let k = 0; k < 4; k++) dot(g, x - 10 - k*6, 42 - (k % 2), '#ffffff', 2);
+      g.fillStyle = '#100810'; g.fillRect(64, 4, 12, 12); g.fillStyle = '#7ae070'; g.fillRect(65, 5 + (t/2.4)*10, 10, 10 - (t/2.4)*10); },
+    gk(g, t) { grass(g); goal(g, 70); const k = Math.min(1, t/0.6), bx = 10 + k*56, by = 44 - k*14;
+      if (t < 0.45) put(g, CLUBS.rom && getSprite(CLUBS.rom, 'idle', 'grit', 0, 'side', { gk: true }), 64, 44, true);
+      else { g.save(); g.translate(62, 26); g.drawImage(getSprite(CLUBS.rom, 'dive', 'grit', 0, 'side', { gk: true }), -20, -20); g.restore(); }
+      if (t < 0.6) ballAt(g, bx, by, t); else { ballAt(g, 52 - (t - 0.6)*30, 30 + (t - 0.6)*20, t); if (Math.floor(t*6) % 2) ptext(g, 'СЕЙВ!', 30, 2, 8, '#ffffff', 'center', '#100810'); } },
+    chaos(g, t) { grass(g); put(g, sp(0, 'idle', 'bulge', 0), 40, 44); const x = -20 + t*60; g.drawImage(VESPA, Math.round(x) - 18, 17);
+      if (x > 30) { g.save(); g.translate(40, 20 - (x - 30)*0.5); g.rotate((Math.floor(t*14) % 4)*Math.PI/2); g.drawImage(sp(0, 'idle', 'bulge', 0), -20, -20); g.restore(); } },
+    items(g, t) { grass(g); ['pizza', 'pepper', 'horn'].forEach((k, i) => g.drawImage(ITEMSPR[k], 12 + i*24, 18 + Math.round(Math.sin(t*4 + i)*2))); },
+    fields(g, t) { const th = ['snow', 'ice', 'savanna', 'underwater'][Math.floor(t/0.6) % 4], T = THEMES[th];
+      for (let y = 0; y < 48; y += 8) { g.fillStyle = (y/8) % 2 ? T.grass[2] : T.grass[0]; g.fillRect(0, y, 80, 8); }
+      ptext(g, T.name, 40, 4, 8, '#ffffff', 'center', '#100810'); put(g, sp(0, 'run', 'normal', run(t)), 40, 46);
+      if (th === 'savanna') g.drawImage(CRITSPR.elephant[0], 4, 18); if (th === 'ice') g.drawImage(CRITSPR.penguin[0], 56, 34); },
+  };
+})();
+let helpRaf = 0;
+function helpLoop() {
+  cancelAnimationFrame(helpRaf);
+  const cvs = [...document.querySelectorAll('#ovHelp canvas.anim')], t0 = performance.now();
+  const tick = now => {
+    if ($('ovHelp').hidden) return;
+    const t = ((now - t0)/1000) % 2.4;
+    for (const c of cvs) { const g = c.getContext('2d'); g.imageSmoothingEnabled = false; g.clearRect(0, 0, 80, 48); try { HELP[c.dataset.a](g, t); } catch (e) {} }
+    helpRaf = requestAnimationFrame(tick);
+  };
+  helpRaf = requestAnimationFrame(tick);
+}
+
 // ================== canvas taps (weather / sound) ==================
 cv.addEventListener('pointerdown', e => {
   audioInit();
@@ -2406,7 +2473,7 @@ click('miSound', () => { muted = !muted; syncSound(); });
 click('miQuit', toMenu);
 click('miAgain', () => startMatch(MODE));
 click('miOnline', () => { NET.ui = 'idle'; NET.msg = ''; showOv('ovOnline'); });
-click('miHelp', () => showOv('ovHelp'));
+click('miHelp', () => { showOv('ovHelp'); helpLoop(); });
 click('miHelpBack', () => { showOv('ovMenu'); menuPage('mMain'); });
 click('miHostCoop', () => hostGame('coop'));
 click('miHostVs', () => hostGame('vs'));

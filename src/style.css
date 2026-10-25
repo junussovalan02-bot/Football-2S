@@ -141,6 +141,13 @@ body.portrait.touch .rot{display:block}
 #derby:empty{display:none}
 @media (max-width:480px){ .vs{gap:6px} .card{min-width:0;padding:8px 6px} .kit{width:56px;height:56px} .arr{width:26px;height:38px;font-size:11px} .club{font-size:9px} .vsx{font-size:12px} }
 @media (orientation:landscape) and (max-height:520px){ .menu.teams{gap:8px} .logo.sm span{margin-top:4px} .kit{width:64px;height:64px} }
+/* rules: cards with a looping mini-animation of each move */
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:10px;width:min(820px,100%);text-align:left}
+.card.help{flex-direction:row;align-items:center;gap:10px;min-width:0;padding:8px}
+.card.help canvas{flex:0 0 auto;width:120px;height:72px;image-rendering:pixelated;image-rendering:crisp-edges;background:#2a8a2a;box-shadow:0 0 0 2px var(--ink)}
+.card.help b{font-weight:400;font-size:9px;display:block;margin-bottom:6px}
+.card.help p{margin:0;font-size:7px;line-height:1.8;color:#dfe6f6}
+#ovHelp .menu{width:100%;padding:0 8px}
 .rules{list-style:none;margin:0;padding:0 4px;display:grid;gap:12px;max-width:min(520px,100%);text-align:left;font-size:8px;line-height:2;color:#e8ecf6}
 .rules b{font-weight:400;color:var(--gold);margin-right:6px}
 .rules b.f{color:#ff8a3a} .rules b.v{color:#ff5a3a} .rules b.g{color:#7fe0ff} .rules b.c{color:#ff6a5a}

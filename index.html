@@ -108,19 +108,21 @@ img{max-width:100%}
 
     <div class="ov" id="ovHelp" hidden>
       <div class="menu">
-        <h2 class="logo sm">ПРАВИЛА<span>СУПЕР-УДАРЫ</span></h2>
-        <ul class="rules">
-          <li><b>ШКАЛА FURIA</b> под счётом. Растёт, когда ведёшь мяч, отбираешь, сбиваешь, получаешь пас, когда тебя сбили или дразнят и когда пропустил гол. Полная — команда становится СУПЕР-САЙЯНАМИ (золотые волосы), хватит на один супер-удар.</li>
-          <li><b class="f">ТИГРИНЫЙ УДАР</b> FURIA + держи УДАР на бегу. Мяч-тигр сносит всех на пути, вратаря тоже.</li>
-          <li><b class="g">КАМЕХАМЕХА</b> FURIA + держи УДАР стоя. Луч летит прямо в ворота и сносит всех.</li>
-          <li><b class="g">РАСЕНГАН</b> FURIA + мяч на уровне головы: просто жми УДАР. Крутящийся шар петляет по штрафной.</li>
-          <li><b class="v">ОРА-ОРА-ОРА</b> FURIA + ПОДКАТ, когда соперник с мячом рядом. Серия ударов раскидывает всех вокруг.</li>
-          <li><b>ВРАТАРИ</b> ловят и отбивают удары, ныряют в углы. Супер-удар заносит вратаря в сетку вместе с мячом. Бей в угол подальше от вратаря.</li>
-          <li><b>ПАС И СПРИНТ</b> Пас уходит партнёру, на которого направлен джойстик, — туда, где он будет. Кружок на поле показывает, куда прилетит мяч. Если на пути соперник — пас идёт навесом. Кнопка » — спринт, пока не кончатся силы (кольцо на кнопке). Свой удар пролетает мимо партнёров.</li>
-          <li><b>БЕЗ FURIA</b> держишь УДАР — сильный удар. Высокий мяч + УДАР — удар с лёта. Игрок с мячом подсвечен кольцом и подписан.</li>
-          <li><b class="c">КАОС</b> Каждые 15 секунд что-то случается: МЯЧ-ГИГАНТ, ПИЦЦА-ЭКСПРЕСС на веспе, ЛУНА, ЭСПРЕССО, ВЕСУВИЙ, ГОЛОЛЁД. В последние 20 секунд гол стоит 2 очка.</li>
-          <li><b class="c">ПРЕДМЕТЫ</b> Пробеги по ним. ПИЦЦА: +FURIA. ПЕРЧИК: бежишь быстрее и сносишь всех. КОРНЕТТО: тебя нельзя сбить и отобрать мяч.</li>
-        </ul>
+        <h2 class="logo sm">ПРАВИЛА<span>КАК ИГРАТЬ</span></h2>
+        <div class="cards">
+          <div class="card help"><canvas class="anim" data-a="furia" width="80" height="48" aria-hidden="true"></canvas><div><b style="color:#ffe14a">СУПЕР-САЙЯН</b><p>Шкала FURIA под счётом растёт от игры: ведёшь мяч, отбираешь, сбивают тебя. Полная — волосы золотые, доступен один супер-удар.</p></div></div>
+          <div class="card help"><canvas class="anim" data-a="tiger" width="80" height="48" aria-hidden="true"></canvas><div><b style="color:#ff9a3a">ТИГРИНЫЙ УДАР</b><p>FURIA + держи УДАР на бегу и отпусти. Мяч-тигр сносит всех на пути, даже вратаря.</p></div></div>
+          <div class="card help"><canvas class="anim" data-a="kame" width="80" height="48" aria-hidden="true"></canvas><div><b style="color:#7fe0ff">КАМЕХАМЕХА</b><p>FURIA + держи УДАР стоя. Шар энергии в руках — и луч летит прямо в ворота.</p></div></div>
+          <div class="card help"><canvas class="anim" data-a="rasen" width="80" height="48" aria-hidden="true"></canvas><div><b style="color:#7fe0ff">РАСЕНГАН</b><p>FURIA + мяч на уровне головы: просто жми УДАР. Удар через себя, шар петляет по штрафной.</p></div></div>
+          <div class="card help"><canvas class="anim" data-a="ora" width="80" height="48" aria-hidden="true"></canvas><div><b style="color:#ff6a9a">ОРА-ОРА-ОРА</b><p>FURIA + ПОДКАТ, когда соперник с мячом рядом. Серия ударов раскидывает всех.</p></div></div>
+          <div class="card help"><canvas class="anim" data-a="pass" width="80" height="48" aria-hidden="true"></canvas><div><b style="color:#7fe0ff">ПАС</b><p>Пас уходит тому, куда направлен джойстик. Мигающий кружок — куда прилетит мяч. Соперник на пути — пойдёт навесом.</p></div></div>
+          <div class="card help"><canvas class="anim" data-a="curve" width="80" height="48" aria-hidden="true"></canvas><div><b style="color:#ffffff">ПОДКРУТКА</b><p>Отпусти УДАР, держа джойстик вбок, — мяч закрутится в обход защитников. Штанга звенит: ДЗЫНЬ!</p></div></div>
+          <div class="card help"><canvas class="anim" data-a="sprint" width="80" height="48" aria-hidden="true"></canvas><div><b style="color:#7ae070">СПРИНТ</b><p>Держи » — бежишь быстрее. Силы на кольце кнопки; выдохся — отдышись.</p></div></div>
+          <div class="card help"><canvas class="anim" data-a="gk" width="80" height="48" aria-hidden="true"></canvas><div><b style="color:#ffffff">ВРАТАРИ</b><p>Ныряют в углы, ловят и отбивают. Бей в угол подальше от вратаря.</p></div></div>
+          <div class="card help"><canvas class="anim" data-a="chaos" width="80" height="48" aria-hidden="true"></canvas><div><b style="color:#ff6a5a">КАОС</b><p>Раз в 15 секунд: мяч-гигант, веспа с пиццей, луна, эспрессо, Везувий, гололёд. Последние 20 с — гол за 2.</p></div></div>
+          <div class="card help"><canvas class="anim" data-a="items" width="80" height="48" aria-hidden="true"></canvas><div><b style="color:#ffd23a">ПРЕДМЕТЫ</b><p>Пробеги по ним. Пицца — FURIA. Перчик — скорость и таран. Корнетто — тебя не сбить.</p></div></div>
+          <div class="card help"><canvas class="anim" data-a="fields" width="80" height="48" aria-hidden="true"></canvas><div><b style="color:#9fe8ff">ПОЛЯ МИРА</b><p>Снег вязкий, лёд скользкий, на пьяцце мяч скачет, под водой плывёт. И на поле выходят звери.</p></div></div>
+        </div>
         <div class="items"><button class="mi" id="miHelpBack">ПОНЯТНО</button></div>
       </div>
     </div>
