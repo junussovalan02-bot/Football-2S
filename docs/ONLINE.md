@@ -30,6 +30,22 @@ room.onPeers(fn, onError) -> unsubscribe
 ```
 Any transport that provides this works. `src/net/local.js` is a 60-line example over BroadcastChannel.
 
+## Relay fallback (v0.12)
+Real phones often can't open a direct WebRTC link (Wi-Fi <-> 4G, carrier-grade NAT), and the free PeerJS
+broker/TURN servers are not always up. So the transport now has a second link with the same messages:
+a public **MQTT broker over secure WebSocket** (`src/net/relay.js`, a ~100-line MQTT 3.1.1 client, QoS 0).
+Brokers tried in order: `broker.emqx.io:8084`, `broker.hivemq.com:8884`, `test.mosquitto.org:8081`.
+- Host: listens on PeerJS **and** the relay; ready when either is up. Announces itself on the retained topic
+  `azzurri-arcade/v1/CODE/info` every 15 s (cleared on leave). Guest messages arrive on `.../g`, host sends on
+  `.../h` with `to` = guest id.
+- Guest: tries direct for 5 s, then the relay (status line: «Напрямую не вышло, соединяемся через сервер…»).
+  Not found = no fresh announcement (<2 min) within 3.5 s.
+- Everything above (heartbeat, rejoin into the running match, host leaving) works the same on both links.
+- Traffic through the relay: ~20 snapshots/s × 2–3 KB. Topics are public: anyone who knows the code could
+  read the game state (only positions and score, nothing personal).
+- Dev: `?relay=ws://127.0.0.1:8888` (local broker: `npm i aedes ws`, see the test notes), `?peer=off`
+  forces relay only.
+
 ## Join by code (done, v0.9)
 WebRTC peer-to-peer through **PeerJS** (`src/net/peer.js`, library vendored in `src/vendor/peerjs.min.js`,
 so there is no CDN dependency and `build-single.py` inlines it too).

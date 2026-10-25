@@ -1305,10 +1305,10 @@ async function joinByCode(raw) {
   const code = cleanCode(raw);
   if (!NET.ready || NET.role !== 'solo' || NET.joining) return;
   if (code.length !== 5) { NET.msg = 'В КОДЕ 5 СИМВОЛОВ'; renderLobby(); return; }
-  NET.msg = ''; NET.joining = code; NET.lastCode = code; renderLobby();
+  NET.msg = ''; NET.joining = code; NET.lastCode = code; NET.viaRelay = false; renderLobby();
   const room = NET.room;
   if (room.join) {
-    try { await room.join(code); }
+    try { await room.join(code, stage => { if (NET.joining === code && stage === 'relay') { NET.viaRelay = true; renderLobby(); } }); }
     catch (e) {
       if (NET.joining !== code) return;
       NET.joining = null; NET.ui = 'enter';
@@ -1387,7 +1387,8 @@ function renderLobby() {
     hint.textContent = 'Отправь другу ссылку или продиктуй код. Друг: ИГРАТЬ > С ДРУГОМ > ВОЙТИ ПО КОДУ.';
     return;
   }
-  if (NET.role === 'guest' || NET.joining) { view(null); st.textContent = 'ПОДКЛЮЧАЕМСЯ К ' + (NET.joining || NET.code) + '…'; return; }
+  if (NET.role === 'guest' || NET.joining) { view(null); st.textContent = 'ПОДКЛЮЧАЕМСЯ К ' + (NET.joining || NET.code) + '…';
+    if (NET.viaRelay) hint.textContent = 'Напрямую не вышло, соединяемся через сервер…'; return; }
   if (NET.ui === 'enter') {
     view('nJoin'); st.textContent = NET.msg || 'ВВЕДИ КОД С ЭКРАНА ДРУГА';
     hint.textContent = 'Код из 5 букв и цифр виден на экране у того, кто создал игру.';

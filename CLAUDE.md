@@ -13,6 +13,7 @@ npx --yes serve -l 8080 .        # or: python3 -m http.server 8080
 open http://localhost:8080/            # single player
 open http://localhost:8080/?net=local  # in TWO tabs: test online (BroadcastChannel, no server)
 open http://localhost:8080/?peer=127.0.0.1:9000  # PeerJS against a local PeerServer (docs/ONLINE.md)
+open http://localhost:8080/?peer=off&relay=ws://127.0.0.1:8888  # relay only, local MQTT broker (docs/ONLINE.md)
 python3 tools/build-single.py          # -> dist/azzurri-arcade.html (one self-contained file)
 ```
 
@@ -28,7 +29,8 @@ can be inlined into one HTML file for a Claude artifact.
 | `src/game.js` | Everything else, one IIFE, sections marked `// ====`. See code map below. |
 | `src/net/index.js` | Picks the online transport → `window.AzzNet.connect()` returns `{room, user}`. |
 | `src/net/local.js` | Dev transport over BroadcastChannel (two tabs). |
-| `src/net/peer.js` | Real online: PeerJS/WebRTC, `room.host(code)` / `room.join(code)` / `leave()`. |
+| `src/net/peer.js` | Real online: `room.host(code)` / `room.join(code)` / `leave()`; direct PeerJS/WebRTC, falls back to the relay. |
+| `src/net/relay.js` | Relay link through a public MQTT broker over WSS (tiny MQTT client), used when WebRTC can't connect. |
 | `src/vendor/peerjs.min.js` | PeerJS 1.5.4, vendored (MIT). Don't edit. |
 | `.github/workflows/pages.yml` | Deploys `index.html` + `src/` to GitHub Pages on every push. |
 | `tools/build-single.py` | Inlines CSS/JS into `dist/azzurri-arcade.html`. |

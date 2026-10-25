@@ -1,6 +1,8 @@
-// Online transport for two phones anywhere: WebRTC peer-to-peer through PeerJS, joined by a short code.
-// The host registers the id PREFIX+CODE on the PeerJS broker (free public server), the guest connects to it.
-// After that the phones talk directly (or through PeerJS's TURN relay when NAT is strict).
+// Online transport for two phones anywhere, joined by a short code. Two links, same messages:
+//  1. direct WebRTC through PeerJS: the host registers PREFIX+CODE on the PeerJS broker, the guest connects;
+//  2. relay through a public MQTT broker (src/net/relay.js) when the direct link can't be made in a few
+//     seconds (Wi-Fi <-> 4G, carrier NAT) or the PeerJS server is down.
+// The host listens on both; the guest tries direct first, then the relay.
 //
 // Implements the room interface from index.js, plus:
 //   room.host(code) -> Promise   take the code and wait for a friend      (rejects Error 'taken' | 'network')
@@ -11,7 +13,7 @@
 //
 // Dev: ?peer=localhost:9000 uses a local PeerServer (npx peer --port 9000) instead of the public one.
 (function () {
-  const PREFIX = 'azzurri-arcade-', HEARTBEAT = 1000, DEAD = 6000, JOIN_TIMEOUT = 15000;
+  const PREFIX = 'azzurri-arcade-', HEARTBEAT = 1000, DEAD = 6000, DIRECT_TIMEOUT = 5000;
 
   function options() {
     const q = new URLSearchParams(location.search).get('peer');
@@ -22,7 +24,8 @@
   const localId = () => 'me-' + Math.random().toString(36).slice(2, 10);
 
   function create() {
-    let peer = null, conn = null, myId = localId(), mine = Object.freeze({}), theirs = null, heard = 0;
+    let peer = null, relay = null, conn = null, myId = localId(), mine = Object.freeze({}), theirs = null, heard = 0, gen = 0;
+    const hasPeer = () => !!window.Peer && new URLSearchParams(location.search).get('peer') !== 'off';
     const handlers = [];
     let snap = Object.freeze([]);
 
@@ -63,11 +66,28 @@
     }, HEARTBEAT);
 
     function reset() {
-      const c = conn, p = peer;
-      conn = null; peer = null; theirs = null; myId = localId();
+      const c = conn, p = peer, r = relay;
+      conn = null; peer = null; relay = null; theirs = null; myId = localId(); gen++;
       if (c) { try { c.close(); } catch (e) {} }
       if (p) { try { p.destroy(); } catch (e) {} }
+      if (r) { try { r.close(); } catch (e) {} }
       rebuild();
+    }
+    function directJoin(code, g) {   // resolves with nothing once the host's presence came over WebRTC
+      return new Promise((resolve, reject) => {
+        if (!hasPeer()) { reject(new Error('network')); return; }
+        let done = false, p;
+        const fail = why => { if (done) return; done = true; clearTimeout(timer); if (peer === p) { peer = null; try { p.destroy(); } catch (e) {} } if (conn && conn.peer === PREFIX + code) { const c = conn; conn = null; theirs = null; try { c.close(); } catch (e) {} } reject(new Error(why)); };
+        const timer = setTimeout(() => fail('timeout'), DIRECT_TIMEOUT);
+        try { p = new window.Peer(options()); } catch (e) { fail('network'); return; }
+        peer = p;
+        p.on('open', id => {
+          if (peer !== p || gen !== g) return;
+          myId = id; rebuild();
+          attach(p.connect(PREFIX + code, { reliable: true, serialization: 'json' }), () => { if (done) return; done = true; clearTimeout(timer); resolve(); });
+        });
+        p.on('error', e => fail(e && e.type === 'peer-unavailable' ? 'notfound' : 'network'));
+      });
     }
 
     return {
@@ -80,44 +100,52 @@
       peers() { return snap; },
       onPeers(fn) { handlers.push(fn); setTimeout(rebuild, 0); return () => { const i = handlers.indexOf(fn); if (i >= 0) handlers.splice(i, 1); }; },
 
+      // listen on both links; ready as soon as one of them is up
       host(code) {
         reset();
-        return new Promise((resolve, reject) => {
-          const p = new window.Peer(PREFIX + code, options()); peer = p;
-          let done = false;
-          p.on('open', id => { if (peer !== p) return; done = true; myId = id; rebuild(); resolve(); });
+        const g = gen; myId = PREFIX + code; rebuild();
+        const direct = new Promise((resolve, reject) => {
+          if (!hasPeer()) { reject(new Error('network')); return; }
+          let done = false, p;
+          try { p = new window.Peer(PREFIX + code, options()); } catch (e) { reject(new Error('network')); return; }
+          peer = p;
+          p.on('open', () => { if (peer !== p) return; done = true; resolve(); });
           p.on('connection', c => { if (peer !== p) { c.close(); return; } attach(c); });
           // lost the broker (phone slept): keep talking to the friend, re-register the code in the background
           p.on('disconnected', () => setTimeout(() => { if (peer === p && !p.destroyed && p.disconnected) p.reconnect(); }, 1500));
-          p.on('error', e => {
-            if (done || peer !== p) return;
-            done = true; reset(); reject(new Error(e && e.type === 'unavailable-id' ? 'taken' : 'network'));
-          });
+          p.on('error', e => { if (done || peer !== p) return; done = true; reject(new Error(e && e.type === 'unavailable-id' ? 'taken' : 'network')); });
+        });
+        const viaRelay = window.AzzRelay ? window.AzzRelay.host(code, () => myId, c => { if (gen === g) attach(c); })
+          .then(r => { if (gen !== g) { r.close(); throw new Error('stale'); } relay = r; }) : Promise.reject(new Error('network'));
+        return new Promise((resolve, reject) => {
+          let fails = 0, taken = false;
+          const no = e => { if (e && e.message === 'taken') taken = true; if (++fails === 2) { if (gen === g) reset(); reject(new Error(taken ? 'taken' : 'network')); } };
+          direct.then(resolve, no); viaRelay.then(resolve, no);
         });
       },
 
-      join(code) {
+      // direct first; if it doesn't come up in a few seconds, through the relay
+      async join(code, onStage) {
         reset();
-        return new Promise((resolve, reject) => {
-          const p = new window.Peer(options()); peer = p;
-          let done = false;
-          const fail = why => { if (done || peer !== p) return; done = true; clearTimeout(timer); reset(); reject(new Error(why)); };
-          const timer = setTimeout(() => fail('timeout'), JOIN_TIMEOUT);
-          p.on('open', id => {
-            if (peer !== p) return;
-            myId = id; rebuild();
-            const c = p.connect(PREFIX + code, { reliable: true, serialization: 'json' });
-            attach(c, () => { if (done) return; done = true; clearTimeout(timer); resolve(); });
-          });
-          p.on('error', e => fail(e && e.type === 'peer-unavailable' ? 'notfound' : 'network'));
+        const g = gen;
+        try { await directJoin(code, g); return; } catch (e) { if (gen !== g) throw new Error('stale'); }
+        if (!window.AzzRelay) { reset(); throw new Error('network'); }
+        onStage && onStage('relay');
+        myId = localId(); rebuild();
+        let c;
+        try { c = await window.AzzRelay.join(code, myId); } catch (e) { if (gen === g) reset(); throw e; }
+        if (gen !== g) { c.close(); throw new Error('stale'); }
+        await new Promise((resolve, reject) => {
+          const timer = setTimeout(() => { if (gen === g) reset(); reject(new Error('timeout')); }, 8000);
+          attach(c, () => { clearTimeout(timer); resolve(); });
         });
       },
 
       leave() {
         // let the last presence ("I left") reach the friend before hanging up
-        const c = conn, p = peer;
-        conn = null; peer = null; theirs = null; myId = localId(); rebuild();
-        setTimeout(() => { try { c && c.close(); } catch (e) {} try { p && p.destroy(); } catch (e) {} }, 300);
+        const c = conn, p = peer, r = relay;
+        conn = null; peer = null; relay = null; theirs = null; myId = localId(); gen++; rebuild();
+        setTimeout(() => { try { c && c.close(); } catch (e) {} try { p && p.destroy(); } catch (e) {} try { r && r.close(); } catch (e) {} }, 300);
       },
       connected() { return true; },
     };
