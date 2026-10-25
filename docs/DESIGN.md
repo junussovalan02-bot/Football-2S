@@ -18,9 +18,14 @@ Main menu: **РЕАЛЬНОСТЬ 11x11 · АРКАДА · С ДРУГОМ · Н
 
 ## Mascots and half-time (v0.17, `// ==== mascots & half-time` in game.js)
 - **Walk-out** before every match (`game.mode = 'show'`, `game.show = {kind:'intro'}`, 4.6 s): both clubs' mascots
-  (`mascot: [name, icon, chant]` in data.js, e.g. БАГЕТТО, КРЕНДЕЛЬ, СЭР ЧАЙ, ЮРТА-КУН; a custom club gets one from its
-  emoji) walk in from the sides, dance at the centre circle with confetti, shout their chant and walk off. Body in the
-  club's kit, head = the club emoji at 2×. УДАР skips it (solo only).
+  walk in from the sides, dance at the centre circle with confetti, shout their chant and walk off. They are living
+  characters (`mascot: [name, type, chant]` in data.js, drawn by `MASC[type]` in game.js, 48×60, walk / dance / flex
+  frames, blinking): ПИЦЦЕТТА (pizza slice with legs), ВОЛЧАРА (wolf in the kit), ПРИЗРАК, ТРИЛЛИОН (banknote in a top
+  hat), ТОВ. РАКЕТА, БЕРКУТ, КОНЬ БАТЫР (a horse walking like a man, in a deel), БАГЕТТО (beret, moustache), СОСИСКИН
+  (lederhosen), СЭР ЧАЙНИК (teapot with monocle), ТОРО (pumped bull), ПЕТУХ ГАЛУ, ГАУДА (cheese in clogs),
+  ПИНГВИН-КАЧОК (abs, chain, biceps), КРАБ, СВЕЧКА (papal red shoes), РЫБА С НОГАМИ. A custom club gets one by its emoji,
+  otherwise БАНАН. Muscle types flex instead of dancing, the ghost floats. A tap on the pitch or УДАР skips (solo only).
+  The match title is shown after the walk-out.
 - **Half-time** when the clock reaches half: whistle, mascots again (5 s), a board with ПЕРЕРЫВ, the score, a silly
   stat («ВЛАДЕНИЕ: 50% ПАНИКИ») and the new weather (the old mid-match weather change moved here). Then the teams
   **swap ends**: `game.flip = 1`, `dirOf(team)` / `goalX` / `ownX` / `mirX` flip, the other team kicks off, «2-Й ТАЙМ!».

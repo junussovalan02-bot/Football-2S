@@ -2,7 +2,8 @@
 
 Кто ещё делает «футбол без правил» или ретро-футбол, чем их хвалят и ругают, и что из этого
 следует для Azzurri Arcade. Классику NES (Goal 3, Nintendo World Cup, Goal! Two) см. в
-[goal-series.md](goal-series.md).
+[goal-series.md](goal-series.md). Обновление на 2026 год (FIFA Heroes, Beat The Champions, GOAL3, мобильные хиты)
+и список «добавить / убрать» — в [competitors-2026.md](competitors-2026.md).
 
 ## Сводная таблица
 

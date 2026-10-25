@@ -2103,7 +2103,6 @@ async function shareGame() {
 const SHOW_LEN = { intro: 4.6, half: 5 };
 const HALF_JOKES = ['ТРЕНЕР ЕСТ ЧИПСЫ', 'ВЛАДЕНИЕ: 50% ПАНИКИ', 'ВРАТАРЬ ЗВОНИТ МАМЕ', 'СУДЬЯ УШЁЛ ЗА ШАУРМОЙ',
   'КОММЕНТАТОР УСНУЛ', 'ТАКТИКА: БЕЖАТЬ К МЯЧУ', 'ФАНАТЫ СПОРЯТ О ПИЦЦЕ', 'НАПАДАЮЩИЙ ИЩЕТ БУТСУ', 'УДАРОВ В СТВОР: ПРИМЕРНО', 'xG: НЕ СПРАШИВАЙ'];
-const mascotOf = team => { const c = TEAMS[team]; return c.mascot || [(EMO_RU[c.emo[0]] || 'ТАЛИСМАН'), EMO[c.emo[0]] ? c.emo[0] : 'laugh', 'ВПЕРЁД!']; };
 function startShow(kind) {
   game.show = { kind, t: 0, j: Math.floor(Math.random()*HALF_JOKES.length) }; game.mode = 'show';
   ball.owner = null; Object.assign(ball, { x: LEN/2, y: WID/2, z: 0, vx: 0, vy: 0, vz: 0, superType: null, beam: null, passTo: null, passAt: null });
@@ -2113,43 +2112,255 @@ function startShow(kind) {
 }
 // where a mascot stands at show time t (field units); phase: 0 walk in, 1 dance, 2 walk off
 function mascotPos(team, t, kind) {
-  const L = SHOW_LEN[kind], s = team ? 1 : -1, hx = LEN/2 + s*48, hy = WID/2 + 52;
+  const L = SHOW_LEN[kind], s = team ? 1 : -1, hx = LEN/2 + s*44, hy = WID/2 + 24;
   if (t < 1.4) { const k = t/1.4; return { x: hx + s*(1 - k)*170, y: hy + (1 - k)*30, ph: 0 }; }
   if (t < L - 0.9) return { x: hx, y: hy, ph: 1 };
   const k = (t - (L - 0.9))/0.9; return { x: hx, y: hy + k*(WID/2 + 30), ph: 2 };
 }
+let showTap = false;   // a tap on the pitch skips the show too
+cv.addEventListener('pointerdown', () => { if (game.mode === 'show') showTap = true; });
 function updShow(dt) {
   const sh = game.show; if (!sh) return;
   sh.t += dt;
   if (sh.t > 1.4 && sh.t < SHOW_LEN[sh.kind] - 0.9 && Math.random() < dt*14) {   // confetti in both clubs' colours
-    const s = P(LEN/2 + rnd(-110, 110), WID/2 + 52, 70); spawn(s.x, s.y - 30, rnd(-40, 40), rnd(-30, 10), rnd(0.8, 1.4), [TEAMS[0].color, TEAMS[1].color, '#ffffff', '#ffd23a'][Math.floor(Math.random()*4)], 2, 40); }
+    const s = P(LEN/2 + rnd(-110, 110), WID/2 + 24, 70); spawn(s.x, s.y - 30, rnd(-40, 40), rnd(-30, 10), rnd(0.8, 1.4), [TEAMS[0].color, TEAMS[1].color, '#ffffff', '#ffd23a'][Math.floor(Math.random()*4)], 2, 40); }
   if (NET.role === 'guest') return;
   for (const p of players) { const i = p.inp; i.mx = i.my = 0; i.kickHeld = i.kickReleased = i.tacklePressed = i.sprint = false; updPlayer(p, dt); }
   separate(); updBall(dt);
-  const skip = NET.role === 'solo' && sh.t > 0.6 && (keys.has('j') || keys.has(' ') || keys.has('enter') || touchKick);
+  const skip = NET.role === 'solo' && sh.t > 0.6 && (keys.has('j') || keys.has(' ') || keys.has('enter') || touchKick || showTap);
+  showTap = false;
   if (sh.t < SHOW_LEN[sh.kind] && !skip) return;
   game.show = null; game.banner = null; touchKick = false; keys.delete('j'); keys.delete(' '); keys.delete('enter');
   if (sh.kind === 'half') {
     game.flip = 1; game.half = 2; kickoff(1); game.announce = { text: '2-Й ТАЙМ!', col: '#ffe14a', t: 1.4 };
-  } else { kickoff(0); if (game.modTxt) game.announce = { text: game.modTxt + '!', col: '#ff9a5a', t: 1.6 }; }
+  } else { kickoff(0); game.announce = game.modTxt ? { text: game.modTxt + '!', col: '#ff9a5a', t: 1.6 } : game.introAnn; }
 }
+// ---- living mascots: each is its own character drawn pixel by pixel (48x60 cell, feet at y 58, facing right).
+// A spec paints the body with the helpers below; legs and arms are shared: walk frames swing them, 'dance'
+// raises the arms, 'flex' shows the biceps. Cached per type, pose, blink and club (some wear the club's kit).
+const MW = 48, MH = 60, MCX = 24, MFY = 58, MSPR = new Map();
+const MASC_STYLE = { penguin: 'flex', bull: 'flex', wolf: 'flex', horse: 'flex', ghost: 'float' };
+const MASC_BY_EMO = { pizza: 'pizza', volcano: 'pizza', wolf: 'wolf', ghost: 'ghost', money: 'note', rocket: 'rocket', horse: 'horse', ger: 'horse', bow: 'horse',
+  eagle: 'eagle', bowl: 'eagle', baguette: 'baguette', croissant: 'baguette', beret: 'baguette', sausage: 'sausage', pretzel: 'sausage', tea: 'teapot', umbrella: 'teapot',
+  bull: 'bull', paella: 'bull', rooster: 'rooster', sardine: 'fish', cheese: 'cheese', tulip: 'cheese', clog: 'cheese', penguin: 'penguin', snowflake: 'penguin',
+  crab: 'crab', anchor: 'crab', candle: 'candle', key: 'candle', fish: 'fish', trident: 'fish' };
+function mascotSprite(type, pose, blink, club) {
+  const key = type + '|' + pose + '|' + (blink ? 1 : 0) + '|' + club.code; let c = MSPR.get(key); if (c) return c;
+  c = document.createElement('canvas'); c.width = MW; c.height = MH; const g = c.getContext('2d');
+  const R = (x, y, w, h, col) => { g.fillStyle = col; g.fillRect(Math.round(x), Math.round(y), w, h); };
+  const E = (cx, cy, rx, ry, col) => { for (let dy = -ry; dy <= ry; dy++) { const hw = Math.round(rx*Math.sqrt(Math.max(0, 1 - (dy/(ry + 0.5))**2))); R(cx - hw, cy + dy, hw*2 + 1, 1, col); } };
+  const walk = pose.startsWith('walk'), ph = +pose.slice(-1), arms = pose.startsWith('flex') ? 'flex' : pose.startsWith('dance') ? 'up' : 'down';
+  const H = {
+    legs(hipY, col, shoe, o) {   // two legs from the hips to the feet; walking swings them, dancing spreads them
+      o = o || {}; const w = o.w || 3, gap = o.gap || 2, sw = o.shoeW || 5, sh = o.shoeH || 2;
+      [[MCX - gap - w, -1], [MCX + gap, 1]].forEach(([x0, side]) => {
+        const off = walk ? (ph ? side : -side)*3 : side*2, lift = !walk && ph === (side > 0 ? 1 : 0) ? 2 : walk && (ph ? side : -side) > 0 ? 1 : 0;
+        const y1 = MFY - sh - lift;
+        for (let y = hipY; y < y1; y++) { const k = (y - hipY)/Math.max(1, y1 - hipY); R(x0 + off*k, y, w, 1, o.sock && k > 0.55 ? o.sock : col); }
+        R(x0 + off - 1, y1, sw, sh, shoe);
+      });
+    },
+    arms(sx, sy, col, hand, o) {   // returns where the hands are, for claws and gloves
+      o = o || {}; const w = o.w || 2, len = o.len || 8, hw = o.hw || w + 1, hh = o.hh || 2, out = [];
+      for (const side of [-1, 1]) {
+        const x = side < 0 ? MCX - sx - w : MCX + sx;
+        if (arms === 'down') { const sw = walk ? (ph ? side : -side) : 0; R(x + sw, sy, w, len, col); if (o.hi) R(x + sw + (side < 0 ? 0 : w - 1), sy + 1, 1, len - 2, o.hi); R(x + sw - (side < 0 ? hw - w : 0), sy + len, hw, hh, hand); out.push([x + sw, sy + len]); }
+        else if (arms === 'up') { const up = (ph ? side : -side) > 0 ? 2 : 0, ox = side*2;
+          for (let k = 0; k < len; k++) R(x + ox*k/len, sy - k, w, 1, col); R(x + ox - (side < 0 ? hw - w : 0), sy - len - hh - up, hw, hh + up, hand); out.push([x + ox, sy - len - hh - up]); }
+        else { const ux = side < 0 ? x - 6 : x, fx = side < 0 ? ux : ux + 6 + w - w, pump = ph ? 1 : 0;   // flex: biceps up
+          R(ux, sy, 6 + w, w, col); R(ux + 1 + (side < 0 ? 0 : 1), sy - 2 - pump, 5, 2 + pump, col); R(fx, sy - 7, w, 7, col);
+          if (o.hi) { R(ux + 2 + (side < 0 ? 0 : 1), sy - 2 - pump, 3, 1, o.hi); R(fx + (side < 0 ? 0 : w - 1), sy - 6, 1, 4, o.hi); }
+          R(fx - 1, sy - 7 - hh - 1, w + 2, hh + 1, hand); out.push([fx, sy - 9]); }
+      }
+      return out;
+    },
+    eyes(x, y, o) {   // big cartoon eyes looking right; blink = a line
+      o = o || {}; const gap = o.gap || 5;
+      for (const ex of o.one ? [x] : [x, x + gap]) {
+        if (blink) { R(ex, y + 1, 3, 1, PAL.ink); continue; }
+        R(ex, y, 3, 3, o.white || '#ffffff'); R(ex + 1 + (o.cross ? 0 : 1), y + 1, 1, 2, o.pupil || PAL.ink);
+        if (o.brow) R(ex - (o.brow > 0 ? 0 : 1), y - 1 - (o.brow > 1 ? 1 : 0), 4, 1, PAL.ink);
+      }
+    },
+    mouth(x, y, open) { if (open) { R(x, y, 5, 3, PAL.ink); R(x + 1, y + 1, 3, 2, '#e8344a'); } else { R(x, y + 1, 5, 1, PAL.ink); R(x - 1, y, 1, 1, PAL.ink); R(x + 5, y, 1, 1, PAL.ink); } },
+  };
+  const talk = !walk && ph === 1, C = club;
+  (MASC[type] || MASC.banana)(R, E, H, { talk, walk, ph, C });
+  outline(g, PAL.ink, MW, MH); MSPR.set(key, c); return c;
+}
+const MASC = {
+  penguin(R, E, H, f) {   // ПИНГВИН-КАЧОК: abs, chain, sweatband and huge flippers
+    H.legs(49, '#ff9a1a', '#ff9a1a', { w: 3, shoeW: 7 });
+    E(MCX, 35, 11, 15, '#202030'); E(MCX + 1, 38, 7, 11, '#f4f4f4');
+    R(21, 35, 8, 1, '#c8c8d4'); R(21, 39, 8, 1, '#c8c8d4'); R(21, 43, 8, 1, '#c8c8d4'); R(25, 34, 1, 13, '#c8c8d4');
+    R(14, 23, 21, 2, '#d8243a'); R(17, 31, 15, 1, '#ffd23a'); R(23, 32, 3, 2, '#ffd23a');
+    H.eyes(22, 26, { brow: 1 }); R(31, 28, 6, 2, '#ff9a1a'); R(31, 30, 5, 1, '#d87a10');
+    H.arms(10, 32, '#2a2a3c', '#2a2a3c', { w: 4, len: 9, hw: 5, hh: 3, hi: '#5a5a74' });
+  },
+  pizza(R, E, H, f) {   // a slice with legs
+    H.legs(42, '#e8b070', '#d8243a', { w: 2, gap: 2 });
+    for (let y = 16; y <= 46; y++) { const w = Math.round(28*(1 - (y - 16)/32)) + 2, x0 = MCX - Math.floor(w/2); R(x0, y, w, 1, '#ffd23a'); R(x0 + w - 2, y, 2, 1, '#f0a020'); }
+    R(9, 12, 30, 5, '#c8803a'); R(10, 12, 28, 2, '#f0c070'); R(28, 21, 2, 9, '#ffd23a'); R(28, 30, 2, 2, '#f0a020');
+    E(15, 21, 2, 2, '#c8302a'); E(32, 22, 2, 2, '#c8302a'); E(24, 35, 2, 2, '#c8302a'); R(19, 31, 2, 1, '#3a9a3a'); R(27, 29, 2, 1, '#3a9a3a');
+    H.eyes(19, 20); H.mouth(21, 26, f.talk);
+    H.arms(12, 19, '#e8b070', '#ffffff', { w: 2, len: 8, hw: 4, hh: 3 });
+  },
+  banana(R, E, H, f) {
+    H.legs(46, '#202030', '#ffffff', { w: 2, shoeW: 6, shoeH: 3 });
+    const cx = y => 21 + Math.round(7*((y - 29)/18)**2);
+    for (let y = 11; y <= 47; y++) { const w = Math.round(12*Math.sin(Math.PI*(y - 9)/40)) + 2, x0 = cx(y) - Math.floor(w/2); R(x0, y, w, 1, '#ffe14a'); R(x0 + w - 2, y, 2, 1, '#e8b020'); R(x0 + 1, y, 1, 1, '#fff6b0'); }
+    R(cx(11) - 1, 6, 3, 6, '#6a4a1a'); R(cx(47) - 1, 47, 3, 2, '#3a2a10'); R(18, 33, 2, 1, '#c89a1a'); R(24, 40, 2, 1, '#c89a1a');
+    H.eyes(17, 22); H.mouth(19, 28, f.talk);
+    H.arms(10, 29, '#202030', '#ffffff', { w: 2, len: 8, hw: 4, hh: 3 });
+  },
+  horse(R, E, H, f) {   // a horse that walks like a man, in a deel
+    R(12, 34, 3, 12, '#201818'); R(11, 44, 3, 4, '#201818');
+    H.legs(44, '#8a5a2a', '#2a2020', { w: 4, gap: 2, shoeW: 6, shoeH: 3 });
+    R(16, 27, 16, 19, f.C.jersey); R(16, 27, 2, 19, f.C.trim || '#ffd23a'); R(16, 38, 16, 2, '#ffd23a'); R(30, 27, 2, 19, f.C.jerseyS);
+    R(23, 18, 7, 10, '#8a5a2a'); E(29, 14, 6, 5, '#8a5a2a'); R(31, 13, 10, 7, '#8a5a2a'); R(31, 18, 10, 2, '#6a4422'); R(39, 15, 1, 1, '#3a2010');
+    R(26, 5, 2, 5, '#8a5a2a'); R(29, 5, 2, 5, '#8a5a2a'); R(20, 8, 4, 18, '#201818'); R(19, 10, 2, 3, '#201818'); R(19, 16, 2, 3, '#201818');
+    H.eyes(28, 11, { one: true, brow: 1 }); R(34, 20, 6, 1, '#ffffff'); if (f.talk) R(34, 21, 6, 2, PAL.ink);
+    H.arms(9, 29, '#8a5a2a', '#2a2020', { w: 3, len: 9, hw: 4, hh: 3, hi: '#b07a40' });
+  },
+  eagle(R, E, H, f) {   // the golden eagle, scarf in the club colour
+    H.legs(46, '#ffd23a', '#ffd23a', { w: 2, shoeW: 7 });
+    E(MCX, 36, 10, 12, '#6a4422'); for (let k = 0; k < 4; k++) R(19 + (k % 2)*4, 32 + k*4, 6, 1, '#8a5a2a');
+    E(26, 19, 7, 7, '#d8a040'); R(20, 13, 6, 2, '#f0c060'); R(32, 18, 5, 3, '#ffd23a'); R(35, 21, 2, 2, '#c89a1a');
+    R(18, 26, 15, 3, f.C.jersey); R(28, 28, 3, 5, f.C.jersey);
+    H.eyes(26, 16, { one: true, brow: 2 });
+    const hs = H.arms(10, 31, '#6a4422', '#3a2210', { w: 4, len: 9, hw: 5, hh: 4 });
+    for (const [x, y] of hs) R(x, y + 4, 4, 1, '#d8a040');
+  },
+  wolf(R, E, H, f) {   // the she-wolf of Rome, in the kit
+    R(11, 33, 4, 9, '#8a8a98'); R(10, 40, 3, 3, '#c8c8d4');
+    H.legs(45, '#8a8a98', '#4a4a58', { w: 4, gap: 2, shoeW: 6, shoeH: 3 });
+    R(16, 28, 17, 15, f.C.jersey); R(16, 28, 17, 2, f.C.trim || '#ffd23a'); R(16, 42, 17, 4, f.C.shorts);
+    E(25, 19, 8, 7, '#8a8a98'); R(31, 19, 7, 5, '#8a8a98'); R(31, 22, 7, 2, '#c8c8d4'); R(36, 19, 3, 2, PAL.ink);
+    R(19, 8, 3, 6, '#8a8a98'); R(26, 8, 3, 6, '#8a8a98'); R(20, 10, 1, 3, '#e89ab0'); R(27, 10, 1, 3, '#e89ab0');
+    H.eyes(25, 15, { one: true, white: '#ffd23a', brow: 2 }); R(32, 24, 1, 2, '#ffffff'); R(36, 24, 1, 2, '#ffffff'); if (f.talk) R(32, 24, 5, 1, PAL.ink);
+    H.arms(10, 30, '#8a8a98', '#6a6a78', { w: 4, len: 9, hw: 5, hh: 3, hi: '#b0b0c0' });
+  },
+  ghost(R, E, H, f) {   // floats, no legs
+    E(MCX, 22, 12, 12, '#f4f4f8'); R(12, 22, 25, 24, '#f4f4f8'); R(33, 22, 4, 24, '#c8c8e0');
+    for (let x = 12; x < 37; x += 4) R(x, 46 + ((x/4 + f.ph) % 2)*2, 3, 3, '#f4f4f8');
+    if (f.talk) E(26, 34, 2, 3, PAL.ink); else R(24, 34, 5, 2, PAL.ink);
+    H.eyes(20, 24, { pupil: PAL.ink, white: PAL.ink }); R(20, 24, 1, 1, '#ffffff'); R(25, 24, 1, 1, '#ffffff');
+    H.arms(12, 30, '#f4f4f8', '#f4f4f8', { w: 4, len: 5, hw: 4, hh: 2 });
+  },
+  note(R, E, H, f) {   // a hundred-trillion banknote with legs, top hat and gloves
+    H.legs(46, '#202030', '#202030', { w: 2, shoeW: 6 });
+    R(13, 14, 22, 32, '#7ab868'); R(15, 16, 18, 28, '#a8d890'); R(31, 16, 2, 28, '#7ab868');
+    for (let i = 0; i < 5; i++) { R(16 + i*3, 17, 2, 3, '#3a7a2a'); R(16 + i*3 + 0, 41, 2, 3, '#3a7a2a'); }
+    E(24, 29, 6, 7, '#cfe8c0'); H.eyes(20, 26); H.mouth(21, 32, f.talk);
+    R(16, 11, 16, 3, '#202030'); R(19, 2, 10, 9, '#202030'); R(19, 8, 10, 2, '#d8243a');
+    H.arms(11, 26, '#202030', '#ffffff', { w: 2, len: 8, hw: 4, hh: 3 });
+  },
+  rocket(R, E, H, f) {
+    H.legs(44, '#a8a8b8', '#202030', { w: 3, shoeW: 6, shoeH: 3 });
+    for (let y = 2; y < 14; y++) { const w = Math.round((y - 1)*1.1); R(MCX - Math.floor(w/2), y, w, 1, '#d8243a'); }
+    R(18, 13, 12, 32, '#e8e8f0'); R(27, 13, 3, 32, '#a8a8b8'); R(13, 34, 5, 11, '#d8243a'); R(30, 34, 5, 11, '#d8243a');
+    E(24, 22, 4, 4, '#4ab8ff'); R(21, 19, 3, 2, '#c8f0ff');
+    H.eyes(20, 21, { gap: 5 }); R(22, 31, 4, 4, '#d8243a'); R(21, 32, 6, 2, '#d8243a');
+    H.mouth(21, 37, f.talk);
+    H.arms(6, 26, '#a8a8b8', '#202030', { w: 3, len: 8, hw: 4, hh: 3 });
+  },
+  baguette(R, E, H, f) {   // with a beret and a moustache
+    H.legs(46, '#202030', '#202030', { w: 2, shoeW: 6, sock: '#ffffff' });
+    E(24, 9, 6, 4, '#d89a4a'); R(18, 9, 13, 38, '#d89a4a'); R(28, 9, 3, 38, '#b0742a');
+    for (let k = 0; k < 4; k++) R(19, 24 + k*6, 7, 1, '#f0c070');
+    E(24, 5, 8, 2, '#202030'); R(24, 1, 2, 2, '#202030');
+    H.eyes(19, 11); R(19, 17, 11, 2, '#202030'); R(18, 16, 2, 1, '#202030'); R(29, 16, 2, 1, '#202030'); if (f.talk) R(22, 19, 5, 2, PAL.ink);
+    R(18, 21, 13, 2, '#d8243a');
+    H.arms(7, 24, '#202030', '#ffffff', { w: 2, len: 8, hw: 4, hh: 3 });
+  },
+  sausage(R, E, H, f) {   // bratwurst in lederhosen and a Tyrolean hat
+    H.legs(46, '#c8603a', '#6a4a2a', { w: 3, shoeW: 6, sock: '#ffffff' });
+    E(24, 12, 7, 4, '#c8603a'); R(17, 12, 15, 34, '#c8603a'); E(24, 46, 7, 2, '#c8603a'); R(29, 12, 3, 34, '#9a4022'); R(19, 14, 2, 26, '#e8906a');
+    R(16, 6, 17, 3, '#3a6a2a'); R(19, 1, 11, 5, '#3a6a2a'); R(30, 0, 2, 6, '#d8243a');
+    H.eyes(19, 14); R(19, 20, 11, 2, '#6a4a2a'); H.mouth(21, 23, f.talk);
+    R(17, 30, 15, 16, '#6a4a2a'); R(19, 26, 2, 6, '#6a4a2a'); R(28, 26, 2, 6, '#6a4a2a'); R(19, 33, 11, 2, '#8a6a3a');
+    H.arms(8, 27, '#c8603a', '#c8603a', { w: 3, len: 8, hw: 4, hh: 3 });
+  },
+  teapot(R, E, H, f) {   // a proper gentleman: top hat and monocle
+    H.legs(44, '#202030', '#202030', { w: 3, shoeW: 6 });
+    E(24, 35, 12, 10, '#f4f4f8'); R(13, 33, 23, 2, '#2a4ad8'); for (let k = 0; k < 4; k++) R(15 + k*6, 39, 2, 2, '#2a4ad8');
+    R(35, 31, 4, 3, '#f4f4f8'); R(38, 27, 3, 5, '#f4f4f8'); R(10, 29, 3, 10, '#f4f4f8'); R(11, 28, 4, 2, '#f4f4f8'); R(11, 38, 4, 2, '#f4f4f8');
+    E(24, 25, 8, 2, '#f4f4f8'); R(16, 22, 16, 2, '#202030'); R(19, 11, 10, 11, '#202030'); R(19, 19, 10, 2, '#d8243a');
+    H.eyes(19, 29); R(23, 28, 5, 5, '#ffd23a'); R(24, 29, 3, 3, '#ffffff'); R(25, 30, 1, 2, PAL.ink); R(27, 33, 1, 5, '#ffd23a');
+    R(19, 34, 9, 1, '#202030'); if (f.talk) R(21, 36, 5, 2, PAL.ink);
+    H.arms(12, 33, '#202030', '#ffffff', { w: 2, len: 8, hw: 4, hh: 3 });
+  },
+  bull(R, E, H, f) {   // pumped, nose ring, bandana
+    H.legs(45, '#2a2a32', '#4a4a58', { w: 5, gap: 1, shoeW: 7, shoeH: 3 });
+    E(MCX, 34, 11, 11, '#2a2a32'); R(18, 29, 6, 4, '#4a4a58'); R(26, 29, 6, 4, '#4a4a58'); R(21, 36, 8, 1, '#3a3a48'); R(21, 40, 8, 1, '#3a3a48');
+    R(15, 42, 19, 5, '#d8243a');
+    E(26, 17, 7, 6, '#2a2a32'); R(29, 18, 8, 6, '#5a4a48'); R(32, 20, 1, 1, PAL.ink); R(35, 20, 1, 1, PAL.ink); R(32, 24, 4, 2, '#ffd23a');
+    R(18, 9, 3, 4, '#f4f0dc'); R(16, 7, 2, 3, '#f4f0dc'); R(31, 9, 3, 4, '#f4f0dc'); R(33, 7, 2, 3, '#f4f0dc');
+    R(19, 23, 14, 3, '#d8243a'); H.eyes(23, 14, { white: '#ff4a3a', brow: 2 });
+    H.arms(11, 30, '#2a2a32', '#4a4a58', { w: 5, len: 9, hw: 5, hh: 3, hi: '#5a5a6a' });
+  },
+  rooster(R, E, H, f) {   // the Barcelos rooster: black with bright hearts
+    R(9, 22, 4, 16, '#2a4ad8'); R(12, 20, 3, 12, '#2a9a3a'); R(7, 28, 3, 12, '#d8243a'); R(14, 18, 2, 8, '#ffd23a');
+    H.legs(45, '#ffd23a', '#ffd23a', { w: 2, shoeW: 7 });
+    E(24, 35, 9, 11, '#202030'); E(22, 35, 2, 2, '#d8243a'); E(27, 39, 2, 2, '#ffd23a'); E(21, 41, 1, 1, '#2a4ad8'); E(28, 32, 1, 1, '#ffffff');
+    E(27, 18, 6, 6, '#202030'); R(23, 8, 3, 5, '#d8243a'); R(26, 7, 3, 6, '#d8243a'); R(29, 9, 3, 4, '#d8243a');
+    R(33, 18, 5, 2, '#ffd23a'); R(33, 20, 4, 1, '#e8a020'); R(32, 22, 2, 4, '#d8243a');
+    H.eyes(27, 15, { one: true, brow: 1 }); if (f.talk) R(34, 20, 3, 1, PAL.ink);
+    H.arms(9, 31, '#202030', '#d8243a', { w: 3, len: 8, hw: 4, hh: 3 });
+  },
+  cheese(R, E, H, f) {   // a wedge of gouda in clogs
+    H.legs(44, '#ff8a1a', '#f0c040', { w: 3, shoeW: 8, shoeH: 3 });
+    for (let x = 11; x <= 37; x++) { const top = Math.round(14 + (x - 11)*0.55); R(x, top, 1, 45 - top, '#ffd23a'); R(x, top, 1, 2, '#fff0a0'); }
+    R(35, 34, 3, 11, '#e0a020'); E(15, 34, 2, 2, '#e0a020'); E(31, 38, 2, 2, '#e0a020'); E(22, 41, 1, 1, '#e0a020'); E(33, 29, 1, 1, '#e0a020');
+    H.eyes(18, 23); H.mouth(20, 29, f.talk);
+    H.arms(13, 28, '#ffd23a', '#ffffff', { w: 2, len: 8, hw: 4, hh: 3 });
+  },
+  crab(R, E, H, f) {   // walks on two legs, waves its claws
+    for (const s of [-1, 1]) for (let k = 0; k < 3; k++) R(s < 0 ? 9 - k : 36 + k, 30 + k*3, 4, 2, '#e84a2a');
+    H.legs(38, '#e84a2a', '#a82a1a', { w: 3, shoeW: 5, shoeH: 3 });
+    R(19, 16, 2, 9, '#e84a2a'); R(28, 16, 2, 9, '#e84a2a'); E(20, 15, 2, 2, '#ffffff'); E(29, 15, 2, 2, '#ffffff');
+    R(21, 15, 1, 2, PAL.ink); R(30, 15, 1, 2, PAL.ink);
+    E(24, 31, 12, 8, '#e84a2a'); R(16, 35, 18, 3, '#a82a1a'); H.mouth(22, 30, f.talk);
+    const hs = H.arms(12, 30, '#e84a2a', '#e84a2a', { w: 3, len: 6, hw: 7, hh: 5 });
+    for (const [x, y] of hs) R(x + 1, y, 1, 3, PAL.ink);
+  },
+  candle(R, E, H, f) {   // a Vatican candle in red papal shoes
+    H.legs(46, '#f4f0e0', '#d8243a', { w: 2, shoeW: 6 });
+    R(18, 16, 12, 31, '#f4f0e0'); R(27, 16, 3, 31, '#c8c0a8'); R(18, 16, 3, 6, '#fffef8'); R(24, 16, 2, 8, '#fffef8');
+    R(23, 11, 2, 5, '#202020'); E(24, 6, 3, 5 - f.ph, '#ff8a1a'); E(24, 7, 1, 3, '#ffe14a');
+    R(23, 33, 2, 8, '#ffd23a'); R(21, 35, 6, 2, '#ffd23a');
+    H.eyes(19, 21); H.mouth(21, 27, f.talk);
+    H.arms(8, 25, '#f4f0e0', '#ffffff', { w: 2, len: 8, hw: 4, hh: 3 });
+  },
+  fish(R, E, H, f) {   // a fish on long hairy human legs
+    H.legs(36, '#ffd0b8', '#d8243a', { w: 2, gap: 3, shoeW: 6, shoeH: 3 });
+    R(17, 42, 1, 1, '#6a3a2a'); R(30, 40, 1, 1, '#6a3a2a'); R(18, 47, 1, 1, '#6a3a2a');
+    for (let k = 0; k < 7; k++) R(5 + k, 22 + k, 2, 16 - k*2, '#2ad8c8');
+    E(25, 29, 14, 9, '#2ad8c8'); R(13, 31, 26, 4, '#c8f8f0'); R(19, 19, 9, 3, '#1a9a9a');
+    for (let k = 0; k < 4; k++) R(15 + k*4, 26 + (k % 2)*2, 2, 1, '#1a9a9a');
+    E(32, 26, 3, 3, '#ffffff'); R(33, 26, 1, 2, PAL.ink);
+    R(37, 30, 3, 3, '#ff8a9a'); if (f.talk) R(38, 31, 2, 1, PAL.ink);
+    H.arms(6, 31, '#1a9a9a', '#2ad8c8', { w: 3, len: 4, hw: 4, hh: 2 });
+  },
+};
+// what a club brings: its own mascot from data.js, or one made from its emoji (a custom club), else the banana
+const mascotOf = team => { const c = TEAMS[team]; if (c.mascot) return c.mascot;
+  const e = c.emo && c.emo[0], ty = MASC_BY_EMO[e] || 'banana'; return [ty === 'banana' ? 'БАНАН' : (EMO_RU[e] || 'ТАЛИСМАН'), ty, 'ВПЕРЁД!']; };
 function drawMascot(team) {
-  const sh = game.show, m = mascotOf(team), c = TEAMS[team], q = mascotPos(team, sh.t, sh.kind), s = S(q.x, q.y);
-  const t = sh.t, x = Math.round(s.x), danceB = q.ph === 1 ? Math.round(Math.abs(Math.sin(t*9 + team))*5) : 0, step = q.ph !== 1 ? Math.floor(t*8) % 2 : 0;
-  const y = Math.round(s.y) - danceB, R = (a, b, w, h, col) => { ctx.fillStyle = col; ctx.fillRect(x + a, y + b, w, h); };
-  pellipse(s.x, s.y, 10, 2, 'rgba(0,30,0,.35)');
-  // legs, body, arms (raised and waving while dancing), then the giant head
-  R(-6, -9, 5, 9, '#100810'); R(1, -9, 5, 9, '#100810'); R(-5, -8 - step*2, 3, 7, c.shorts); R(2, -8 - (1 - step)*2, 3, 7, c.shorts);
-  R(-6, -2 - step*2, 4, 2, c.boots || '#202030'); R(2, -2 - (1 - step)*2, 4, 2, c.boots || '#202030');
-  R(-9, -23, 18, 15, '#100810'); R(-8, -22, 16, 13, c.jersey); R(-8, -11, 16, 2, c.jerseyS); R(-2, -20, 4, 4, c.trim);
-  const wave = q.ph === 1 ? Math.round(Math.sin(t*12 + team*2)*3) : 0, up = q.ph === 1;
-  for (const sd of [-1, 1]) { const ax = sd < 0 ? -12 : 9, ay = up ? -34 + (sd < 0 ? wave : -wave) : -21;
-    R(ax, ay, 4, up ? 13 : 10, '#100810'); R(ax + 1, ay + 1, 2, up ? 11 : 8, c.sleeve); R(ax, ay - (up ? 3 : -9), 4, 4, '#100810'); R(ax + 1, ay - (up ? 2 : -10), 2, 2, '#ffffff'); }
-  const ic = EMO[m[1]] || EMO.laugh, hb = q.ph === 1 ? Math.round(Math.sin(t*9 + team)*2) : 0;
-  ctx.drawImage(ic, x - 14, y - 49 + hb, 28, 28);
+  const sh = game.show, m = mascotOf(team), c = TEAMS[team], q = mascotPos(team, sh.t, sh.kind), s = S(q.x, q.y), t = sh.t;
+  const type = m[1], style = MASC_STYLE[type] || 'dance';
+  const pose = q.ph === 1 ? (style === 'flex' ? 'flex' : 'dance') + (Math.floor(t*4 + team) % 2) : 'walk' + (Math.floor(t*8) % 2);
+  const blink = (t*10 + team*13) % 28 < 1.4, img = mascotSprite(type, pose, blink, c);
+  const hop = style === 'float' ? Math.round(5 + Math.sin(t*4 + team)*3) : q.ph === 1 ? Math.round(Math.abs(Math.sin(t*8 + team))*4) : 0;
+  // walking in: face the way you go; dancing: turn around now and then
+  const faceL = q.ph === 0 ? team === 1 : q.ph === 1 ? (Math.floor(t*1.5 + team) % 2 === 1) : team === 1;
+  const x = Math.round(s.x), y = Math.round(s.y);
+  pellipse(s.x, s.y, 11, 2, 'rgba(0,30,0,.35)');
+  if (faceL) { ctx.save(); ctx.translate(x, 0); ctx.scale(-1, 1); ctx.drawImage(img, -MCX, y - MFY - hop); ctx.restore(); }
+  else ctx.drawImage(img, x - MCX, y - MFY - hop);
   if (q.ph === 1) {   // name tag and the chant
-    ptext(ctx, m[0], x, y - 62 - team*10, 8, c.color === '#ffffff' ? '#ffffff' : c.color, 'center', '#100810');
-    const ct = t - 1.8 - team*0.7; if (ct > 0 && ct < 1.2) ptext(ctx, m[2], x, y - 74 - team*10, 8, '#ffffff', 'center', '#100810');
+    ptext(ctx, m[0], x, y - 68 - team*9, 8, c.color === '#ffffff' ? '#ffffff' : c.color, 'center', '#100810');
+    const ct = t - 1.8 - team*0.7; if (ct > 0 && ct < 1.2) ptext(ctx, m[2], x, y - 86, 8, '#ffffff', 'center', '#100810');
   }
 }
 function drawHalfBoard() {
@@ -2230,8 +2441,8 @@ function startMatch(mode, opt) {
   const mod = opt && opt.mod; game.curse = mod === 'curse'; game.modTxt = mod ? STORY.modName[mod] : '';
   if (mod === 'fury') game.fury[0] = 100; if (mod === 'skill') game.skillCd[0] = 0; if (mod === 'tired') game.fury[1] = 100;
   setWeather(!weatherOn ? 'off' : TH.weather || randomWeather(null)); kickoff(0); showOv(null); startShow('intro'); startMusic();
-  game.announce = { text: MODE === 11 ? TH.name + ' · ' + TEAMS[1].name : TEAMS[0].name + ' - ' + TEAMS[1].name, col: '#ffe14a', t: 3 };
-  const dl = derbyLine(); if (dl) game.banner = null, game.announce = { text: dl, col: '#ffd23a', t: 3 };
+  // the title of the match shows when the mascots leave, so it doesn't cover them
+  game.announce = null; game.introAnn = { text: derbyLine() || (MODE === 11 ? TH.name + ' · ' + TEAMS[1].name : TEAMS[0].name + ' - ' + TEAMS[1].name), col: '#ffe14a', t: 2.2 };
 }
 // little jokes for special pairings
 function derbyLine() {
@@ -2680,7 +2891,7 @@ function render() {
   cam.x = cx; cam.y = cy;
   if (game.flash > 0) { ctx.fillStyle = `rgba(255,255,255,${Math.min(REDUCED ? 0.3 : 0.85, game.flash)})`; ctx.fillRect(0, 0, W, H); }
   if (game.mode !== 'title') { drawHUD(); drawChaosBar(); drawHalfBoard(); }
-  if (game.show && NET.role === 'solo' && game.show.t > 0.6 && Math.floor(game.t*2) % 2) ptext(ctx, 'УДАР - ПРОПУСТИТЬ', W/2, H - 12, 8, '#ffffff', 'center', '#100810');
+  if (game.show && NET.role === 'solo' && game.show.t > 0.6 && Math.floor(game.t*2) % 2) ptext(ctx, 'ТАП - ПРОПУСТИТЬ', W/2, H - 12, 8, '#ffffff', 'center', '#100810');
   if (NET.role === 'guest' && game.mode === 'play' && performance.now() - NET.snapAt > 600 && Math.floor(game.t*4) % 2)
     ptext(ctx, 'СВЯЗЬ…', W/2, H - 34, 8, '#ff9a5a', 'center', '#100810');   // waiting for the host
   if (game.banner) { const t = game.banner.t, sc = t < 0.25 ? 8 + 16*(t/0.25) : 24, y = 78 + Math.sin(t*6)*3;
