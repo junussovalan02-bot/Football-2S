@@ -83,6 +83,10 @@ All graphics are drawn by code (sprites built pixel by pixel in `getSprite`, fie
   firing), `ceremony`, `newGoal`/`goalMet`, modifiers via `startMatch(…, {mod})` (`game.curse`, `game.modTxt`).
 - **Mascots & half-time** — `game.mode = 'show'`, `game.show`, `startShow('intro'|'half')`, `updShow`, `drawMascot`,
   `drawHalfBoard`, `halfWeather`; ends swap via `game.flip` → `dirOf`/`goalX`/`ownX`/`mirX`.
+- **Match start / extras (v0.18)** — countdown `startCount`/`updCount`/`drawCount` (mode `count`), flight loading `flyGo`
+  (`hold`, mode `load`, `releaseMatch`), stars `TASKS`/`newTasks`/`awardStars`/`openColl`, ball skins `BALLS`/`makeBall`/`setBall`,
+  crowd `updCrowd`, block `game.block`/`blockChance`/`superBlocked`/`drawBlock`, taunts `taunt`, auto sprint `edgeSprint`,
+  tips `tip`/`updTips`, pace `PACE`.
 - **Skills & silliness** — `SKILLS`, `useSkill`, runners `game.runners`/`updRunners`/`drawRunner`, `freeze`, `scare`, `boo`,
   `pee`/`pees`, gags `updGags`, words `say` (TXTS). Pad button `bK`.
 - **Rules screen** — `HELP` scene painters + `helpLoop`.

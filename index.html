@@ -40,6 +40,7 @@ img{max-width:100%}
             <button class="mi" id="miOnline">С ДРУГОМ <small>ОНЛАЙН</small></button>
             <button class="mi" id="miOpts">НАСТРОЙКИ</button>
             <button class="mi" id="miHelp">ПРАВИЛА</button>
+            <button class="mi" id="miColl">КОЛЛЕКЦИЯ <b id="starN">★0</b></button>
             <button class="mi" id="miFull" hidden>ВО ВЕСЬ ЭКРАН</button>
             <button class="mi dim" id="miExit">ВЫХОД</button>
           </div>
@@ -111,18 +112,23 @@ img{max-width:100%}
       <div class="menu">
         <h2 class="logo sm">ПРАВИЛА<span>КАК ИГРАТЬ</span></h2>
         <div class="cards">
+          <div class="card help"><canvas class="anim" data-a="sprint" width="80" height="48" aria-hidden="true"></canvas><div><b style="color:#7ae070">БЕГ И СПРИНТ</b><p>Джойстик — бег. Дотяни его до края — спринт. Полоска под ногами — силы, выдохся — отдышись.</p></div></div>
+          <div class="card help"><canvas class="anim" data-a="curve" width="80" height="48" aria-hidden="true"></canvas><div><b style="color:#ffffff">УДАР</b><p>Держи УДАР — копится сила, отпусти — удар. Джойстик вбок — мяч закрутится. Бей в угол подальше от вратаря.</p></div></div>
+          <div class="card help"><canvas class="anim" data-a="pass" width="80" height="48" aria-hidden="true"></canvas><div><b style="color:#7fe0ff">ПАС И ПОДКАТ</b><p>С мячом кнопка — ПАС тому, куда смотрит джойстик. Без мяча — ПОДКАТ: сбей соперника и забери мяч.</p></div></div>
+          <div class="card help"><canvas class="anim" data-a="block" width="80" height="48" aria-hidden="true"></canvas><div><b style="color:#ffe14a">СУПЕР И БЛОК</b><p>Шкала FURIA полна — волосы золотые: держи УДАР — супер-удар. Супер летит в твои ворота — быстро жми БЛОК!</p></div></div>
+        </div>
+        <button class="mi dim" id="miHelpMore">ВСЕ ПРИЁМЫ ▼</button>
+        <div class="cards" id="helpMore" hidden>
           <div class="card help"><canvas class="anim" data-a="furia" width="80" height="48" aria-hidden="true"></canvas><div><b style="color:#ffe14a">СУПЕР-САЙЯН</b><p>Шкала FURIA под счётом растёт от игры: ведёшь мяч, отбираешь, сбивают тебя. Полная — волосы золотые, доступен один супер-удар.</p></div></div>
           <div class="card help"><canvas class="anim" data-a="tiger" width="80" height="48" aria-hidden="true"></canvas><div><b style="color:#ff9a3a">ТИГРИНЫЙ УДАР</b><p>FURIA + держи УДАР на бегу и отпусти. Мяч-тигр сносит всех на пути, даже вратаря.</p></div></div>
           <div class="card help"><canvas class="anim" data-a="kame" width="80" height="48" aria-hidden="true"></canvas><div><b style="color:#7fe0ff">КАМЕХАМЕХА</b><p>FURIA + держи УДАР стоя. Шар энергии в руках — и луч летит прямо в ворота.</p></div></div>
           <div class="card help"><canvas class="anim" data-a="rasen" width="80" height="48" aria-hidden="true"></canvas><div><b style="color:#7fe0ff">РАСЕНГАН</b><p>FURIA + мяч на уровне головы: просто жми УДАР. Удар через себя, шар петляет по штрафной.</p></div></div>
           <div class="card help"><canvas class="anim" data-a="ora" width="80" height="48" aria-hidden="true"></canvas><div><b style="color:#ff6a9a">ОРА-ОРА-ОРА</b><p>FURIA + ПОДКАТ, когда соперник с мячом рядом. Серия ударов раскидывает всех.</p></div></div>
-          <div class="card help"><canvas class="anim" data-a="pass" width="80" height="48" aria-hidden="true"></canvas><div><b style="color:#7fe0ff">ПАС</b><p>Пас уходит тому, куда направлен джойстик. Мигающий кружок — куда прилетит мяч. Соперник на пути — пойдёт навесом.</p></div></div>
-          <div class="card help"><canvas class="anim" data-a="curve" width="80" height="48" aria-hidden="true"></canvas><div><b style="color:#ffffff">ПОДКРУТКА</b><p>Отпусти УДАР, держа джойстик вбок, — мяч закрутится в обход защитников. Штанга звенит: ДЗЫНЬ!</p></div></div>
-          <div class="card help"><canvas class="anim" data-a="sprint" width="80" height="48" aria-hidden="true"></canvas><div><b style="color:#7ae070">СПРИНТ</b><p>Держи » — бежишь быстрее. Силы на кольце кнопки; выдохся — отдышись.</p></div></div>
           <div class="card help"><canvas class="anim" data-a="gk" width="80" height="48" aria-hidden="true"></canvas><div><b style="color:#ffffff">ВРАТАРИ</b><p>Ныряют в углы, ловят и отбивают. Бей в угол подальше от вратаря.</p></div></div>
-          <div class="card help"><canvas class="anim" data-a="skill" width="80" height="48" aria-hidden="true"></canvas><div><b style="color:#ffe14a">СКИЛЛ СТРАНЫ</b><p>У каждой страны своя кнопка-суперспособность: табун Монголии, метель Антарктиды, забастовка Франции… Пока заряжается — кнопка БУ!: пугает соперников рядом, кто-то даже описается.</p></div></div>
+          <div class="card help"><canvas class="anim" data-a="skill" width="80" height="48" aria-hidden="true"></canvas><div><b style="color:#ffe14a">СКИЛЛ СТРАНЫ</b><p>У каждой страны своя кнопка-суперспособность: табун Монголии, метель Антарктиды, забастовка Франции… Пока заряжается — БУ!: загорается, когда соперник рядом, и пугает его (кто-то даже описается).</p></div></div>
+          <div class="card help"><canvas class="anim" data-a="taunt" width="80" height="48" aria-hidden="true"></canvas><div><b style="color:#ff9ab8">ДРАЗНИЛКИ</b><p>Кнопка ХА! — твой игрок дразнит соперников. Смешно, но злит их: их FURIA растёт.</p></div></div>
           <div class="card help"><canvas class="anim" data-a="gags" width="80" height="48" aria-hidden="true"></canvas><div><b style="color:#ff9aff">НЕЛЕПИЦЫ</b><p>То чихнёт, то шнурки, то мама звонит, то голубь на голову. Лужи скользкие!</p></div></div>
-          <div class="card help"><canvas class="anim" data-a="chaos" width="80" height="48" aria-hidden="true"></canvas><div><b style="color:#ff6a5a">КАОС</b><p>Раз в 15 секунд: мяч-гигант, веспа с пиццей, луна, эспрессо, Везувий, гололёд. Последние 20 с — гол за 2.</p></div></div>
+          <div class="card help"><canvas class="anim" data-a="chaos" width="80" height="48" aria-hidden="true"></canvas><div><b style="color:#ff6a5a">КАОС</b><p>В аркаде часто, в 11 на 11 и карьере реже: мяч-гигант, веспа с пиццей, луна, эспрессо, Везувий, гололёд. Последние 20 с — гол за 2.</p></div></div>
           <div class="card help"><canvas class="anim" data-a="items" width="80" height="48" aria-hidden="true"></canvas><div><b style="color:#ffd23a">ПРЕДМЕТЫ</b><p>Пробеги по ним. Пицца — FURIA. Перчик — скорость и таран. Корнетто — тебя не сбить.</p></div></div>
           <div class="card help"><canvas class="anim" data-a="fields" width="80" height="48" aria-hidden="true"></canvas><div><b style="color:#9fe8ff">ПОЛЯ МИРА</b><p>Снег вязкий, лёд скользкий, на пьяцце мяч скачет, под водой плывёт. И на поле выходят звери.</p></div></div>
         </div>
@@ -185,10 +191,21 @@ img{max-width:100%}
       <div class="menu"><canvas id="flightCv" width="240" height="120" aria-hidden="true"></canvas><p class="tag" id="flightTxt" aria-live="polite"></p></div>
     </div>
 
+    <div class="ov" id="ovColl" hidden>
+      <div class="menu">
+        <h2 class="logo sm">КОЛЛЕКЦИЯ<span>МЯЧИ ЗА ЗВЁЗДЫ</span></h2>
+        <p class="tag" id="collInfo"></p>
+        <div class="collgrid" id="collList"></div>
+        <p class="sub">Звёзды дают за матчи: победа и два задания — до 3 звёзд за игру.</p>
+        <div class="items"><button class="mi dim" id="miCollBack">НАЗАД</button></div>
+      </div>
+    </div>
+
     <div class="ov" id="ovPause" hidden>
       <div class="menu">
         <h2 class="logo" style="font-size:22px">ПАУЗА</h2>
         <div class="items">
+          <p class="tag" id="pauseTasks"></p>
           <button class="mi" id="miResume">ПРОДОЛЖИТЬ</button>
           <button class="mi" id="miSound">ЗВУК <b>ВКЛ</b></button>
           <button class="mi" id="miQuit">ВЫЙТИ В МЕНЮ</button>
@@ -201,6 +218,7 @@ img{max-width:100%}
         <p class="tag" style="margin:0">ФИНАЛЬНЫЙ СВИСТОК</p>
         <p class="final" id="finalScore">NAP <span class="sc">0 : 0</span> ROM</p>
         <p class="sub" id="finalLine"></p>
+        <div class="stars" id="finalStars" hidden></div>
         <div class="items">
           <button class="mi" id="miAgain">ЕЩЁ РАЗ</button>
           <button class="mi big go" id="miToTour" hidden>К МАРШРУТУ</button>
@@ -222,7 +240,7 @@ img{max-width:100%}
     <div id="zoneL"><div id="stick"><i class="tick t0"></i><i class="tick t1"></i><i class="tick t2"></i><i class="tick t3"></i><div id="knob"></div></div></div>
     <div id="btns">
       <button class="pb" id="bK" aria-label="Скилл команды, пока заряжается — напугать"><svg class="chg" viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="44" pathLength="100"/></svg><span class="lb" id="lbK">СКИЛЛ</span></button>
-      <button class="pb" id="bR" aria-label="Спринт, удерживать"><svg class="chg" viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="44" pathLength="100"/></svg><svg class="ic" viewBox="0 0 16 16" aria-hidden="true"><path d="M2 3h3l5 5-5 5H2l5-5zM8 3h3l5 5-5 5H8l5-5z"/></svg></button>
+      <button class="pb" id="bR" aria-label="Дразнить соперника"><svg class="chg" viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="44" pathLength="100"/></svg><span class="lb">ХА!</span></button>
       <button class="pb" id="bS" aria-label="Сменить игрока"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2 5h9V2l4 4-4 4V7H2zM14 11H5v3l-4-4 4-4v3h9z"/></svg></button>
       <button class="pb" id="bB" aria-label="Подкат или пас"><span class="lb" id="lbB">ПОДКАТ</span></button>
       <button class="pb" id="bA" aria-label="Удар, удерживать для супер-удара"><svg class="chg" viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="44" pathLength="100"/></svg><span class="lb" id="lbA">УДАР</span></button>

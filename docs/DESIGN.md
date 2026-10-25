@@ -26,7 +26,7 @@ Main menu: **РЕАЛЬНОСТЬ 11x11 · АРКАДА · С ДРУГОМ · Н
   ПИНГВИН-КАЧОК (abs, chain, biceps), КРАБ, СВЕЧКА (papal red shoes), РЫБА С НОГАМИ. A custom club gets one by its emoji,
   otherwise БАНАН. Muscle types flex instead of dancing, the ghost floats. A tap on the pitch or УДАР skips (solo only).
   The match title is shown after the walk-out.
-- **Half-time** when the clock reaches half: whistle, mascots again (5 s), a board with ПЕРЕРЫВ, the score, a silly
+- **Half-time** when the clock reaches half: whistle, mascots again (3.5 s), a board with ПЕРЕРЫВ, the score, a silly
   stat («ВЛАДЕНИЕ: 50% ПАНИКИ») and the new weather (the old mid-match weather change moved here). Then the teams
   **swap ends**: `game.flip = 1`, `dirOf(team)` / `goalX` / `ownX` / `mirX` flip, the other team kicks off, «2-Й ТАЙМ!».
   Everything that used to assume «team 0 attacks right» goes through `dirOf` (AI, keepers, skills, kickoffs, scoring).
@@ -159,7 +159,10 @@ spinning sphere, ORA, pass, curve/post, sprint, keeper, chaos, pickups, pitches.
 | Kick | УДАР (tap) | J / Space / Z |
 | Strong or super shot | hold УДАР ≥ 0.42 s, release | hold J |
 | Tackle (no ball) / pass (with ball; in 11v11 to the teammate you face) | ПОДКАТ/ПАС | K / X |
-| Switch player | СМЕНА | L / C / Shift |
+| Sprint | push the stick to the very edge (≥ 0.92) for 0.2 s | Shift / U |
+| Taunt | ХА! | T |
+| Block a super shot | tap УДАР fast while it flies at you (button reads БЛОК!) | J |
+| Switch player | СМЕНА | L / C |
 | Pause | II in the HUD | P / Esc |
 
 In 1v1 "pass" becomes a lob over the opponent.
@@ -182,15 +185,44 @@ blinking ring + arrow; control stays on the receiver while the ball travels. The
 open human teammate in (rate 1.4/s, not when marked, behind or with the lane blocked); `bestPassTarget` favours
 the human (+0.8) and avoids blocked lanes.
 
-**Sprint (v0.14).** Hold » (touch) / Shift or U: speed ×1.35 (×1.22 with the ball, the ball runs further ahead and
+**Sprint (v0.14, v0.18: no button).** Push the stick to the edge for 0.2 s (touch) / Shift or U: speed ×1.35 (×1.22 with the ball, the ball runs further ahead and
 is 1.5× easier to steal), acceleration ×1.2. Stamina lasts ~2.5 s (−0.4/s), refills at 0.25/s; run dry and you are
-tired until 35 % (refill 0.18/s, button dims red). The green ring on the button shows stamina. Online: input `sp`,
+tired until 35 % (refill 0.18/s). A green bar under your player shows stamina (red when tired). Online: input `sp`,
 snapshot carries stamina/tired/sprinting. Switch player is now L / C only.
 
 Responsiveness (v0.11): humans accelerate with `ACCH 1600` (AI 1050), the touch stick is analog with a
 0.16 dead zone and full speed at half deflection, the kick connects after 0.045 s (was 0.07), kick
 animation 0.18 s, charge time 0.42 s. The ball carrier has a blinking ring in the team colour and their
 name above the head.
+
+**ДРАЗНИЛКИ (v0.18).** The pink ХА! button (where sprint was): your player shows a taunt (your country's emoji,
+laugh or tongue) and sometimes says something cheeky (СЛАБО?, ДОГОНИ!…), cooldown 2 s. Rivals within 80 get angry:
+their FURIA +4 each — taunting has a price. Online: input counter `tt`.
+
+**Purple button (v0.18).** One meaning at a time: the country skill when charged; while it charges it is dim, and
+БУ! lights up (red rim) only when a rival is within 55 and the scare is ready. No rival near — БУ! does nothing.
+
+**БЛОК! (v0.18).** When a super shot is kicked, `game.block = {team, taps}` opens for the other side. Each tap of
+УДАР adds 7.5 % (max 45 %) on top of 5 %; the keeper's reach grows with taps (14 → 26). If he gets it: the ball
+bounces out, «БЛОК!», crowd roar, FURIA +25. The computer taps by difficulty (1.5 / 3 / 4.5 / 6 per s). Online:
+the guest's kick releases count as taps; snapshot `bk`.
+
+## Match start, stars, crowd (v0.18)
+- **Countdown**: after the walk-out (and after half-time) 3..2..1 (2.4 s, beeps), then a random shout as a banner
+  (ПОЕХАЛИ!, ЗА ГУСЯ!, Я ЗАБЫЛ ПРАВИЛА!…). `game.mode = 'count'`, synced as `ho[6]`.
+- **Career flight = real loading**: the match is built behind the flight screen (`startMatch(…, {hold})`, mode
+  `load`), then all players' sprites and both mascots are cached a few per frame; the plane's progress and the bar
+  follow the real work, with silly tips (СТРИЖЁМ ГАЗОН…). Lands → `releaseMatch()`.
+- **Stars** (solo only): ★ win + 2 random tasks of 8 (3 goals, concede ≤1, super goal, knock 3 down, use the skill,
+  2 БУ!, goal in the last 20 s, taunt 3 times), shown on a board during the countdown and in the pause menu; result
+  on the end screen. Totals unlock ball skins in КОЛЛЕКЦИЯ: АРБУЗ 3, ПИЦЦА 6, ГЛОБУС 10, КАПУСТА 15, ГЛАЗ 20,
+  ЗОЛОТОЙ 30, ЯЙЦО ГУСЯ 45. Nothing is spent, no timers.
+- **Crowd**: looped noise through a band filter, louder near the goals / on supers / during shows, roar on goals and
+  blocks, «ооо» on posts and hard saves, a drum now and then (`updCrowd`).
+- **First-time tips** in the match (once each, solo): sprint, FURIA, skill, БУ!, taunt, block.
+- **Silliness pace** (`PACE`): arcade CAOS every 14–20 s (first 12–16), gags 12–18 s; 11 on 11 / career CAOS 24–34 s
+  (first 20–26), gags 22–32 s. One thing at a time: gags and animals wait while CAOS runs, CAOS waits for an animal;
+  gags never hit the human who has the ball.
 
 ## No rules
 No fouls. Sliding tackles knock anyone down (even teammates). Fire balls flatten whoever they hit.
