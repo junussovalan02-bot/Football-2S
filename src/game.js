@@ -308,7 +308,7 @@ function freeze(q, k, t) {
 function popOut(q) {
   const own = ownX(q.team), d = own === 0 ? 1 : -1;
   q.x = clamp(own + d*rnd(30, LEN*0.25), 10, LEN - 10); q.y = rnd(15, WID - 15); q.vx = q.vy = 0;
-  const s0 = P(q.x, q.y); burst('dust', s0.x, s0.y); say(Math.random() < 0.5 ? 'ГДЕ Я?!' : 'ТАМ МАМОНТЫ!', q.x, q.y);
+  const s0 = P(q.x, q.y); burst('dust', s0.x, s0.y); sfx('pop'); say(Math.random() < 0.5 ? 'ГДЕ Я?!' : 'ТАМ МАМОНТЫ!', q.x, q.y);
 }
 function pee(q) {
   pees.push({ x: q.x, y: q.y + 2, t: 12 }); if (pees.length > 12) pees.shift();
@@ -633,6 +633,24 @@ function audioInit() {
     const d = noiseBuf.getChannelData(0); for (let i = 0; i < n; i++) d[i] = Math.random()*2-1;
   } catch (e) { AC = null; }
 }
+function slide(f0, f1, dur, vol) {   // slide whistle: a sine sweep with a little wobble
+  const t = AC.currentTime, o = AC.createOscillator(), g = AC.createGain(), l = AC.createOscillator(), lg = AC.createGain();
+  o.type = 'sine'; o.frequency.setValueAtTime(f0, t); o.frequency.exponentialRampToValueAtTime(f1, t + dur); l.frequency.value = 9; lg.gain.value = 18; l.connect(lg).connect(o.frequency);
+  g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.0001, t + dur + 0.05); o.connect(g).connect(AC.destination);
+  o.start(t); l.start(t); o.stop(t + dur + 0.1); l.stop(t + dur + 0.1);
+}
+function wah(f, delay, dur) {   // a muted trombone note: sawtooth through a moving low-pass
+  const t = AC.currentTime + delay, o = AC.createOscillator(), g = AC.createGain(), flt = AC.createBiquadFilter(), l = AC.createOscillator(), lg = AC.createGain();
+  o.type = 'sawtooth'; o.frequency.value = f; l.frequency.value = dur > 0.5 ? 6 : 0.1; lg.gain.value = 8; l.connect(lg).connect(o.frequency);
+  flt.type = 'lowpass'; flt.frequency.setValueAtTime(400, t); flt.frequency.linearRampToValueAtTime(1400, t + dur*0.5); flt.frequency.linearRampToValueAtTime(500, t + dur);
+  g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(0.09, t + 0.03); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  o.connect(flt).connect(g).connect(AC.destination); o.start(t); l.start(t); o.stop(t + dur + 0.05); l.stop(t + dur + 0.05);
+}
+function buzzNote(f, delay, dur) {   // kazoo: a buzzy sawtooth through a narrow band
+  const t = AC.currentTime + delay, o = AC.createOscillator(), g = AC.createGain(), flt = AC.createBiquadFilter();
+  o.type = 'sawtooth'; o.frequency.value = f; flt.type = 'bandpass'; flt.frequency.value = f*2; flt.Q.value = 3;
+  g.gain.setValueAtTime(0.12, t); g.gain.exponentialRampToValueAtTime(0.0001, t + dur); o.connect(flt).connect(g).connect(AC.destination); o.start(t); o.stop(t + dur + 0.02);
+}
 function tone(type, f0, f1, dur, vol, delay) {
   const t = AC.currentTime + (delay||0), o = AC.createOscillator(), g = AC.createGain();
   o.type = type; o.frequency.setValueAtTime(f0, t); o.frequency.exponentialRampToValueAtTime(Math.max(1,f1), t+dur);
@@ -663,6 +681,8 @@ function sfxLocal(k) {
     case 'ooh': tone('sine', 330, 250, 0.6, 0.05); tone('sine', 400, 300, 0.6, 0.04, 0.02); noise(0.7, 0.07, 700); break;
     case 'block': tone('square', 200, 900, 0.18, 0.12); noise(0.2, 0.25, 4000); break;
     case 'taunt': tone('square', 520, 1040, 0.08, 0.06); tone('square', 1040, 520, 0.08, 0.06, 0.09); break;
+    case 'swish': noise(0.35, 0.18, 5000); noise(0.5, 0.08, 1200, 0.05); break;
+    case 'rip': tone('sawtooth', 900, 120, 0.35, 0.08); noise(0.4, 0.22, 3000); break;
     case 'beep': tone('square',880,880,0.12,0.12); break;
     case 'go': tone('square',1320,1320,0.25,0.13); tone('square',990,990,0.25,0.08,0.05); break;
     case 'whistle': tone('sine',2600,2500,0.22,0.13); tone('sine',2600,2550,0.4,0.13,0.28); break;
@@ -679,6 +699,19 @@ function sfxLocal(k) {
     case 'blip': tone('square',660,700,0.04,0.05); break;
     case 'honk': tone('square',420,300,0.12,0.12); tone('square',380,280,0.12,0.12,0.15); break;
     case 'skill': [523,784,1046,1568].forEach((f,i) => tone('square',f,f,0.09,0.09,i*0.06)); noise(0.3,0.15,3000,0.2); break;
+    // ---- cartoon sounds
+    case 'whee': slide(500, 1600, 0.45, 0.07); break;                                   // a player flies: a rising slide whistle
+    case 'slidedown': slide(1500, 300, 0.5, 0.07); break;                               // a howler
+    case 'trombone': [[311, 0], [294, 0.32], [277, 0.64], [262, 0.96]].forEach(([f, d], i) => wah(f, d, i === 3 ? 0.9 : 0.3)); break;   // sad trombone
+    case 'kazoo': [[523, 0], [659, 0.1], [784, 0.2], [1047, 0.32]].forEach(([f, d], i) => buzzNote(f, d, i === 3 ? 0.45 : 0.1)); break;  // party fanfare
+    case 'squeak': tone('sine', 1800, 2600, 0.07, 0.07); tone('sine', 2600, 1700, 0.08, 0.06, 0.07); break;   // rubber duck
+    case 'fart': { const t0 = AC.currentTime, o = AC.createOscillator(), g = AC.createGain(), l = AC.createOscillator(), lg = AC.createGain(), f = AC.createBiquadFilter();
+      o.type = 'sawtooth'; o.frequency.value = 85; l.frequency.value = 23; lg.gain.value = 30; l.connect(lg).connect(o.frequency); f.type = 'lowpass'; f.frequency.value = 400;
+      g.gain.setValueAtTime(0.16, t0); g.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.5); o.connect(f).connect(g).connect(AC.destination);
+      o.start(t0); l.start(t0); o.stop(t0 + 0.55); l.stop(t0 + 0.55); break; }
+    case 'bonk': tone('square', 220, 110, 0.1, 0.12); tone('sine', 900, 600, 0.08, 0.06, 0.02); break;   // ball on the head
+    case 'pop': tone('sine', 300, 1400, 0.08, 0.1); break;
+    case 'click': noise(0.03, 0.2, 7000); noise(0.03, 0.15, 7000, 0.08); break;      // a selfie
     case 'boo': tone('sawtooth',160,90,0.45,0.12); noise(0.3,0.2,600); break;
     case 'scream': tone('square',1200,1800,0.18,0.06); tone('square',1800,900,0.3,0.06,0.18); break;
     case 'pee': for (let k = 0; k < 10; k++) noise(0.05,0.06,5000 + k*200,k*0.06); break;
@@ -845,7 +878,7 @@ const ball = { shotT:0, passTo:null, passAt:null, x:LEN/2, y:WID/2, z:0, vx:0, v
   } };
 const game = { mode:'title', t:0, time:MATCH, score:[0,0], goalT:0, weather:'rain', wind:{x:0,y:0}, windT:0, lightT:6,
   len:MATCH, chasers:[[], []], runners:[], skillCd:[0, 0], miracle:[0, 0], gagT:10, shake:0, flash:0, bolt:null, banner:null, announce:null, ctrlCd:0, kickoffTeam:0, hitstop:0, fury:[0,0], furyFlash:[0,0], switchFlash:0, wantSwitch:false, paused:false, emoCd:0, tauntT:8, half:1, flip:0, show:null };
-let patches = [], parts = [], rain = [], pops = [];
+let patches = [], parts = [], rain = [], pops = [], tears = [];   // tears: holes ripped in the nets this match
 
 function hitstop(t) { game.hitstop = Math.max(game.hitstop, t); }
 function setState(p, s) { if (p.state === s) return;
@@ -870,6 +903,7 @@ function surfaceAt(x, y) { let s = null;
 // lift > 0 throws the player into the air (cartwheel until they land)
 function knockDown(p, dx, dy, force, expr, lift) {
   if (p.state === ST.FALL || p.state === ST.STUN) return;
+  if (!(p.buff === 'horn' || p.buff === 'feint' || p.ghost > 0) && game.t - (game.funnyT || 0) > 0.2) { game.funnyT = game.t; const r = Math.random(); sfx(lift >= 100 ? 'whee' : r < 0.12 ? 'fart' : r < 0.35 ? 'squeak' : 'bonk'); }
   if (TEAMS[p.team] && TEAMS[p.team].drama && Math.random() < 0.6 && !(p.buff === 'horn' || p.buff === 'feint' || p.ghost > 0)) {   // a theatrical fall
     say(['МАМА МИА!', 'АЙ-АЙ-АЙ!', 'ДОКТОРА!', 'ПЕНАЛЬТИ!', 'Я УМИРАЮ!'][Math.floor(Math.random()*5)], p.x, p.y); lift = Math.max(lift || 0, 90); expr = 'cry'; }
   if (p.buff === 'horn' || p.buff === 'feint' || p.ghost > 0) { shield(p); return; }
@@ -888,7 +922,7 @@ function keeperSave(p) {
   if (spd > 200) sfx('ooh');
   if ((spd < 230 || Math.random() < K.catch) && Math.random() < (K.fumble || 0)) {   // a howler: it slips through his gloves
     const d = ownX(p.team) === 0 ? -1 : 1; b.vx = d*rnd(60, 90); b.vy *= 0.3; b.vz = 30; b.lock = p; b.lockT = 0.6; p.saved = true;
-    say(Math.random() < 0.5 ? 'ДЫРЯВЫЕ РУКИ!' : 'СКОЛЬЗКИЙ!', p.x, p.y); sfx('boing'); return;
+    say(Math.random() < 0.5 ? 'ДЫРЯВЫЕ РУКИ!' : 'СКОЛЬЗКИЙ!', p.x, p.y); sfx('slidedown'); return;
   }
   if (spd < 230 || Math.random() < K.catch) { b.owner = p; b.vx = b.vy = b.vz = 0; b.z = 0; b.last = p; p.holdT = 0; sfx('catch'); }
   else {   // punched away: the rebound is up for grabs
@@ -1234,7 +1268,9 @@ function updBall(dt) {
     const o = b.owner;
     if (o.state > ST.KICK && o.state !== ST.DIVE) b.owner = null;
     else { const k = Math.min(1, dt*20);
-      b.x += (o.x + o.fx*(giant() ? 20 : o.sprinting ? 13 : 9) - b.x)*k;   // sprinting pushes the ball further ahead b.y += (o.y + o.fy*5 + 1 - b.y)*k; b.vx = o.vx; b.vy = o.vy; b.z = 0; b.vz = 0;
+      // sprinting pushes the ball further ahead
+      b.x += (o.x + o.fx*(giant() ? 20 : o.sprinting ? 13 : 9) - b.x)*k;
+      b.y += (o.y + o.fy*5 + 1 - b.y)*k; b.vx = o.vx; b.vy = o.vy; b.z = 0; b.vz = 0;
       b.rot += hyp(o.vx, o.vy)*dt; return; }
   }
   const surf = surfaceAt(b.x, b.y); b.drag = (surf === 'puddle' ? 5 : surf === 'mud' ? 2.5 : 1)*(chaosIs('ice') ? 0.35 : 1);
@@ -1269,7 +1305,14 @@ function updBall(dt) {
   const mouth = b.y > Y0 && b.y < Y1;
   const endBounce = (x, sign) => { b.x = x; b.vx = sign*Math.abs(b.vx)*0.35; b.vy *= 0.6; b.superType = null; b.gs = 1; sfx('bounce'); };
   if (game.mode === 'goal') {
-    if (b.x < -GD+4) { b.x = -GD+4; b.vx = 0; } if (b.x > LEN+GD-4) { b.x = LEN+GD-4; b.vx = 0; }
+    const N = game.net, back = b.x < LEN/2 ? -GD + 4 : LEN + GD - 4, out = b.x < LEN/2 ? -1 : 1, over = (b.x - back)*out;
+    if (N && N.torn && over > 0) {   // through the hole and away
+      if (!N.hit) { N.hit = true; sfx('rip'); say('СЕТКУ ПОРВАЛ!', b.x, b.y); game.shake = Math.max(game.shake, 0.35); tears.push({ right: N.right, y: N.y, z: N.z }); }
+      b.vx *= 0.985; b.x = clamp(b.x, -GD - 70, LEN + GD + 70);
+    } else if (over > 0) {   // the net stretches up to N.depth and throws the ball back
+      if (N && !N.hit) { N.hit = true; N.t = 0; }
+      const d = N ? N.depth : 6; if (over > d) { b.x = back + out*d; } b.vx -= out*over*90*dt; b.vx *= 0.9;
+    }
     if (b.x < 0 || b.x > LEN) { b.vx *= 0.9; b.vy *= 0.9; b.y = clamp(b.y, Y0+3, Y1-3); if (b.z > GH-4) { b.z = GH-4; b.vz = Math.min(0, b.vz); } }
   } else if (game.mode === 'title') {
     if (b.x < 0) endBounce(0, 1); else if (b.x > LEN) endBounce(LEN, -1);
@@ -1395,7 +1438,7 @@ function aiKeeper(p, dt) {
   const i = p.inp, b = ball, own = ownX(p.team), dir = own === 0 ? 1 : -1, K = keeperSkill(p);
   i.kickHeld = false; i.mx = i.my = 0;
   if (p.state > ST.RUN || p.freeze || b.miracle) return;   // frozen, or a blessed shot: he just watches
-  if (game.mode === 'play' && Math.abs(b.x - own) > LEN*0.6 && Math.random() < 1/60*(K.selfie || 0)) { freeze(p, 'phone', 1.6); say('СЕЛФИ!', p.x, p.y); return; }   // bored: a selfie
+  if (game.mode === 'play' && Math.abs(b.x - own) > LEN*0.6 && Math.random() < 1/60*(K.selfie || 0)) { freeze(p, 'phone', 1.6); say('СЕЛФИ!', p.x, p.y); sfx('click'); return; }   // bored: a selfie
   if (b.owner === p) {   // hold it a moment, then throw it to a free teammate or punt it long
     p.holdT += dt;
     if (p.holdT > 0.9) { p.holdT = 0; const m = bestPassTarget(p);
@@ -2014,6 +2057,7 @@ function buildSnap() {
     it: items.map(i => [ITEMS.indexOf(i.type), r1(i.x), r1(i.y), r1(i.t)]),
     pe: pees.map(q => [Math.round(q.x), Math.round(q.y)]), sk: [r1(game.skillCd[0]), r1(game.skillCd[1])], bm: ball.miracle ? 1 : 0,
     ru: game.runners.map(r => [RK.indexOf(r.k), r1(r.x), r1(r.y), r1(r.z || 0), r.dir || 1, r.team]),
+    nt: game.net ? [game.net.right ? 1 : 0, r1(game.net.y), r1(game.net.z), r2(game.net.t), r1(game.net.depth), game.net.torn ? 1 : 0, game.net.hit ? 1 : 0] : 0, tr: tears.map(T => [T.right ? 1 : 0, r1(T.y), r1(T.z)]),
     tm: TEAMS.map(t => CLUB_KEYS.find(k => CLUBS[k] === t) || 'fra'),
     ho: [game.half, game.flip, game.show ? (game.show.kind === 'half' ? 2 : 1) : 0, game.show ? r2(game.show.t) : 0, game.show ? game.show.j : 0, game.show && game.show.wx || 0, game.mode === 'count' ? r2(game.count) : 0],
     bk: game.block ? [game.block.team, Math.round(game.block.taps)] : 0,
@@ -2198,6 +2242,8 @@ function applySnap(s) {
     if (!s.ho[2]) game.show = null; else { const kind = s.ho[2] === 2 ? 'half' : 'intro'; if (!game.show || game.show.kind !== kind) game.show = { kind, t: 0, j: 0 }; game.show.t = s.ho[3]; game.show.j = s.ho[4]; game.show.wx = s.ho[5] || ''; }
     if (s.gm === 'count') game.count = s.ho[6] || 0; }
   game.block = s.bk ? { team: s.bk[0], taps: s.bk[1] } : null;
+  game.net = s.nt ? { right: !!s.nt[0], y: s.nt[1], z: s.nt[2], t: s.nt[3], depth: s.nt[4], torn: !!s.nt[5], hit: !!s.nt[6] } : null;
+  tears = (s.tr || []).map(([r, y, z]) => ({ right: !!r, y, z }));
   game.runners = (s.ru || []).map(([k, x, y, z, dir, team]) => ({ k: RK[k], x, y, z, dir, team, t: 0 }));
   s.P.forEach((a, i) => { const p = players[i]; if (!p) return;
     p.tx = a[0]; p.ty = a[1]; p.vx = a[2]; p.vy = a[3];
@@ -2659,6 +2705,12 @@ function kickoff(team) {
 }
 function scored(team) {
   const pts = chaosOn && game.time <= X2T ? 2 : 1;
+  { // the net: it bulges where the ball hits it, and a hard enough shot rips it (the hole stays for the match)
+    const spd = hyp(ball.vx, ball.vy), right = ball.x > LEN/2, hard = spd > 380 || !!ball.superType;
+    const torn = hard && Math.random() < (ball.superType ? 0.5 : 0.25);
+    game.net = { right, y: clamp(ball.y, Y0 + 6, Y1 - 6), z: clamp(ball.z, 4, GH - 14), t: 0, depth: clamp(spd/28, 6, 16), torn, hit: false };
+    game.slowmo = 0.55; sfx('swish');
+  }
   if (game.st && team === 0) { if (ball.superType) game.st.superGoals++; if (game.time <= 20) game.st.late++; }
   if (game.career && team === 0 && ball.last && ball.last.me) { game.myGoals += pts; pops.push({ text: 'ТВОЙ ГОЛ!', col: '#ffe14a', x: P(ball.x, ball.y).x, y: P(ball.x, ball.y).y - 30, t: 1.6 }); }
   fury(1-team, 30); game.score[team] += pts; game.mode = 'goal'; buzz(team === 0 ? [40, 40, 80] : 60); game.goalT = 2.2; game.kickoffTeam = 1-team;
@@ -2669,6 +2721,7 @@ function scored(team) {
   if (team === 0) players.filter(p => p.team === 0 && p.role !== 'gk').sort((a, b) => dist(a, ball) - dist(b, ball)).slice(0, 2).forEach(p => emote(p, clubEmo(0), true));
   game.banner = { text: (team === 0 ? 'GOOOL!' : 'GOL ' + TEAMS[1].code) + (pts > 1 ? ' x2' : ''), col: TEAMS[team].color, t: 0 };
   game.flash = Math.max(game.flash, 0.35); game.shake = 0.4; sfx('goal'); sfx('roar');
+  { const mine = players.some(p => p.team === team && p.local); setTimeout(() => sfx(mine ? 'kazoo' : 'trombone'), 600); }
   const s = P(ball.x, ball.y, ball.z);
   burst('goal', s.x, s.y, team);
 }
@@ -2691,7 +2744,7 @@ function startMatch(mode, opt) {
   MODE = mode; setPitch(mode); buildTeams(mode); if (game.career) { placeMe(); applySquad(); } NET.mid = (NET.mid + 1) % 100000; NET.rK = NET.rT = -1;
   game.len = mode === 11 ? MATCH11 : MATCH;
   game.score = [0,0]; game.fury = [0, 0]; game.furyFlash = [0, 0]; game.time = game.len; parts = []; game.banner = null; game.bolt = null; game.paused = false;
-  game.half = 1; game.flip = 0; game.show = null; game.tip = null; game.tut = null; newTasks(); game.tauntT = rnd(5, 9); game.emoCd = 0;
+  game.half = 1; game.flip = 0; game.show = null; game.tip = null; game.tut = null; game.net = null; game.slowmo = 0; tears = []; newTasks(); game.tauntT = rnd(5, 9); game.emoCd = 0;
   game.chaos = null; game.vespa = null; game.lastChaos = null; game.chaosT = rnd(...PACE().first); game.itemT = rnd(5, 8); game.x2 = false; items = []; pops = [];
   game.runners = []; pees = []; game.skillCd = [12, 12]; game.miracle = [0, 0]; game.gagT = rnd(...PACE().gag)*0.6; NET.rS = -1; NET.rTT = -1;
   const mod = opt && opt.mod; game.curse = mod === 'curse'; game.modTxt = mod ? STORY.modName[mod] : '';
@@ -2708,7 +2761,6 @@ function derbyLine() {
   if (c === 'RHOZIM') return 'ДЕРБИ ОДНОЙ СТРАНЫ!';
   if (c === 'AGAATL') return 'ДЕРБИ МИФОВ!';
   if (c === 'FRAITA') return 'ДЕРБИ ЕДЫ!';
-  if (c === 'AMZITA') return 'КРАСОТА И ДРАМА!';
   if (c === 'ITAVAT') return 'ВАТИКАН ВНУТРИ ИТАЛИИ!';
   if (c === 'AGAANT') return 'ВХОД ЧЕРЕЗ ПОЛЮС!';
   if (c === 'ENGGER') return 'ВЕЧНОЕ ПРОТИВОСТОЯНИЕ!';
@@ -2921,7 +2973,8 @@ function updCamera(dt, snap) {
   let fx = b.x + look.x, fy = b.y;
   if (game.mode === 'title') { const q = P(LEN/2 + Math.sin(game.t*0.12)*250, WID/2); fx = q.x; fy = q.y; }
   let hp = null;
-  if (h && (game.mode === 'play' || game.mode === 'goal')) { hp = P(h.x, h.y); fx = fx*0.65 + hp.x*0.35; fy = fy*0.65 + (hp.y - 16)*0.35; }
+  // after a goal the camera watches the net, not you
+  if (h && game.mode === 'play') { hp = P(h.x, h.y); fx = fx*0.65 + hp.x*0.35; fy = fy*0.65 + (hp.y - 16)*0.35; }
   let tx = fx - W/2, ty = fy - H*0.6;
   // your player always stays in the picture: away from the edges, below the HUD, his head on screen
   if (hp) { tx = clamp(tx, hp.x - W + 44, hp.x - 44); ty = clamp(ty, hp.y + 10 - H, hp.y - 74); }
@@ -2938,6 +2991,8 @@ function updCamera(dt, snap) {
 }
 function update(dt) {
   game.t += dt; updCrowd(dt);
+const rdt = dt;
+  if (game.slowmo > 0 && NET.role !== 'guest') { game.slowmo -= dt; dt *= 0.35; }   // the ball going in, in slow motion
   if (NET.role === 'guest') { guestUpdate(dt); return; }
   game.shake = Math.max(0, game.shake - dt); game.flash = Math.max(0, game.flash - dt*2);
   if (game.bolt) { game.bolt.t -= dt; if (game.bolt.t <= 0) game.bolt = null; }
@@ -2956,7 +3011,7 @@ function update(dt) {
     else { if (game.block && !players.some(q => q.team === game.block.team && q.human)) game.block.taps += dt*(cpuSide(game.block.team) ? D().block : 4);
       if (NET.role === 'solo') updControl(dt); humanInput(); remoteInput(); if (MODE === 11) computeChasers(); for (const p of players) if (!p.human && !(game.tut && tutIdle(p))) ai(p, dt); }
   } else if (game.mode === 'goal') {
-    game.goalT -= dt; if (game.banner) game.banner.t += dt;
+    game.goalT -= dt; if (game.banner) game.banner.t += dt; if (game.net) game.net.t += dt;
     if (game.goalT <= 0) { game.banner = null; kickoff(game.kickoffTeam); }
   }
   if (game.mode === 'show') updShow(dt);
@@ -2977,7 +3032,7 @@ function update(dt) {
     if (game.mode === 'play') { for (const t of [0, 1]) { game.skillCd[t] = Math.max(0, game.skillCd[t] - dt); game.miracle[t] = Math.max(0, game.miracle[t] - dt); }
       if (cpuSide(1) && game.skillCd[1] <= 0 && Math.random() < dt*0.12) useSkill(1); }
   }
-  updCamera(dt, false);
+  updCamera(game.mode === 'goal' ? rdt*1.6 : rdt, false);
   if (NET.role === 'host') hostBroadcast();
 }
 
@@ -2996,6 +3051,26 @@ function drawGoalBack(right, g, S) {
     ln(S(xl, Y0, 0), S(xl, Y0, GH), col, w); ln(S(xl, Y0, GH), S(xl, Y1, GH), col, w);
   }
   ln(S(xb, Y0, 0), S(xb, Y0, zb), '#d8d8e0', 2); ln(S(xb, Y1, 0), S(xb, Y1, zb), '#d8d8e0', 2); ln(S(xb, Y0, zb), S(xb, Y1, zb), '#d8d8e0', 2);
+}
+// the live part of the net: a pocket stretched by the ball (wobbling back), and holes ripped by hard shots
+function drawNetFx() {
+  const N = game.net, white = 'rgba(255,255,255,0.95)';
+  const ln = (a, b) => pline(ctx, a.x, a.y, b.x, b.y, white, 1);
+  if (N && game.mode === 'goal' && !N.torn) {
+    const xb = N.right ? LEN + GD : -GD, out = N.right ? 1 : -1, zb = GH - 10, amp = N.hit ? N.depth*Math.exp(-N.t*2.2)*Math.cos(N.t*14) : 0;
+    const dx = (y, z) => { const r = ((y - N.y)/16)**2 + ((z - N.z)/12)**2; return r < 1 ? out*amp*(1 - r) : 0; };
+    for (let h = 1; h < 6; h++) { const z = zb*h/6; let prev = null;   // stretched horizontal strings
+      for (let y = Y0; y <= Y1; y += 4) { const q = S(xb + dx(y, z), y, z); if (prev) ln(prev, q); prev = q; } }
+    for (let k = 1; k < 10; k++) { const y = Y0 + (Y1 - Y0)*k/10; let prev = null;   // and vertical ones
+      for (let z = 0; z <= zb; z += 3) { const q = S(xb + dx(y, z), y, z); if (prev) ln(prev, q); prev = q; } }
+  }
+  for (const T of tears) {   // a ragged hole with strands hanging down
+    const xb = T.right ? LEN + GD : -GD, c = S(xb, T.y, T.z), x = Math.round(c.x), y = Math.round(c.y);
+    pellipse(x, y, 7, 6, 'rgba(16,8,16,0.55)');
+    ctx.fillStyle = '#ffffff';
+    for (let k = 0; k < 8; k++) { const a = k/8*Math.PI*2, rx = Math.round(x + Math.cos(a)*7), ry = Math.round(y + Math.sin(a)*6); ctx.fillRect(rx, ry, 1, 2 + (k % 3)); }
+    for (let k = -1; k <= 1; k++) ctx.fillRect(x + k*4, y + 6, 1, 4 + Math.round(Math.sin(game.t*3 + k)*1.5));
+  }
 }
 function drawGoalFront(right, g, S) {
   const xl = right ? LEN : 0, xb = right ? LEN + GD : -GD, zb = GH - 10, net = 'rgba(255,255,255,0.85)';
@@ -3242,6 +3317,7 @@ function render() {
   }
   const ents = players.map(p => ({ y: p.y, f: () => drawPlayer(p) }));
   ents.push({ y: ball.y + 0.5, f: drawBall });
+  if (game.net || tears.length) ents.push({ y: Y0 + 0.2, f: drawNetFx });
   for (const it of items) ents.push({ y: it.y, f: () => drawItem(it) });
   if (game.vespa) ents.push({ y: game.vespa.y, f: drawVespa });
   if (game.critter) ents.push({ y: game.critter.y, f: drawCritter });

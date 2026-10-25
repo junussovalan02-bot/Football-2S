@@ -32,13 +32,22 @@ Main menu (v0.18.1): **КАРЬЕРА · АРКАДА · С ДРУГОМ · НА
   Everything that used to assume «team 0 attacks right» goes through `dirOf` (AI, keepers, skills, kickoffs, scoring).
 - Online: `ho: [half, flip, showKind, showT, joke, weather]` in the snapshot; the guest draws the show itself.
 
+## v0.21: nets, dribbling fix, cartoon sounds
+- **The ball in the net**: a goal plays in slow motion for ~0.5 s (×0.35, camera at full speed). Where the ball hits
+  the back of the net it makes a pocket (`game.net`: depth from the shot's speed, 6–16) that wobbles out; the net
+  throws the ball back. A hard shot (> 380 u/s or a super) rips the net 25 % / 50 %: «СЕТКУ ПОРВАЛ!», the ball flies
+  through and away, and the hole with hanging strands stays for the rest of the match (`tears`). Synced online
+  (`nt`, `tr`). After a goal the camera watches the net instead of your player.
+- **Dribbling fix**: the ball follows the carrier in depth too (a comment had swallowed that line), so turns and
+  feints keep the ball at the feet.
+- **Cartoon sounds**: a slide whistle when a player flies, a rubber squeak / bonk / (rarely) a fart on knock-downs,
+  a kazoo fanfare when your side scores and a sad trombone when you concede, a falling whistle on keeper howlers,
+  a camera click on selfies, a pop from the hollow Earth. The Amazons were removed.
+
 ## v0.20: Italy, Amazons, music, tutorial, keepers, two careers
 - **ИТАЛИЯ** (`ita`): every stereotype — gel, moustaches, sunglasses, «МАМА МИА!» theatrical falls (`drama`: 60 % of
   knock-downs get a lift and a cry). Skill **АВТОБУС**: a bus parks in front of your goal for 6 s, the ball bounces
   off (a super shot wrecks it). Mascot ПИЦЦЕТТА, emojis pinched fingers / pizza / volcano, home pitch piazza.
-- **АМАЗОНКИ** (`amz`): legendary warrior women — war paint, headbands, long hair (sprite features `fem`, `paint`,
-  club-wide `feat`). Skill **БОЕВОЙ КЛИЧ**: rivals within 90 of any Amazon are knocked down. Mascot ПОПУГАЙ АРА,
-  home pitch ДЖУНГЛИ (rain, leaves). Deliberately not sexualised.
 - **Agartha** players are blue-eyed long-haired blondes (sprites take `eye` colour from the look).
 - **Music** (`music` in data.js, `songNow`/`schedMusic`): one original loop per country in a stereotypical style
   (tarantella, musette with accordion vibrato, oompah polka, tea march, paso doble, fado, barrel organ, dombra

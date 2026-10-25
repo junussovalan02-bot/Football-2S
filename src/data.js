@@ -101,13 +101,6 @@
       gk: gk('#ff8a6a','#d8604a','#1a5a8a','#0e3a62','#ffe14a'),
       looks: [{ ...LOOK.sea, ...hair('#2a8a3a','#5ac86a','long') }, { ...LOOK.sea, ...hair('#1a5a6a','#3a8a9a','spiky') }, { ...LOOK.sea, ...hair('#ffe14a','#fff4b0','long') }],
       names: ['КРАБОС','НЕПТУНИС','ТРИТОНОС','КОРАЛЛИС','МЕДУЗИС','ЖЕМЧУГОС','ПРИЛИВИС','РИФОС','СКАТОС','АКВАРИС','ОСЬМИНОС'] }),
-    // Амазонки: the legendary warrior women — tall, strong, war paint, a battle cry that knocks people over
-    amz: Object.assign(kit('#2a8a3a','#1a6a2a','#c8903a','#9a6a20','#ffd23a','#6a4a2a','#4a2e18','#2a8a3a','#1a6a2a','#5ac86a','#1a5a24', { pattern:'sash', stripe:'#ffd23a' }), {
-      code:'AMZ', mascot:['ПОПУГАЙ АРА','parrot','КРА-А-А!'], skill:'warcry', name:'АМАЗОНКИ', home:'jungle', emo:['bow','parrot'], flag:['#2a8a3a','#ffd23a','#2a8a3a'], dir:'h',
-      gk: gk('#d8243a','#a8141e','#6a4a2a','#4a2e18','#ffd23a'),
-      looks: [{ ...LOOK.tan, ...hair(BLACK,BLACKHI,'long') }, { ...LOOK.dark, ...hair(BLACK,BLACKHI,'long') }, { ...LOOK.light, ...hair('#a8381c','#d8622e','long') }, { ...LOOK.tan, ...hair('#3a2414','#6a4428','long') }],
-      feat: 'fem paint band',
-      names: ['ИППОЛИТА','ПЕНТЕСИЛЕЯ','АНТИОПА','МЕЛАНИППА','ОТРЕРА','ЛАМПАДО','МАРПЕСИЯ','ОРИФИЯ','АНДРОМАХА','АЭЛЛА','ТОМИРИС'] }),
     // Агарта: the legendary civilisation inside the hollow Earth (entrance at the poles, an inner sun, mammoths).
     agh: Object.assign(kit('#5a2a9a','#3a1a6a','#2ad8c8','#1aa098','#ffd23a','#2a1a3a','#180e24','#5a2a9a','#3a1a6a','#b86aff','#3a1a6a'), {
       code:'AGA', mascot:['МАМОНТ ГЕНА','mammoth','МЫ СНИЗУ!'], skill:'hole', name:'АГАРТА', home:'cavern', emo:['crystal','innersun'], flag:['#5a2a9a','#ffd23a','#100810'], dir:'sun',
@@ -264,7 +257,6 @@
     vat: { name:'ХОРАЛ ДЛЯ ВРАТАРЯ', beat:4, step:0.32, lead:'square', mel:[72,74,76,77, 76,74,72,0, 71,72,74,72, 72,0,0,0], bass:[48,43,45,48], on:[0], drum:'....' },
     atl: { name:'БУЛЬ-БУЛЬ ЭМБИЕНТ', beat:8, step:0.14, lead:'triangle', mel:[60,64,67,71,72,71,67,64, 57,60,64,67,69,67,64,60, 53,57,60,64,65,64,60,57, 55,59,62,66,67,0,0,0], bass:[36,33,29,31], on:[0,4], drum:'h...h...' },
     agh: { name:'СИНТВЕЙВ ИЗ НЕДР', beat:8, step:0.15, lead:'sawtooth', vib:7, mel:[64,0,67,0,70,0,69,67, 64,0,63,0,62,0,0,0, 64,67,70,73,72,70,67,64, 63,0,0,0,62,0,0,0], bass:[40,40,39,38], on:[0,2,4,6], drum:'k.h.s.h.' },
-    amz: { name:'БАРАБАНЫ ДЖУНГЛЕЙ', beat:8, step:0.12, lead:'square', mel:[64,64,67,64,69,67,64,0, 64,64,67,64,62,0,60,0, 67,69,72,69,67,64,62,0, 64,0,64,0,64,0,0,0], bass:[40,40,43,40], on:[0,3,6], drum:'kks.kks.' },
   };
   window.AZZ_DATA = { LOOK, clubs, icons, themes, music };
 })();
