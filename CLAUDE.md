@@ -1,6 +1,6 @@
 # Azzurri Arcade — notes for Claude Code
 
-Retro arcade football in the spirit of Goal 3 / Kunio-kun (NES): 16 countries (real, joke and mythical: Rhodesia/Zimbabwe, North Korea, Atlantis, Agartha…),
+Retro arcade football in the spirit of Goal 3 / Kunio-kun (NES): 18 countries (real, joke and mythical: Rhodesia/Zimbabwe, North Korea, Atlantis, Agartha…),
 11-on-11 «РЕАЛЬНОСТЬ» and 1v1/2v2 «АРКАДА», keepers, anime-parody supers, chibi pixel players,
 oblique side view, no rules (tackles, knock-downs), weather, super shots, taunt emotes.
 The owner plays it on a **phone** (iPhone, landscape) and wants to play **online with a friend**.
@@ -87,6 +87,9 @@ All graphics are drawn by code (sprites built pixel by pixel in `getSprite`, fie
   (`hold`, mode `load`, `releaseMatch`), stars `TASKS`/`newTasks`/`awardStars`/`openColl`, ball skins `BALLS`/`makeBall`/`setBall`,
   crowd `updCrowd`, block `game.block`/`blockChance`/`superBlocked`/`drawBlock`, taunts `taunt`, auto sprint `edgeSprint`,
   tips `tip`/`updTips`, pace `PACE`.
+- **v0.20** — coach management `ensureSquad`/`renderSquad`/`applySquad`/`TACTICS`/`newMarket` (overlay `ovSquad`), separate saves
+  `CAREERS`/`saveCareer`/`openCareerHub`, stories by kind `storyOf()`, music `SONGS`/`songNow`, tutorial `TUT`/`updTut`,
+  `careerLevel`, keeper `fumble`/`selfie`, skills `bus`/`warcry`, `drama` falls.
 - **Skills & silliness** — `SKILLS`, `useSkill`, runners `game.runners`/`updRunners`/`drawRunner`, `freeze`, `scare`, `boo`,
   `pee`/`pees`, gags `updGags`, words `say` (TXTS). Pad button `bK`.
 - **Rules screen** — `HELP` scene painters + `helpLoop`.

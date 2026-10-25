@@ -32,6 +32,33 @@ Main menu (v0.18.1): **КАРЬЕРА · АРКАДА · С ДРУГОМ · НА
   Everything that used to assume «team 0 attacks right» goes through `dirOf` (AI, keepers, skills, kickoffs, scoring).
 - Online: `ho: [half, flip, showKind, showT, joke, weather]` in the snapshot; the guest draws the show itself.
 
+## v0.20: Italy, Amazons, music, tutorial, keepers, two careers
+- **ИТАЛИЯ** (`ita`): every stereotype — gel, moustaches, sunglasses, «МАМА МИА!» theatrical falls (`drama`: 60 % of
+  knock-downs get a lift and a cry). Skill **АВТОБУС**: a bus parks in front of your goal for 6 s, the ball bounces
+  off (a super shot wrecks it). Mascot ПИЦЦЕТТА, emojis pinched fingers / pizza / volcano, home pitch piazza.
+- **АМАЗОНКИ** (`amz`): legendary warrior women — war paint, headbands, long hair (sprite features `fem`, `paint`,
+  club-wide `feat`). Skill **БОЕВОЙ КЛИЧ**: rivals within 90 of any Amazon are knocked down. Mascot ПОПУГАЙ АРА,
+  home pitch ДЖУНГЛИ (rain, leaves). Deliberately not sexualised.
+- **Agartha** players are blue-eyed long-haired blondes (sprites take `eye` colour from the look).
+- **Music** (`music` in data.js, `songNow`/`schedMusic`): one original loop per country in a stereotypical style
+  (tarantella, musette with accordion vibrato, oompah polka, tea march, paso doble, fado, barrel organ, dombra
+  gallop, throat-singing drone, victory march, marimba, penguin waltz, sea shanty, chorale, underwater ambient,
+  hollow-Earth synthwave, jungle drums). The home side's song plays (the pitch owner), the name is in the pause menu.
+- **Tutorial** (АРКАДА → ОБУЧЕНИЕ, `TUT`/`startTutorial`/`updTut`): calm 1 v 1, no clock, no chaos, asleep keeper; 8
+  checked steps: run, sprint, score, tackle, skill, super, block, done.
+- **Keepers**: corner-shot goal rate ≈ 68 % (Я СЛАБАК, Я НОРМ), 33 % (МУТАНТ), 25 % (ЧУДОВИЩЕ). Easy keepers fumble
+  (`fumble` 35/15/5/1 %: «ДЫРЯВЫЕ РУКИ!») and take selfies when the ball is far (`selfie`).
+- **Career difficulty** (`careerLevel`): rounds 1–3 one level easier than the setting, 4–7 at it, the final one
+  harder; season 2+ one level harder; capped. Shown on the route screen.
+- **Two careers, two saves** (`career-team`, `career-player`), КАРЬЕРА → ТРЕНЕР / ИГРОК.
+  - **Coach** (`kind:'team'`): own story (`STORY.coach`: the internet coach, the star who wants a statue, the
+    president's nephew, the xG analyst, the stolen tactics notebook, the goose transfer, ultras, a docu-series),
+    rival coaches, ceremony ТРЕНЕР ГОДА. **КОМАНДА** screen: tactic (БАЛАНС 4-4-2 / АТАКА 4-3-3: shape +0.07 /
+    АВТОБУС 5-4-1: −0.08), 11 players with СК (speed ×0.93–1.05) and УД (shot ×0.92–1.08) 1–5, +2 training points per
+    match, money per result (4/2/1 мешка), a transfer market of 3 players per round (replaces the weakest at that
+    position).
+  - **Player**: the agent / mum / twin-rival story as before.
+
 ## Names (v0.19): nothing borrowed
 Super shots and items have our own parody names instead of anime/brand names: ТИГРОПЕНДАЛЬ, КЕФИРХАМЕХА,
 ВЕРТОПЕЛЬМЕНЬ, НА-НА-НА (super tackle), ЗОЛОТАЯ БАШКА (full FURIA), МОПЕД (was Vespa), РОЖОК (was Cornetto); story

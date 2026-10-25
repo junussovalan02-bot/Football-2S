@@ -220,3 +220,13 @@ body.in-menu #pad{visibility:hidden}
 .mi.coll.on{box-shadow:0 0 0 3px var(--gold)}
 .mi.coll.locked{color:#6a7490}
 @media (orientation:landscape) and (max-height:520px){ .collgrid{grid-template-columns:repeat(8,1fr)} .mi.coll canvas{width:28px;height:28px} #ovEnd .menu{gap:10px} }
+/* coach career: squad, tactics, transfers */
+.menu.squad{gap:10px;width:min(720px,96vw)}
+.sqlist{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:3px 10px;width:100%;text-align:left}
+.sqlist li{display:flex;align-items:center;gap:6px;font-size:8px;color:#c8cde0;background:var(--panel);padding:3px 6px}
+.sqlist li .nm{flex:1;color:#fff}
+.sqlist li .st{color:var(--gold);letter-spacing:1px}
+.sqlist li button,.sqmarket button{font-family:var(--f-pixel);font-size:8px;padding:4px 6px;background:#2a3a66;color:#fff;border:0;cursor:pointer}
+.sqmarket{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:6px;width:100%}
+.sqmarket .card{min-width:0;font-size:8px;line-height:1.6;align-items:stretch;text-align:left}
+.sqmarket .card b{color:var(--gold);font-weight:400}

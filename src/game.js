@@ -831,6 +831,7 @@ function setPitch(mode) {
 }
 const ball = { shotT:0, passTo:null, passAt:null, x:LEN/2, y:WID/2, z:0, vx:0, vy:0, vz:0, owner:null, superType:null, gs:1, lock:null, lockT:0, last:null, rot:0, drag:1,
   kick(dx, dy, pow, lift, by, type) {
+    if (by && by.shtK && !type) pow *= by.shtK;   // the coach's ratings
     this.owner = null; this.vx = dx*pow; this.vy = dy*pow; this.vz = lift; this.superType = type || null; this.gs = 1;
     this.shot = false; this.shotT = 0; this.passTo = null; this.passAt = null; this.curve = 0; this.home = null; this.miracle = false;
     this.lock = by; this.lockT = 0.3; this.last = by;
@@ -1154,7 +1155,7 @@ function updPlayer(p, dt) {
       else { p.stam = Math.min(1, p.stam + dt*(p.tired ? 0.18 : 0.25)); if (p.tired && p.stam > 0.35) p.tired = false; }
       p.sprinting = want;
       const spr = want ? (ball.owner === p ? 1.22 : 1.35) : 1;
-      const sp = MAXSP * p.sm * turbo * spr * ph('speed') * (p.human ? 1 : aiSp) * (ball.owner === p ? 0.9 : 1);
+      const sp = MAXSP * p.sm * turbo * spr * ph('speed') * (p.human ? 1 : aiSp) * (ball.owner === p ? 0.9 : 1) * (p.spdK || 1);
       approach(p, i.mx*sp, i.my*sp, (p.human ? ACCH : ACC)*p.tr*turbo*(want ? 1.2 : 1)*dt);
       if (p.buff === 'pepper' && hyp(p.vx, p.vy) > 70) for (const q of players)   // chili: run people over
         if (q.team !== p.team && q.state <= ST.KICK && dist(p, q) < 14) { knockDown(q, p.vx, p.vy, 200, 'bulge', 120);
@@ -2672,7 +2673,7 @@ function scored(team) {
   burst('goal', s.x, s.y, team);
 }
 const $ = id => document.getElementById(id);
-const OVS = ['ovColl', 'ovMenu', 'ovPause', 'ovEnd', 'ovBye', 'ovOnline', 'ovHelp', 'ovTeams', 'ovCareer', 'ovCreate', 'ovTour', 'ovFlight', 'ovStory'];
+const OVS = ['ovSquad', 'ovColl', 'ovMenu', 'ovPause', 'ovEnd', 'ovBye', 'ovOnline', 'ovHelp', 'ovTeams', 'ovCareer', 'ovCreate', 'ovTour', 'ovFlight', 'ovStory'];
 function showOv(id) {
   for (const o of OVS) $(o).hidden = o !== id;
   if (id === 'ovOnline') renderLobby();
@@ -2687,7 +2688,7 @@ function startMatch(mode, opt) {
   if (opt) setTeams(opt.a, opt.b); else setTeams(CLUB_KEYS[pick[0]], CLUB_KEYS[pick[1]]);
   setTheme(opt ? opt.theme : NET.role !== 'solo' ? 'stadium' : (fieldPick || TEAMS[1].home));
   game.critter = null; game.critterT = rnd(8, 14);
-  MODE = mode; setPitch(mode); buildTeams(mode); if (game.career) placeMe(); NET.mid = (NET.mid + 1) % 100000; NET.rK = NET.rT = -1;
+  MODE = mode; setPitch(mode); buildTeams(mode); if (game.career) { placeMe(); applySquad(); } NET.mid = (NET.mid + 1) % 100000; NET.rK = NET.rT = -1;
   game.len = mode === 11 ? MATCH11 : MATCH;
   game.score = [0,0]; game.fury = [0, 0]; game.furyFlash = [0, 0]; game.time = game.len; parts = []; game.banner = null; game.bolt = null; game.paused = false;
   game.half = 1; game.flip = 0; game.show = null; game.tip = null; game.tut = null; newTasks(); game.tauntT = rnd(5, 9); game.emoCd = 0;
@@ -3296,8 +3297,13 @@ const ROLES = [['att', 'НАПАДАЮЩИЙ', 10], ['mid', 'ПОЛУЗАЩИТ�
 const NAMEPOOL = ['МЯЧИКОВ', 'ШТАНГИН', 'ФИНТОВ', 'УДАЛОВ', 'ПАСОВ', 'ВОРОТОВ', 'СВИСТКОВ', 'ПОДКАТОВ', 'НАВЕСОВ', 'БУТСИН', 'ГАЗОНОВ',
   'ЛЕВША', 'ДРИБЛИН', 'ПЕНАЛЬТИ', 'СЕЙВОВ', 'ТАЙМОВ', 'КРОССОВ', 'ГОЛОВИН'];
 const shade = (hex, k) => '#' + [1, 3, 5].map(i => Math.round(parseInt(hex.slice(i, i + 2), 16)*k)).map(v => Math.min(255, v).toString(16).padStart(2, '0')).join('');
-let career = store.get('career', null);
-if (career && (!Array.isArray(career.tour) || !career.kind)) career = null;
+// two separate careers, each with its own save: the coach (your club) and the player
+const CAREERS = { team: store.get('career-team', null), player: store.get('career-player', null) };
+{ const old = store.get('career', null);   // a save from before the split
+  if (old && Array.isArray(old.tour) && old.kind && !CAREERS[old.kind]) { CAREERS[old.kind] = old; store.set('career-' + old.kind, old); } }
+for (const k of ['team', 'player']) if (CAREERS[k] && !Array.isArray(CAREERS[k].tour)) CAREERS[k] = null;
+let career = null, careerKind = 'team';
+function saveCareer() { if (!career) return; CAREERS[career.kind] = career; store.set('career-' + career.kind, career); }
 let draft = null;
 const meLocked = () => game.career && career && career.kind === 'player';
 const myKey = () => career.kind === 'team' ? 'my' : career.clubKey;
@@ -3340,14 +3346,27 @@ function careerResult(a, b) {
   sy.pending = { res, a, b, opp, ok };
   if (sy.mod === 'promise') { const kept = career.kind === 'player' ? (game.myGoals || 0) > 0 : a > 0; sy.pending.promise = kept; sy.fame = Math.max(0, sy.fame + (kept ? 30 : -20)); }
   addNews(storyFill(any(STORY.results[res]), { opp }) + ' ' + a + ':' + b);
-  sy.mod = null; career.round++; sy.goal = career.round < TOUR_LEN ? newGoal() : null; store.set('career', career);
+  if (career.kind === 'team') { career.money = (career.money || 0) + (res === 'w' ? 4 : res === 'd' ? 2 : 1); career.tp = (career.tp || 0) + 2; }
+  sy.mod = null; career.round++; sy.goal = career.round < TOUR_LEN ? newGoal() : null; saveCareer();
   const pts = st.w*3 + st.d, mine = career.kind === 'player' ? ` Твоих голов: ${game.myGoals || 0}.` : '';
   return (ok ? 'ЗАДАЧА ВЫПОЛНЕНА. ' : 'ЗАДАЧА ПРОВАЛЕНА. ') + `Турне: ${career.round}/${TOUR_LEN}, очков: ${pts}.${mine}`;
 }
 // ---- screens
-function openCareer() {
-  const has = !!career; $('carHub').hidden = !has; $('carNew').hidden = has;
-  $('carInfo').textContent = has ? (career.kind === 'team' ? 'КЛУБ ' + career.team.name.toUpperCase() : career.player.name + ' · ' + CLUBS[career.clubKey].name) + ' · СЕЗОН ' + career.season : 'СОЗДАЙ КЛУБ ИЛИ ИГРОКА';
+const careerLabel = c => c ? (c.kind === 'team' ? 'КЛУБ ' + c.team.name.toUpperCase() : c.player.name + ' · ' + (CLUBS[c.clubKey] || {}).name) + ' · СЕЗОН ' + c.season : '';
+function openCareer() {   // pick which career: coach or player
+  $('carPick').hidden = false; $('carHub').hidden = true; newArmed = false;
+  $('carCoachInfo').textContent = CAREERS.team ? careerLabel(CAREERS.team) : 'СВОЙ КЛУБ И МЕНЕДЖМЕНТ';
+  $('carPlayerInfo').textContent = CAREERS.player ? careerLabel(CAREERS.player) : 'ОДИН ПРОТИВ ВСЕХ';
+  $('carInfo').textContent = 'ДВЕ КАРЬЕРЫ — ДВА СЮЖЕТА';
+  showOv('ovCareer');
+}
+let newArmed = false;
+function openCareerHub(kind) {
+  careerKind = kind; career = CAREERS[kind];
+  if (!career) { openCreate(kind); return; }
+  registerCareer(); newArmed = false;
+  $('carPick').hidden = true; $('carHub').hidden = false; $('miSquadOpen').hidden = kind !== 'team'; $('miCarNew').textContent = 'НОВАЯ КАРЬЕРА';
+  $('carInfo').textContent = (kind === 'team' ? 'ТРЕНЕР · ' : 'ИГРОК · ') + careerLabel(career);
   showOv('ovCareer');
 }
 const FORM = {
@@ -3390,10 +3409,65 @@ function finishCreate() {
     const names = NAMEPOOL.slice(); for (let i = names.length - 1; i > 0; i--) { const j = Math.floor(Math.random()*(i + 1)); [names[i], names[j]] = [names[j], names[i]]; }
     career = { v: 1, kind: 'team', team: { name: nm, shirt: draft.shirt, shorts: draft.shorts, emo: Object.keys(EMO_RU)[draft.emo], home: THEME_KEYS[draft.home], skill: SKILL_KEYS[draft.skill], names: names.slice(0, 11) } };
   } else career = { v: 1, kind: 'player', clubKey: CLUB_KEYS[draft.club], player: { name: nm, skin: draft.skin, hair: draft.hair, face: draft.face, short: draft.short, role: draft.role } };
-  newTour(); registerCareer(); store.set('career', career); openTour();
+  careerKind = career.kind; ensureSquad(); newTour(); registerCareer(); saveCareer(); openTour();
+}
+// ---- the coach's management: squad ratings, tactics, training, transfers
+const TACTICS = [['balance', 'БАЛАНС 4-4-2', 0, 0], ['attack', 'АТАКА 4-3-3', 0.07, 0.05], ['bus', 'АВТОБУС 5-4-1', -0.08, -0.05]];
+const POSN = { gk: 'ВРТ', def: 'ЗАЩ', mid: 'ПЗ', att: 'НАП' };
+const MARKET_NAMES = ['ЗВЕЗДУНОВ', 'ПЕНАЛЬТЕВ', 'ДРИБЛИНСОН', 'ПАРКЕТОВ', 'ЛЕГЕНДАРОВ', 'ГОЛЕАДОР', 'БУТСЕНКО', 'НАВЕСОВИЧ', 'ФИНТЕЛЬ', 'ПОДКАТОВСКИЙ', 'ШТРАФНЫХ', 'УГЛОВОЙ', 'ГАЗОНОВИЧ', 'ЛИДЕРОВ'];
+function ensureSquad() {
+  if (career.kind !== 'team') return;
+  const t = career.team;
+  if (!t.squad) t.squad = t.names.map((n, i) => ({ n, s: 2 + (i % 3 === 0 ? 1 : 0), k: 2 + (i % 4 === 1 ? 1 : 0) }));
+  if (!career.tactic) career.tactic = 'balance';
+  if (career.money === undefined) career.money = 10;
+  if (career.tp === undefined) career.tp = 2;
+  if (!career.market || career.marketAt !== career.season*100 + career.round) newMarket();
+  t.names = t.squad.map(q => q.n);
+}
+function newMarket() {
+  career.marketAt = career.season*100 + career.round;
+  career.market = [0, 1, 2].map(() => { const slot = 1 + Math.floor(Math.random()*10), s0 = 2 + Math.floor(Math.random()*4), k0 = 2 + Math.floor(Math.random()*4);
+    return { n: any(MARKET_NAMES), slot, s: Math.min(5, s0), k: Math.min(5, k0), price: Math.max(3, s0 + k0 + Math.floor(Math.random()*4) - 2) }; });
+}
+const dots = v => '●'.repeat(v) + '○'.repeat(5 - v);
+function openSquad() { ensureSquad(); renderSquad(); showOv('ovSquad'); }
+function renderSquad() {
+  const t = career.team, tac = TACTICS.find(x => x[0] === career.tactic) || TACTICS[0];
+  $('sqInfo').textContent = 'БЮДЖЕТ ' + career.money + ' МЕШК. · ТРЕНИРОВКИ ' + career.tp;
+  $('miTactic').innerHTML = 'ТАКТИКА <b>' + tac[1] + '</b>';
+  const list = $('sqList'); list.textContent = '';
+  t.squad.forEach((q, i) => {
+    const li = document.createElement('li'), pos = POSN[F442[i][0]];
+    li.innerHTML = '<span>' + NUMS[i] + '</span><span class="nm"></span><span>' + pos + '</span><span>СК <span class="st">' + dots(q.s) + '</span></span><span>УД <span class="st">' + dots(q.k) + '</span></span>';
+    li.querySelector('.nm').textContent = q.n;
+    if (career.tp > 0) for (const [key, lab] of [['s', '+СК'], ['k', '+УД']]) if (q[key] < 5) { const b = document.createElement('button'); b.textContent = lab;
+      b.addEventListener('click', () => { audioInit(); q[key]++; career.tp--; sfx('ding'); saveCareer(); renderSquad(); }); li.appendChild(b); }
+    list.appendChild(li);
+  });
+  const mk = $('sqMarket'); mk.textContent = '';
+  career.market.forEach((o, j) => {
+    const c = document.createElement('div'), pos = F442[o.slot][0], target = t.squad.reduce((best, q, i) => F442[i][0] === pos && (best < 0 || q.s + q.k < t.squad[best].s + t.squad[best].k) ? i : best, -1);
+    c.className = 'card'; c.innerHTML = '<b></b><span>' + POSN[pos] + ' · СК ' + dots(o.s) + ' · УД ' + dots(o.k) + '</span><span>ЦЕНА ' + o.price + ' МЕШК. · ВМЕСТО ' + t.squad[target].n + '</span>';
+    c.querySelector('b').textContent = o.n;
+    const b = document.createElement('button'); b.textContent = o.sold ? 'КУПЛЕН' : career.money >= o.price ? 'КУПИТЬ' : 'НЕ ХВАТАЕТ';
+    b.addEventListener('click', () => { audioInit(); if (o.sold || career.money < o.price) return; career.money -= o.price; t.squad[target] = { n: o.n, s: o.s, k: o.k }; o.sold = true;
+      t.names = t.squad.map(q => q.n); sfx('skill'); addNews('{CLUB} ПОКУПАЕТ ' + o.n + ' ЗА ' + o.price + ' МЕШКОВ ЖЕМЧУГА'); saveCareer(); registerCareer(); renderSquad(); });
+    c.appendChild(b); mk.appendChild(c);
+  });
+}
+// in the match: ratings change speed and shot power, the tactic moves the shape
+function applySquad() {
+  if (!game.career || !career || career.kind !== 'team' || !career.team.squad) return;
+  const tac = TACTICS.find(x => x[0] === career.tactic) || TACTICS[0];
+  for (const p of players) if (p.team === 0) {
+    const q = career.team.squad[p.slot]; if (!q) continue;
+    p.name = q.n; p.spdK = 0.9 + q.s*0.03; p.shtK = 0.88 + q.k*0.04;
+    if (p.home && p.role !== 'gk') p.home = { x: clamp(p.home.x + (p.role === 'def' ? tac[3] : tac[2]), 0.08, 0.6), y: p.home.y };
+  }
 }
 function openTour() {
-  registerCareer();
+  ensureSquad(); registerCareer(); $('miTourSquad').hidden = career.kind !== 'team';
   const sy = ensureStory();
   if (sy.pending) { postMatch(openTour); return; }
   const me = CLUBS[myKey()], st = career.stats, done = career.round >= TOUR_LEN, list = $('tourList'); list.textContent = '';
@@ -3421,7 +3495,7 @@ function openTour() {
 // the flight to the next stop, then the match
 let flightRaf = 0;
 function fly() {
-  if (career.round >= TOUR_LEN) { newTour(); store.set('career', career); openTour(); return; }
+  if (career.round >= TOUR_LEN) { newTour(); saveCareer(); openTour(); return; }
   preMatch(flyGo);
 }
 // The flight is the real loading screen: the match is built behind it (pitch, weather, squads), then every
@@ -3474,7 +3548,7 @@ const any = a => a[Math.floor(Math.random()*a.length)];
 function ensureStory() {
   if (!career.story) career.story = { fame: 1, board: 60, trait: { calm: 0, fire: 0, mad: 0 }, news: [], seen: {}, fired: 0, mod: null, goal: null, pending: null };
   const st = career.story;
-  if (!st.rival) { const last = career.tour[career.tour.length - 1]; st.rival = { name: any(STORY.rivals), club: last ? last.key : any(CLUB_KEYS.filter(k => k !== myKey())) }; }
+  if (!st.rival) { const last = career.tour[career.tour.length - 1]; st.rival = { name: any(storyOf().rivals), club: last ? last.key : any(CLUB_KEYS.filter(k => k !== myKey())) }; }
   if (!st.big) st.big = any(STORY.bigClubs);
   if (!st.goal && career.round < TOUR_LEN) st.goal = newGoal();
   return st;
@@ -3501,7 +3575,7 @@ function storyFx(fx) {
   if (fx.t) st.trait[fx.t] = (st.trait[fx.t] || 0) + 1;
   if (fx.m) st.mod = fx.m;
   if (fx.news) addNews(fx.news);
-  store.set('career', career);
+  saveCareer();
 }
 const fansTxt = n => { const v = n*1000 + 3; return v >= 1e6 ? (v/1e6).toFixed(1) + 'M' : v >= 1000 ? Math.round(v/1000) + 'K' : String(v); };
 const mainTrait = st => Object.keys(st.trait).reduce((a, k) => st.trait[k] > st.trait[a] ? k : a, 'calm');
@@ -3556,15 +3630,17 @@ function sceneTap() {   // tapping the speech box shows the whole line at once
   else if (!$('stChoices').querySelector('.mi:not(.go)')) sceneNext();
 }
 // ---- story flow around the matches
-function chapter() { return STORY.chapters[Math.min(career.season, STORY.chapters.length) - 1]; }
+const storyOf = () => career.kind === 'team' ? STORY.coach : STORY;   // the coach and the player have different stories
+function chapter() { const C = storyOf().chapters; return C[Math.min(career.season, C.length) - 1]; }
 // before a match: this round's beat, or now and then a random event; then the board's demand
 function preMatch(go) {
   const st = ensureStory(), key = 's' + career.season + 'r' + career.round, ch = chapter();
   if (st.seen[key]) { go(); return; }
-  st.seen[key] = 1; store.set('career', career);
+  st.seen[key] = 1; saveCareer();
   let steps = ch.beats[career.round];
-  if (!steps && Math.random() < 0.7) { const pool = STORY.events.map((e, i) => i).filter(i => !st.seen['e' + career.season + '_' + i]);
-    if (pool.length) { const i = any(pool); st.seen['e' + career.season + '_' + i] = 1; steps = STORY.events[i]; } }
+  const EV = storyOf().events;
+  if (!steps && Math.random() < 0.7) { const pool = EV.map((e, i) => i).filter(i => !st.seen['e' + career.season + '_' + i]);
+    if (pool.length) { const i = any(pool); st.seen['e' + career.season + '_' + i] = 1; steps = EV[i]; } }
   const demand = ['boss', 'Задача на матч с {OPP}: ' + st.goal.t + '. ' + st.goal.threat + '.'];
   playScene((steps || []).concat([demand]), ch.title, go);
 }
@@ -3580,19 +3656,19 @@ function postMatch(done) {
   steps.push(['press', outlet + ': ' + q, ['calm', 'fire', 'mad'].map((t, i) => { const hl = storyFill(any(STORY.headlines[t]), { opp: pm.opp });
     return [ans[i], { ...STORY.pressFx[t], t, news: hl }, [['press', 'ЗАГОЛОВОК: ' + hl]]]; })]);
   playScene(steps, 'ПРЕСС-КОНФЕРЕНЦИЯ', () => {
-    st.pending = null; store.set('career', career);
+    st.pending = null; saveCareer();
     const next = () => career.round >= TOUR_LEN && !st.seen['cer' + career.season] ? ceremony(done) : done();
     if (st.board <= 0) { st.board = 30; st.fired++; addNews(career.kind === 'player' ? '{ME} НА ТРАНСФЕРЕ ЗА 1 ЕВРО. ПОКУПАТЕЛЕЙ НЕТ' : 'ТРЕНЕРА УВОЛИЛИ И ТУТ ЖЕ ВЕРНУЛИ');
-      store.set('career', career); playScene(STORY.fired[career.kind], 'УВОЛЬНЕНИЕ', next); }
+      saveCareer(); playScene(STORY.fired[career.kind], 'УВОЛЬНЕНИЕ', next); }
     else next();
   });
 }
 function ceremony(done) {
-  const st = career.story, s = career.stats, pts = s.w*3 + s.d, C = STORY.ceremony;
-  st.seen['cer' + career.season] = 1; store.set('career', career);
+  const st = career.story, s = career.stats, pts = s.w*3 + s.d, C = storyOf().ceremony;
+  st.seen['cer' + career.season] = 1; saveCareer();
   const win = pts >= 19 || (career.kind === 'player' && s.goals >= 10);
-  playScene(C.intro.concat(win ? C.gold : pts >= 13 ? C.silver : C.none, [['narr', C.trait[mainTrait(st)]]], C.outro), 'ЗОЛОТОЙ МЯЧ', () => {
-    addNews(win ? '{ME} ВЗЯЛ ЗОЛОТОЙ МЯЧ. МАМЫ ЛИКУЮТ' : '{RIV} СНОВА ЛУЧШИЙ. {ME} ДЕРЖИТ ЛИЦО'); store.set('career', career); done(); });
+  playScene(C.intro.concat(win ? C.gold : pts >= 13 ? C.silver : C.none, [['narr', C.trait[mainTrait(st)]]], C.outro), career.kind === 'team' ? 'ТРЕНЕР ГОДА' : 'ЗОЛОТОЙ МЯЧ', () => {
+    addNews(win ? (career.kind === 'team' ? '{ME} — ТРЕНЕР ГОДА! ПАЛЫЧ ПЛАЧЕТ' : '{ME} ВЗЯЛ ЗОЛОТОЙ МЯЧ. МАМЫ ЛИКУЮТ') : '{RIV} СНОВА ЛУЧШИЙ. {ME} ДЕРЖИТ ЛИЦО'); saveCareer(); done(); });
 }
 
 // ================== rules screen: looping mini-animations ==================
@@ -3695,15 +3771,19 @@ click('miTeamsBack', () => { showOv('ovMenu'); menuPage('mPlay'); });
 click('miKick', () => startMatch(teamMode));
 click('miCareer', openCareer);
 click('miCarGo', openTour);
-click('miCarNew', () => { $('carHub').hidden = true; $('carNew').hidden = false; $('carInfo').textContent = 'НАЧНЁМ С НУЛЯ?'; });
+click('miCarCoach', () => openCareerHub('team'));
+click('miCarPlayer', () => openCareerHub('player'));
+click('miCarNew', () => { if (!newArmed) { newArmed = true; $('miCarNew').textContent = 'ТОЧНО? СТАРАЯ ПРОПАДЁТ'; return; } openCreate(careerKind); });
+click('miCarHubBack', openCareer);
 click('miCarBack', () => { showOv('ovMenu'); menuPage('mMain'); });
-click('miCarNewBack', () => { if (career) openCareer(); else { showOv('ovMenu'); menuPage('mMain'); } });
-click('miNewTeam', () => openCreate('team'));
-click('miNewPlayer', () => openCreate('player'));
+click('miSquadOpen', openSquad);
+click('miTourSquad', openSquad);
+click('miSquadBack', () => { saveCareer(); openTour(); });
+click('miTactic', () => { const i = TACTICS.findIndex(t => t[0] === career.tactic); career.tactic = TACTICS[(i + 1) % TACTICS.length][0]; saveCareer(); renderSquad(); });
 click('miCrOk', finishCreate);
 click('miCrBack', openCareer);
 click('miFly', fly);
-click('miTourBack', () => { showOv('ovMenu'); menuPage('mMain'); });
+click('miTourBack', () => openCareerHub(career.kind));
 click('miToTour', () => { attract(); openTour(); });
 $('stScene').addEventListener('click', () => { audioInit(); sceneTap(); });
 click('miField', cycleField);

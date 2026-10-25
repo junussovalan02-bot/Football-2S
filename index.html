@@ -28,7 +28,7 @@ img{max-width:100%}
         <div class="brand">
           <h1 class="logo">AZZURRI<span>ARCADE</span></h1>
           <p class="stamp" aria-hidden="true">CAOS!</p>
-          <p class="tag">16 СТРАН · КАРЬЕРА · АНИМЕ-УДАРЫ</p>
+          <p class="tag">18 СТРАН · КАРЬЕРА · АНИМЕ-УДАРЫ</p>
           <p class="tag diff">СЛОЖНОСТЬ: <span id="diffTag">Я НОРМ</span></p>
           <p class="hint rot">ПОВЕРНИ ТЕЛЕФОН — ТАК УДОБНЕЕ</p>
         </div>
@@ -141,15 +141,16 @@ img{max-width:100%}
       <div class="menu">
         <h2 class="logo sm">КАРЬЕРА<span>МИРОВОЕ ТУРНЕ</span></h2>
         <p class="tag" id="carInfo"></p>
-        <div class="items" id="carHub">
-          <button class="mi big go" id="miCarGo">МАРШРУТ</button>
-          <button class="mi" id="miCarNew">НОВАЯ КАРЬЕРА</button>
+        <div class="items" id="carPick">
+          <button class="mi big go" id="miCarCoach">ТРЕНЕР <small id="carCoachInfo">СВОЙ КЛУБ И МЕНЕДЖМЕНТ</small></button>
+          <button class="mi big" id="miCarPlayer">ИГРОК <small id="carPlayerInfo">ОДИН ПРОТИВ ВСЕХ</small></button>
           <button class="mi dim" id="miCarBack">НАЗАД</button>
         </div>
-        <div class="items" id="carNew" hidden>
-          <button class="mi big" id="miNewTeam">СВОЯ КОМАНДА <small>СОЗДАЙ КЛУБ</small></button>
-          <button class="mi big" id="miNewPlayer">СВОЙ ИГРОК <small>ВСТУПИ В КОМАНДУ</small></button>
-          <button class="mi dim" id="miCarNewBack">НАЗАД</button>
+        <div class="items" id="carHub" hidden>
+          <button class="mi big go" id="miCarGo">МАРШРУТ</button>
+          <button class="mi" id="miSquadOpen">КОМАНДА <small>ТАКТИКА · ТРАНСФЕРЫ</small></button>
+          <button class="mi" id="miCarNew">НОВАЯ КАРЬЕРА</button>
+          <button class="mi dim" id="miCarHubBack">НАЗАД</button>
         </div>
       </div>
     </div>
@@ -165,6 +166,16 @@ img{max-width:100%}
       </div>
     </div>
 
+    <div class="ov" id="ovSquad" hidden>
+      <div class="menu squad">
+        <h2 class="logo sm">КОМАНДА<span id="sqInfo"></span></h2>
+        <div class="items row"><button class="mi" id="miTactic">ТАКТИКА <b>БАЛАНС</b></button><button class="mi dim" id="miSquadBack">ГОТОВО</button></div>
+        <ol class="sqlist" id="sqList"></ol>
+        <p class="tag">ТРАНСФЕРНЫЙ РЫНОК</p>
+        <div class="sqmarket" id="sqMarket"></div>
+      </div>
+    </div>
+
     <div class="ov" id="ovTour" hidden>
       <div class="menu">
         <h2 class="logo sm">МИРОВОЕ ТУРНЕ<span id="tourWho"></span></h2>
@@ -173,7 +184,7 @@ img{max-width:100%}
         <p class="tag meta" id="tourMeta"></p>
         <p class="tag goal" id="tourGoal"></p>
         <ul class="news" id="tourNews"></ul>
-        <div class="items row"><button class="mi big go" id="miFly">ЛЕТИМ!</button><button class="mi dim" id="miTourBack">В МЕНЮ</button></div>
+        <div class="items row"><button class="mi big go" id="miFly">ЛЕТИМ!</button><button class="mi" id="miTourSquad">КОМАНДА</button><button class="mi dim" id="miTourBack">НАЗАД</button></div>
       </div>
     </div>
 
