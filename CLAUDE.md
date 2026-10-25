@@ -1,6 +1,6 @@
 # Azzurri Arcade — notes for Claude Code
 
-Retro arcade football in the spirit of Goal 3 / Kunio-kun (NES): 5 clubs (Napoli, Roma, Rhodesia, Zimbabwe, North Korea),
+Retro arcade football in the spirit of Goal 3 / Kunio-kun (NES): 17 countries (real, joke and mythical: Rhodesia/Zimbabwe, North Korea, Atlantis, Agartha…),
 11-on-11 «РЕАЛЬНОСТЬ» and 1v1/2v2 «АРКАДА», keepers, anime-parody supers, chibi pixel players,
 oblique side view, no rules (tackles, knock-downs), weather, super shots, taunt emotes.
 The owner plays it on a **phone** (iPhone, landscape) and wants to play **online with a friend**.
@@ -60,7 +60,7 @@ All graphics are drawn by code (sprites built pixel by pixel in `getSprite`, fie
 - **Sprites** — `getSprite(team|club, pose, expr, frame, view, {look, gk, ssj, num})`, 40×40 cells, cached by
   club code. Poses: idle, run(0–2), kick, charge, cheer, tackle, fall, dive, shock (skeleton). Expressions:
   normal, grit, shout, bulge, cry. `lookOf(p)` builds the options for a player (gold hair = `SSJ`).
-- **Emotes** — Roma players show pixel icons in speech bubbles (`emote()`, `updEmotes()`).
+- **Emotes** — the opponents show pixel icons in speech bubbles (`emote()`, `updEmotes()`).
 - **Audio** — WebAudio square/noise SFX (`sfx`) and a chiptune loop. `sfx()` also relays to the online guest.
 - **Game state** — `players[]` (`buildTeams(MODE)`: 1/2 arcade with keepers last, 11 = `F442`), `ball`, `game`,
   `MODE`, `setPitch`. Player state machine `ST`: IDLE, RUN, KICK, TACKLE, FALL, STUN, DIVE.

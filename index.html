@@ -21,7 +21,7 @@ img{max-width:100%}
 <body>
 <div id="app">
   <div id="stage">
-    <div id="screen"><canvas id="cv" width="320" height="180" aria-label="Футбольное поле: Наполи против Ромы"></canvas></div>
+    <div id="screen"><canvas id="cv" width="320" height="180" aria-label="Футбольное поле"></canvas></div>
 
     <div class="ov" id="ovMenu">
       <div class="menu main">
@@ -64,7 +64,7 @@ img{max-width:100%}
 
     <div class="ov" id="ovTeams" hidden>
       <div class="menu teams">
-        <h2 class="logo sm">11 НА 11<span>ВЫБОР СТРАН</span></h2>
+        <h2 class="logo sm" id="teamsTitle">11 НА 11<span>ВЫБОР СТРАН</span></h2>
         <div class="vs">
           <div class="card"><p class="who">ТЫ</p>
             <div class="pickrow"><button class="arr" id="tPrev0" aria-label="Предыдущая команда">&lt;</button><canvas class="kit" id="kit0" width="40" height="40"></canvas><button class="arr" id="tNext0" aria-label="Следующая команда">&gt;</button></div>
@@ -89,7 +89,7 @@ img{max-width:100%}
         <h2 class="logo" style="font-size:20px">С ДРУГОМ<span>ONLINE</span></h2>
         <p class="tag" id="netStatus" style="margin:0" aria-live="polite">ПОДКЛЮЧЕНИЕ…</p>
         <div class="items" id="nIdle">
-          <button class="mi" id="miHostCoop">ВМЕСТЕ ПРОТИВ РОМЫ</button>
+          <button class="mi" id="miHostCoop">ВМЕСТЕ ПРОТИВ КОМПА</button>
           <button class="mi" id="miHostVs">ДРУГ ПРОТИВ ДРУГА</button>
           <button class="mi" id="miJoinCode">ВОЙТИ ПО КОДУ</button>
           <div class="items" id="gameList"></div>
@@ -119,17 +119,17 @@ img{max-width:100%}
         </div>
         <button class="mi dim" id="miHelpMore">ВСЕ ПРИЁМЫ ▼</button>
         <div class="cards" id="helpMore" hidden>
-          <div class="card help"><canvas class="anim" data-a="furia" width="80" height="48" aria-hidden="true"></canvas><div><b style="color:#ffe14a">СУПЕР-САЙЯН</b><p>Шкала FURIA под счётом растёт от игры: ведёшь мяч, отбираешь, сбивают тебя. Полная — волосы золотые, доступен один супер-удар.</p></div></div>
-          <div class="card help"><canvas class="anim" data-a="tiger" width="80" height="48" aria-hidden="true"></canvas><div><b style="color:#ff9a3a">ТИГРИНЫЙ УДАР</b><p>FURIA + держи УДАР на бегу и отпусти. Мяч-тигр сносит всех на пути, даже вратаря.</p></div></div>
-          <div class="card help"><canvas class="anim" data-a="kame" width="80" height="48" aria-hidden="true"></canvas><div><b style="color:#7fe0ff">КАМЕХАМЕХА</b><p>FURIA + держи УДАР стоя. Шар энергии в руках — и луч летит прямо в ворота.</p></div></div>
-          <div class="card help"><canvas class="anim" data-a="rasen" width="80" height="48" aria-hidden="true"></canvas><div><b style="color:#7fe0ff">РАСЕНГАН</b><p>FURIA + мяч на уровне головы: просто жми УДАР. Удар через себя, шар петляет по штрафной.</p></div></div>
-          <div class="card help"><canvas class="anim" data-a="ora" width="80" height="48" aria-hidden="true"></canvas><div><b style="color:#ff6a9a">ОРА-ОРА-ОРА</b><p>FURIA + ПОДКАТ, когда соперник с мячом рядом. Серия ударов раскидывает всех.</p></div></div>
+          <div class="card help"><canvas class="anim" data-a="furia" width="80" height="48" aria-hidden="true"></canvas><div><b style="color:#ffe14a">ЗОЛОТАЯ БАШКА</b><p>Шкала FURIA под счётом растёт от игры: ведёшь мяч, отбираешь, сбивают тебя. Полная — волосы золотые, доступен один супер-удар.</p></div></div>
+          <div class="card help"><canvas class="anim" data-a="tiger" width="80" height="48" aria-hidden="true"></canvas><div><b style="color:#ff9a3a">ТИГРОПЕНДАЛЬ</b><p>FURIA + держи УДАР на бегу и отпусти. Мяч-тигр сносит всех на пути, даже вратаря.</p></div></div>
+          <div class="card help"><canvas class="anim" data-a="kame" width="80" height="48" aria-hidden="true"></canvas><div><b style="color:#7fe0ff">КЕФИРХАМЕХА</b><p>FURIA + держи УДАР стоя. Шар кефира в руках — и кефирный луч летит прямо в ворота.</p></div></div>
+          <div class="card help"><canvas class="anim" data-a="rasen" width="80" height="48" aria-hidden="true"></canvas><div><b style="color:#7fe0ff">ВЕРТОПЕЛЬМЕНЬ</b><p>FURIA + мяч на уровне головы: просто жми УДАР. Удар через себя, пельмень-вертушка петляет по штрафной.</p></div></div>
+          <div class="card help"><canvas class="anim" data-a="ora" width="80" height="48" aria-hidden="true"></canvas><div><b style="color:#ff6a9a">НА-НА-НА</b><p>FURIA + ПОДКАТ, когда соперник с мячом рядом. Серия ударов раскидывает всех.</p></div></div>
           <div class="card help"><canvas class="anim" data-a="gk" width="80" height="48" aria-hidden="true"></canvas><div><b style="color:#ffffff">ВРАТАРИ</b><p>Ныряют в углы, ловят и отбивают. Бей в угол подальше от вратаря.</p></div></div>
           <div class="card help"><canvas class="anim" data-a="skill" width="80" height="48" aria-hidden="true"></canvas><div><b style="color:#ffe14a">СКИЛЛ СТРАНЫ</b><p>У каждой страны своя кнопка-суперспособность: табун Монголии, метель Антарктиды, забастовка Франции… Пока заряжается — БУ!: загорается, когда соперник рядом, и пугает его (кто-то даже описается).</p></div></div>
           <div class="card help"><canvas class="anim" data-a="taunt" width="80" height="48" aria-hidden="true"></canvas><div><b style="color:#ff9ab8">ДРАЗНИЛКИ</b><p>Кнопка ХА! — твой игрок дразнит соперников. Смешно, но злит их: их FURIA растёт.</p></div></div>
           <div class="card help"><canvas class="anim" data-a="gags" width="80" height="48" aria-hidden="true"></canvas><div><b style="color:#ff9aff">НЕЛЕПИЦЫ</b><p>То чихнёт, то шнурки, то мама звонит, то голубь на голову. Лужи скользкие!</p></div></div>
-          <div class="card help"><canvas class="anim" data-a="chaos" width="80" height="48" aria-hidden="true"></canvas><div><b style="color:#ff6a5a">КАОС</b><p>В аркаде часто, в 11 на 11 и карьере реже: мяч-гигант, веспа с пиццей, луна, эспрессо, Везувий, гололёд. Последние 20 с — гол за 2.</p></div></div>
-          <div class="card help"><canvas class="anim" data-a="items" width="80" height="48" aria-hidden="true"></canvas><div><b style="color:#ffd23a">ПРЕДМЕТЫ</b><p>Пробеги по ним. Пицца — FURIA. Перчик — скорость и таран. Корнетто — тебя не сбить.</p></div></div>
+          <div class="card help"><canvas class="anim" data-a="chaos" width="80" height="48" aria-hidden="true"></canvas><div><b style="color:#ff6a5a">КАОС</b><p>В аркаде часто, в 11 на 11 и карьере реже: мяч-гигант, мопед с пиццей, луна, эспрессо, Везувий, гололёд. Последние 20 с — гол за 2.</p></div></div>
+          <div class="card help"><canvas class="anim" data-a="items" width="80" height="48" aria-hidden="true"></canvas><div><b style="color:#ffd23a">ПРЕДМЕТЫ</b><p>Пробеги по ним. Пицца — FURIA. Перчик — скорость и таран. Рожок — тебя не сбить.</p></div></div>
           <div class="card help"><canvas class="anim" data-a="fields" width="80" height="48" aria-hidden="true"></canvas><div><b style="color:#9fe8ff">ПОЛЯ МИРА</b><p>Снег вязкий, лёд скользкий, на пьяцце мяч скачет, под водой плывёт. И на поле выходят звери.</p></div></div>
         </div>
         <div class="items"><button class="mi" id="miHelpBack">ПОНЯТНО</button></div>
@@ -216,7 +216,7 @@ img{max-width:100%}
     <div class="ov" id="ovEnd" hidden>
       <div class="menu">
         <p class="tag" style="margin:0">ФИНАЛЬНЫЙ СВИСТОК</p>
-        <p class="final" id="finalScore">NAP <span class="sc">0 : 0</span> ROM</p>
+        <p class="final" id="finalScore">FRA <span class="sc">0 : 0</span> GER</p>
         <p class="sub" id="finalLine"></p>
         <div class="stars" id="finalStars" hidden></div>
         <div class="items">
@@ -229,7 +229,7 @@ img{max-width:100%}
 
     <div class="ov" id="ovBye" hidden>
       <div class="menu">
-        <h2 class="logo" style="font-size:20px">ДО ВСТРЕЧИ<span>FORZA NAPOLI</span></h2>
+        <h2 class="logo" style="font-size:20px">ДО ВСТРЕЧИ<span>ЖДЁМ НА ПОЛЕ</span></h2>
         <p class="sub">Игра остановлена. Вкладку можно просто закрыть.</p>
         <div class="items"><button class="mi" id="miBackFromBye">В МЕНЮ</button></div>
       </div>

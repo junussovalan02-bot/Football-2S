@@ -5,7 +5,7 @@
   const LOOK = {
     light: { skin:'#ffb88a', skinS:'#e0845a' }, tan: { skin:'#e8a070', skinS:'#c07848' },
     dark: { skin:'#8a5634', skinS:'#663c22' }, east: { skin:'#f6c898', skinS:'#d89c68' },
-    pale: { skin:'#ffd0b8', skinS:'#e8a088' }, sea: { skin:'#8fd8c0', skinS:'#5aa890' },
+    pale: { skin:'#ffd0b8', skinS:'#e8a088' }, agh: { skin:'#c8b8f0', skinS:'#9a88d0' }, sea: { skin:'#8fd8c0', skinS:'#5aa890' },
   };
   const hair = (hair, hairHi, style) => ({ hair, hairHi, style });
   const kit = (jersey, jerseyS, sleeve, sleeveS, trim, shorts, shortsS, socks, socksS, color, hudBg, extra) =>
@@ -17,16 +17,6 @@
   // emo: taunt emojis (keys of ICONS); home: pitch theme; flag: [colours], dir 'v' | 'h' | special;
   // uniform: every player looks the same (no beards/glasses...); special: slot -> features for one player
   const clubs = {
-    nap: Object.assign(kit('#4aa8f0','#2a74c4','#4aa8f0','#2a74c4','#ffffff','#ffffff','#b8c8e4','#4aa8f0','#2a74c4','#4aa8f0','#3d9be9'), {
-      code:'NAP', mascot:['ПИЦЦЕТТА','pizza','ФОРЦА!'], skill:'lava', name:'НАПОЛИ', home:'stadium', emo:['pizza','volcano'], flag:['#4aa8f0','#ffffff','#4aa8f0'], dir:'v',
-      gk: gk('#3ac85a','#249a40','#202030','#101018','#ffffff'),
-      looks: [{ ...LOOK.light, ...hair('#1a1420','#463c5e','spiky') }, { ...LOOK.tan, ...hair('#3a2414','#6a4428','spiky') }, { ...LOOK.light, ...hair('#2a1a10','#5a3a20','crop') }],
-      names: ['ЭСПОЗИТО','РУССО','КАПУАНО','ЙОРИО','АМАТО','ДЕ ЛУКА','ФЕРРАРА','ПАГАНО','КОППОЛА','ЧИРО','САВАСТАНО'] }),
-    rom: Object.assign(kit('#ffffff','#cfc4c8','#a01c2c','#6c0e1a','#a01c2c','#a01c2c','#6c0e1a','#ffffff','#cfc4c8','#ff5a6a','#2a1a20'), {
-      code:'ROM', mascot:['ВОЛЧАРА','wolf','АУУУ!'], skill:'shields', name:'РОМА', home:'piazza', emo:['wolf','pizza'], flag:['#a01c2c','#ffd23a'], dir:'v',
-      gk: gk('#ff9a2a','#d0701a','#202030','#101018','#100810'),
-      looks: [{ ...LOOK.light, ...hair('#a8381c','#d8622e','pomp') }, { ...LOOK.tan, ...hair('#3a2414','#6a4428','pomp') }, { ...LOOK.light, ...hair('#d8b040','#fff0a0','crop') }],
-      names: ['ДЖЕНТИЛЕ','РИЧЧИ','МАРКЕТТИ','КОНТИ','ГАЛЛИ','ФОНТАНА','РИНАЛЬДИ','БАССИ','ТЕСТА','СЕРРА','МАНКУЗО'] }),
     rho: Object.assign(kit('#2f9a4a','#1f6e34','#ffffff','#c8d0c8','#ffffff','#ffffff','#c8d0c8','#2f9a4a','#1f6e34','#4ac86a','#1f6e34'), {
       code:'RHO', mascot:['ПРИЗРАК','ghost','У-У-У!'], skill:'ghost', name:'РОДЕЗИЯ', home:'savanna', emo:['ghost','money'], flag:['#2f9a4a','#ffffff','#2f9a4a'], dir:'v',
       gk: gk('#2a2a3a','#16161e','#2a2a3a','#16161e','#ffd23a'),
@@ -73,7 +63,7 @@
       looks: [{ ...LOOK.tan, ...hair(BLACK,BLACKHI,'pomp') }, { ...LOOK.light, ...hair('#3a2414','#6a4428','spiky') }, { ...LOOK.tan, ...hair('#3a2414','#6a4428','crop') }],
       names: ['КАСАС','ГАРСИЯ','ЛОПЕС','МАРТИНЕС','САНЧЕС','ПЕРЕС','ГОМЕС','РУИС','ДИАС','МОРЕНО','ПАЭЛЬЯС'] }),
     por: Object.assign(kit('#a8142a','#780a1c','#a8142a','#780a1c','#2a9a3a','#2a9a3a','#1a6a26','#a8142a','#780a1c','#ff5a6a','#780a1c'), {
-      code:'POR', mascot:['ПЕТУХ ГАЛУ','rooster','КУКАРЕ-СИУ!'], skill:'feint', name:'ПОРТУГАЛИЯ', home:'beach', emo:['sardine','rooster'], flag:['#2a9a3a','#d8243a','#d8243a'], dir:'v',
+      code:'POR', mascot:['ПЕТУХ ГАЛУ','rooster','КУКАРЕ-ГОЛ!'], skill:'feint', name:'ПОРТУГАЛИЯ', home:'beach', emo:['sardine','rooster'], flag:['#2a9a3a','#d8243a','#d8243a'], dir:'v',
       gk: gk('#ffd23a','#e0a020','#202030','#101018','#202030'),
       looks: [{ ...LOOK.tan, ...hair(BLACK,BLACKHI,'spiky') }, { ...LOOK.tan, ...hair('#3a2414','#6a4428','pomp') }, { ...LOOK.dark, ...hair(BLACK,BLACKHI,'crop') }],
       names: ['КОШТА','СИЛВА','САНТУШ','ФЕРРЕЙРА','ПЕРЕЙРА','ОЛИВЕЙРА','РОДРИГЕШ','МАРТИНШ','СОУЗА','ГОМЕШ','САРДИНЬЯ'] }),
@@ -104,6 +94,13 @@
       gk: gk('#ff8a6a','#d8604a','#1a5a8a','#0e3a62','#ffe14a'),
       looks: [{ ...LOOK.sea, ...hair('#2a8a3a','#5ac86a','long') }, { ...LOOK.sea, ...hair('#1a5a6a','#3a8a9a','spiky') }, { ...LOOK.sea, ...hair('#ffe14a','#fff4b0','long') }],
       names: ['КРАБОС','НЕПТУНИС','ТРИТОНОС','КОРАЛЛИС','МЕДУЗИС','ЖЕМЧУГОС','ПРИЛИВИС','РИФОС','СКАТОС','АКВАРИС','ОСЬМИНОС'] }),
+    // Агарта: the legendary civilisation inside the hollow Earth (entrance at the poles, an inner sun, mammoths).
+    agh: Object.assign(kit('#5a2a9a','#3a1a6a','#2ad8c8','#1aa098','#ffd23a','#2a1a3a','#180e24','#5a2a9a','#3a1a6a','#b86aff','#3a1a6a'), {
+      code:'AGA', mascot:['МАМОНТ ГЕНА','mammoth','МЫ СНИЗУ!'], skill:'hole', name:'АГАРТА', home:'cavern', emo:['crystal','innersun'], flag:['#5a2a9a','#ffd23a','#100810'], dir:'sun',
+      gk: gk('#ffd23a','#d8a020','#2a1a3a','#180e24','#5a2a9a'),
+      looks: [{ ...LOOK.agh, ...hair('#e8e8f4','#ffffff','long') }, { ...LOOK.agh, ...hair('#b86aff','#e0b8ff','spiky') }, { ...LOOK.agh, ...hair('#2ad8c8','#8ff8f0','pomp') }, { ...LOOK.agh, ...hair('#e8e8f4','#ffffff','crop') }],
+      special: { 1: 'bald beard', 9: 'glasses', 6: 'long band' },
+      names: ['ШАМБАЛОВ','ПОЛЫЙ','КРИСТАЛЛОВ','ГЛУБИНИН','ЯДРОВ','МАНТИЕВ','СТАЛАКТИТ','ПОДЗЕМНЫЙ','ЛАВОВ','МАГМИН','ПОЛЮСОВ'] }),
   };
 
   // 12x12 icons: one character per pixel, '.' = transparent, letters from the palette
@@ -159,6 +156,10 @@
       '....kkkk....','...kkkkkk...','..kkwkkwkk..','..kkkookkk..','..kwwwwwwk..','.kkwwwwwwkk.','.kkwwwwwwkk.','kk.wwwwww.kk','...wwwwww...','...kwwwwk...','...oo..oo...','............']),
     snowflake: P({ w:'#ffffff', b:'#8fe0ff' }, [
       '.....w......','...w.w.w....','....www.....','.w..bwb..w..','..w.bwb.w...','wwwwwbwwwww.','..w.bwb.w...','.w..bwb..w..','....www.....','...w.w.w....','.....w......','............']),
+    crystal: P({ c:'#b86aff', l:'#e0b8ff', d:'#7a3ac8', w:'#ffffff' }, [
+      '.....c......','....clc.....','....clc..c..','...clwlc.cl.','...clllc.cl.','.c.cllld.cl.','cl.clldd.cd.','cl.clldd.cd.','cd.clddd.dd.','cdccdddddd..','.dddddddd...','............']),
+    innersun: P({ k:'#3a2a4a', r:'#6a5a7a', y:'#ffd23a', o:'#ff9a1a', w:'#fff6b0' }, [
+      '...kkkkkk...','..kkrrrrkk..','.kkr....rkk.','kkr..yy..rkk','kr..ywwy..rk','kr.ywwwwy.rk','kr.yowwoy.rk','kr..yooy..rk','kkr..yy..rkk','.kkr....rkk.','..kkrrrrkk..','...kkkkkk...']),
     goose: P({ w:'#f4f4f4', s:'#c8c8d0', o:'#ff9a1a', k:'#141010' }, [
       '....www.....','...wwkw.....','...wwwwoo...','....ww.oo...','....ww......','....ww......','...wwww.....','.wwwwwwwww..','wwwwwwwwwsw.','.wwwwwwwsw..','..sssssss...','...o...o....']),
     mic: P({ k:'#3a3a48', s:'#8a8a9a', w:'#d8d8e4', r:'#d8243a' }, [
@@ -213,6 +214,8 @@
                  phys:{ bounce:1.5, fric:0.75 }, weather:'clear', critter:'pigeon' },
     gobi:      { name:'ГОБИ', grass:['#e8b870','#dca864','#d09c58','#e4b46c'], line:'#fff4e0', track:['#c88a4a','#b07a40'], back:'dunes',
                  phys:{ fric:1.8, bounce:0.6, speed:0.92 }, weather:'clear', critter:'camel', wind:70, dust:true },
+    cavern:    { name:'ПОЛАЯ ЗЕМЛЯ', grass:['#3a8a7a','#368070','#327666','#3c8c78'], line:'#9ff8ff', track:['#3a2a4a','#2a1e38'], back:'cavern',
+                 phys:{ grav:0.75, speed:1.05 }, weather:'clear', critter:'mammoth', tint:'rgba(90,40,160,.12)', sparks:true },
     underwater:{ name:'ДНО ОКЕАНА', grass:['#d8c890','#ccbc84','#c0b078','#d4c48c'], line:'#ffffff', track:['#2a6a8a','#1a5a7a'], back:'reef',
                  phys:{ grav:0.45, air:0.5, speed:0.9 }, weather:'clear', critter:'shark', tint:'rgba(20,90,160,.22)', bubbles:true },
   };

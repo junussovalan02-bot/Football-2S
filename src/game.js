@@ -28,7 +28,7 @@ const PAL = { skin:'#ffb88a', skinS:'#e0845a', white:'#ffffff', ink:'#100810', m
 const { clubs: CLUBS, icons: ICONS, themes: THEMES, LOOK } = window.AZZ_DATA;
 const CLUB_KEYS = Object.keys(CLUBS);
 const SSJ = { hair:'#ffe14a', hairHi:'#fff6b0', style:'spiky' };   // full FURIA: super saiyan hair
-let TEAMS = [CLUBS.nap, CLUBS.rom];                                  // side 0 (you) and side 1 in the current match
+let TEAMS = [CLUBS.fra, CLUBS.ger];                                  // side 0 (you) and side 1 in the current match
 function setTeams(a, b) { TEAMS = [CLUBS[a], CLUBS[b]]; }
 
 // ================== sprites (40x40 cells, anchor = feet at (20,39)) ==================
@@ -232,8 +232,8 @@ const EMO = {
   laugh: makeIcon(r => { face(r, YL, YS); r(3,3,1,1,K); r(2,4,1,1,K); r(4,4,1,1,K); r(8,3,1,1,K); r(7,4,1,1,K); r(9,4,1,1,K);
     r(3,6,6,1,K); r(3,7,6,1,'#ffffff'); r(3,8,6,1,'#e8344a'); r(4,9,4,1,K); r(0,5,1,2,TB); r(11,5,1,2,TB); }),
   tongue: makeIcon(r => { face(r, YL, YS); r(3,3,2,2,K); r(7,4,2,1,K); r(3,7,6,1,K); r(5,8,3,3,'#ff6a8a'); r(6,9,1,1,'#d8345a'); }),
-  finger: makeIcon(r => { const S = PAL.skin, SS = PAL.skinS;
-    r(5,0,2,6,S); r(5,0,2,1,'#ffe0cc'); r(2,5,8,3,S); r(4,5,1,2,SS); r(7,5,1,2,SS); r(3,8,6,3,S); r(1,7,2,2,S); r(8,8,1,3,SS); r(3,11,6,1,'#a01c2c'); }),
+  finger: makeIcon(r => { const S = PAL.skin, SS = PAL.skinS;   // thumbs down (was a rude finger: not for app stores)
+    r(2,0,8,2,'#a01c2c'); r(2,2,8,5,S); r(2,2,8,1,'#ffe0cc'); r(4,3,1,3,SS); r(6,3,1,3,SS); r(8,3,1,3,SS); r(4,7,3,4,S); r(4,10,3,1,SS); r(6,7,1,4,SS); }),
   zzz: makeIcon(r => { const B = '#4aa8f0'; r(5,0,6,1,B); r(9,1,1,1,B); r(8,2,1,1,B); r(7,3,1,1,B); r(6,4,1,1,B); r(5,5,6,1,B);
     r(0,7,4,1,B); r(2,8,1,1,B); r(1,9,1,1,B); r(0,10,4,1,B); })
 };
@@ -287,9 +287,10 @@ const SKILLS = {
   cannon:    { name: 'ПУШКА!', short: 'ПУШКА', desc: 'ядро прошивает защиту насквозь' },
   miracle:   { name: 'ЧУДО!', short: 'ЧУДО', desc: 'следующий удар вратарь не возьмёт' },
   tsunami:   { name: 'ЦУНАМИ!', short: 'ВОЛНА', desc: 'волна смывает соперников к их воротам' },
+  hole:      { name: 'ПОЛАЯ ЗЕМЛЯ!', short: 'ДЫРА', desc: 'соперники проваливаются под землю и вылезают у своих ворот' },
 };
 const SKILL_KEYS = Object.keys(SKILLS);
-const RK = ['horse', 'bull', 'cannon', 'wave', 'eagle', 'rocket', 'lava', 'camel'], FRZ = ['strike', 'ice', 'phone', 'poop', 'dance', 'sneeze', 'order'];
+const RK = ['horse', 'bull', 'cannon', 'wave', 'eagle', 'rocket', 'lava', 'camel', 'hole'], FRZ = ['strike', 'ice', 'phone', 'poop', 'dance', 'sneeze', 'order', 'under'];
 const TXTS = ['ОПИСАЛСЯ!', 'АПЧХИ!', 'ШНУРКИ!', 'АЛЛО, МАМА?', 'ГОЛУБЬ!', 'ТАНЦУЕТ!', 'ПАУК!', 'БУ!', 'ДЗЫНЬ!', 'ТВОЙ ГОЛ!', 'НЕТ!'];
 let pees = [];
 // a word over someone's head (relayed to the online guest)
@@ -298,6 +299,12 @@ function freeze(q, k, t) {
   if (q.state === ST.FALL || q.state === ST.STUN) return;
   q.freeze = { k, t };
   if (ball.owner === q && ['strike', 'ice', 'order', 'sneeze'].includes(k)) { ball.owner = null; ball.lock = q; ball.lockT = 0.6; ball.vx = rnd(-60, 60); ball.vy = rnd(-60, 60); }
+}
+// back from the hollow Earth: out of a hole somewhere near your own goal, dizzy
+function popOut(q) {
+  const own = ownX(q.team), d = own === 0 ? 1 : -1;
+  q.x = clamp(own + d*rnd(30, LEN*0.25), 10, LEN - 10); q.y = rnd(15, WID - 15); q.vx = q.vy = 0;
+  const s0 = P(q.x, q.y); burst('dust', s0.x, s0.y); say(Math.random() < 0.5 ? 'ГДЕ Я?!' : 'ТАМ МАМОНТЫ!', q.x, q.y);
 }
 function pee(q) {
   pees.push({ x: q.x, y: q.y + 2, t: 12 }); if (pees.length > 12) pees.shift();
@@ -353,6 +360,11 @@ function useSkill(team) {
     case 'feint': { const q = ball.owner && ball.owner.team === team ? ball.owner : mates.filter(m => m.role !== 'gk').sort((a, b) => dist(a, ball) - dist(b, ball))[0]; if (q) { q.buff = 'feint'; q.buffT = 5; } break; }
     case 'bikes': for (const q of mates) if (q.role !== 'gk') q.cycle = 6; break;
     case 'miracle': game.miracle[team] = 9; break;
+    case 'hole': for (const q of field.sort((a, c) => dist(a, ball) - dist(c, ball)).slice(0, 4)) {   // into the hollow Earth
+      if (q.state === ST.FALL || q.state === ST.STUN) continue;
+      if (ball.owner === q) { ball.owner = null; ball.lock = q; ball.lockT = 0.6; ball.vx = rnd(-40, 40); ball.vy = rnd(-40, 40); }
+      R({ k: 'hole', x: q.x, y: q.y, life: 1.7 }); q.freeze = { k: 'under', t: 1.6 }; q.vx = q.vy = 0; }
+      sfx('boom'); break;
   }
   return true;
 }
@@ -369,6 +381,7 @@ function updRunners(dt) {
         if (Math.random() < 0.4) { const q = P(r.x - r.dir*12, r.y); spawn(q.x, q.y, -r.dir*30, rnd(-30, -10), 0.5, '#c8a870', 3, 30); }
         if (r.x < -100 || r.x > LEN + 100) done = true; break;
       case 'cannon': r.y += r.sp*dt; trample(r, 13, 200); { const q = P(r.x, r.y, r.z); spawn(q.x, q.y, rnd(-10, 10), -20, 0.6, '#a0a0a8', 3, -20); } if (r.y > WID + 30) done = true; break;
+      case 'hole': if (r.t > (r.life || 1.7)) done = true; break;
       case 'wave': r.x += r.dir*r.sp*dt;
         for (const q of players) if (q.team !== r.team && !r.hit.has(q) && Math.abs(q.x - r.x) < 14) { r.hit.add(q); knockDown(q, r.dir, rnd(-0.3, 0.3), 230, 'bulge', 90); }
         if (!b.owner && Math.abs(b.x - r.x) < 16 && b.z < 20) b.vx = r.dir*Math.max(Math.abs(b.vx), 300);
@@ -390,6 +403,11 @@ function updRunners(dt) {
     }
     if (done) game.runners.splice(i, 1);
   }
+}
+function drawHole(r) {   // a dark pit with a purple glow from the hollow Earth below
+  const s0 = S(r.x, r.y), k = Math.min(1, r.t*5), rx = Math.round(12*k), ry = Math.max(1, Math.round(4*k));
+  pellipse(s0.x, s0.y, rx + 2, ry + 1, '#b86aff'); pellipse(s0.x, s0.y, rx, ry, '#100810');
+  if (Math.random() < 0.5) { const q = P(r.x + rnd(-8, 8), r.y); spawn(q.x, q.y, rnd(-10, 10), rnd(-40, -15), 0.5, Math.random() < 0.5 ? '#b86aff' : '#e0b8ff', 2, 0); }
 }
 function drawRunner(r) {
   const s0 = S(r.x, r.y), x = Math.round(s0.x), y = Math.round(s0.y), z = Math.round(r.z || 0), fr = Math.floor(game.t*10) % 2;
@@ -445,6 +463,7 @@ const CRIT = {
   pigeon:   { speed: 140, r: 10, lift: 0, fly: 8, every: [8, 12], name: 'ГОЛУБИ!' },
   camel:    { speed: 50, r: 20, lift: 0, every: [12, 18], snd: 'moo', name: 'ВЕРБЛЮД!' },
   shark:    { speed: 230, r: 16, lift: 200, every: [11, 17], name: 'АКУЛА!' },
+  mammoth:  { speed: 55, r: 24, lift: 240, every: [13, 20], snd: 'trumpet', name: 'МАМОНТ!' },
 };
 const CRITSPR = (() => {
   const mk = (w, h, fn) => { const c = document.createElement('canvas'); c.width = w; c.height = h; const g = c.getContext('2d');
@@ -452,6 +471,10 @@ const CRITSPR = (() => {
   const two = (w, h, fn) => [mk(w, h, r => fn(r, 0)), mk(w, h, r => fn(r, 1))];
   const K = PAL.ink;
   return {
+    mammoth: two(38, 28, (r, f) => { const G = '#8a5a2a', D = '#6a4220', L = '#a8743a';
+      r(4,7,23,14,G); r(6,5,18,3,D); r(23,3,11,12,G); r(21,4,4,10,D); r(31,12,3,10,G); r(29,22,3,2,G); r(5,8,3,2,L); r(12,6,3,2,L); r(18,7,3,2,L);
+      r(28,14,6,1,'#f4f0dc'); r(33,15,2,3,'#f4f0dc'); r(34,18,2,1,'#f4f0dc'); r(29,6,1,1,K); r(2,9,2,6,D);
+      for (const [x, k] of [[6,0],[11,1],[19,0],[23,1]]) r(x, 20, 4, 7 - (k === f ? 2 : 0), D); }),
     elephant: two(36, 26, (r, f) => { const G = '#9a9aa8', D = '#7a7a88';
       r(4,6,22,13,G); r(22,3,10,12,G); r(19,4,5,10,D); r(29,12,3,9,G); r(27,20,3,2,G); r(27,13,4,1,'#ffffff'); r(28,6,1,1,K); r(3,8,1,5,D);
       for (const [x, k] of [[6,0],[11,1],[18,0],[22,1]]) r(x, 18, 4, 6 - (k === f ? 2 : 0), D); }),
@@ -842,14 +865,14 @@ function electrocute(p) {
 // ================== CAOS: random events, pickups, flying players ==================
 const CHAOS = {
   giant:    { name: 'МЯЧ-ГИГАНТ!',     label: 'ГИГАНТ', dur: 9,  col: '#ffd23a' },
-  vespa:    { name: 'ПИЦЦА-ЭКСПРЕСС!', label: 'ВЕСПА',  dur: 7,  col: '#ff6a5a' },
+  vespa:    { name: 'ПИЦЦА-ЭКСПРЕСС!', label: 'МОПЕД',  dur: 7,  col: '#ff6a5a' },
   moon:     { name: 'ЛУНА!',           label: 'ЛУНА',   dur: 10, col: '#c8b8ff' },
   espresso: { name: 'ЭСПРЕССО!',       label: 'ТУРБО',  dur: 8,  col: '#e8b070' },
   quake:    { name: 'ВЕСУВИЙ!',        label: 'ТРЯСКА', dur: 6,  col: '#ff5a3a' },
   ice:      { name: 'ГОЛОЛЁД!',        label: 'ЛЁД',    dur: 9,  col: '#9fe8ff' },
 };
 const CHAOS_KEYS = Object.keys(CHAOS), ITEMS = ['pizza', 'pepper', 'horn'];
-const ITEMNAME = { pizza: '+FURIA', pepper: 'ПЕРЧИК!', horn: 'КОРНЕТТО!' };
+const ITEMNAME = { pizza: '+FURIA', pepper: 'ПЕРЧИК!', horn: 'РОЖОК!' };
 const VSPD = 290, BIGK = 2.5, X2T = 20;   // vespa speed, giant ball scale, last seconds when a goal counts double
 let chaosOn = true, items = [];
 const chaosIs = t => !!game.chaos && game.chaos.type === t;
@@ -933,6 +956,7 @@ function updChaos(dt) {
 }
 // cosmetic only (runs on the guest too): exhaust, falling rocks, chili flames, espresso steam
 function chaosFx(dt) {
+  if (TH.sparks && Math.random() < dt*10) spawn(cam.x + rnd(0, W), cam.y + rnd(20, H), rnd(-8, 8), rnd(-25, -8), rnd(1, 2), Math.random() < 0.5 ? '#e0b8ff' : '#8ff8f0', 1, -2);
   if (TH.bubbles && Math.random() < dt*14) spawn(cam.x + rnd(0, W), cam.y + H + 2, rnd(-6, 6), rnd(-50, -25), rnd(1.5, 3), Math.random() < 0.5 ? '#bfe8ff' : '#ffffff', Math.random() < 0.3 ? 2 : 1, -4);
   if (TH.leaves && Math.random() < dt*5) spawn(cam.x + rnd(0, W), cam.y - 2, rnd(10, 30), rnd(20, 40), rnd(2, 4), Math.random() < 0.5 ? '#6ad05a' : '#3a9a2a', 2, 0);
   if (TH.dust && Math.random() < dt*2) { const x = cam.x + rnd(0, W), y = cam.y + rnd(60, H); for (let k = 0; k < 8; k++) spawn(x + rnd(-6, 6), y, rnd(-30, 30), rnd(-40, -10), rnd(0.5, 1), '#d8a860', 2, 30); }
@@ -949,8 +973,8 @@ function chaosFx(dt) {
 
 // super shots, a nod to famous anime: running = tiger shot, standing = energy beam, overhead = spinning sphere,
 // FURIA + tackle when they have the ball close by = a barrage of punches
-const SUPERNAME = { tiger:'ТИГРИНЫЙ УДАР!', kame:'КАМЕХАМЕХА!', rasen:'РАСЕНГАН!', ora:'ОРА-ОРА-ОРА!' };
-const SUPERSHORT = { tiger:'ТИГР', kame:'КАМЕ', rasen:'РАСЕН' };
+const SUPERNAME = { tiger:'ТИГРОПЕНДАЛЬ!', kame:'КЕФИРХАМЕХА!', rasen:'ВЕРТОПЕЛЬМЕНЬ!', ora:'НА-НА-НА!' };
+const SUPERSHORT = { tiger:'ПЕНДАЛЬ', kame:'КЕФИР', rasen:'ПЕЛЬМЕНЬ' };
 // FURIA: each team fills one meter by playing; a full meter unlocks one super shot.
 function fury(team, n) {
   if (team !== 0 && team !== 1 || game.mode !== 'play') return;
@@ -959,7 +983,7 @@ function fury(team, n) {
   const was = game.fury[team]; game.fury[team] = clamp(was + n, 0, 100);
   if (was < 100 && game.fury[team] >= 100) {
     game.furyFlash[team] = 1.2;
-    if (players.some(p => p.team === team && p.local)) { game.announce = { text: 'СУПЕР-САЙЯН!', col: '#ffe14a', t: 1.3 }; buzz(25); }
+    if (players.some(p => p.team === team && p.local)) { game.announce = { text: 'ЗОЛОТАЯ БАШКА!', col: '#ffe14a', t: 1.3 }; buzz(25); }
     sfx('ready');
   }
 }
@@ -1063,7 +1087,7 @@ function updPlayer(p, dt) {
   const turbo = (chaosIs('espresso') ? 1.5 : 1)*(p.buff === 'pepper' ? 1.4 : 1)*(p.cycle > 0 ? 1.5 : 1)*(p.buff === 'feint' ? 1.3 : 1);
   const i = p.inp;
   p.peeT -= dt; p.poopT -= dt; p.ghost -= dt; p.cycle -= dt; p.scareCd -= dt;
-  if (p.freeze && (p.freeze.t -= dt) <= 0) p.freeze = null;
+  if (p.freeze && (p.freeze.t -= dt) <= 0) { if (p.freeze.k === 'under') popOut(p); p.freeze = null; }
   if (p.fear && (p.fear.t -= dt) <= 0) p.fear = null;
   if (p.freeze) { i.mx = i.my = 0; i.kickReleased = i.tacklePressed = i.kickHeld = false; }
   else if (p.fear) { i.mx = p.fear.dx; i.my = p.fear.dy; i.kickReleased = i.tacklePressed = false; i.sprint = true; }
@@ -1566,7 +1590,7 @@ function updPad() {
   if (key === PAD.key) return; PAD.key = key;
   PAD.root.style.setProperty('--team', TEAMS[p.team].color);
   for (const c of ['pass', 'ora', 'tackle']) PAD.B.classList.toggle(c, c === b);   // classList keeps the pressed state
-  PAD.lbB.textContent = b === 'pass' ? 'ПАС' : b === 'ora' ? 'ОРА!' : 'ПОДКАТ';
+  PAD.lbB.textContent = b === 'pass' ? 'ПАС' : b === 'ora' ? 'НА-НА!' : 'ПОДКАТ';
   PAD.A.classList.toggle('super', fr); PAD.A.classList.toggle('full', ch >= 20); PAD.lbA.textContent = blk ? 'БЛОК!' : fr ? 'СУПЕР' : 'УДАР'; PAD.A.classList.toggle('block', blk);
   PAD.ring.style.strokeDashoffset = String(100 - ch*5);
   PAD.S.classList.toggle('off', !sw);
@@ -1661,6 +1685,7 @@ const ADS = {
   steppe: ['КУМЫС', 'БАУРСАК', 'БЕШБАРМАК', 'СТЕПЬ TV'], sea: ['САРДИНЫ', 'СЁРФ', 'КРЕМ SPF', 'ПЛЯЖ TV'],
   windmills: ['ТЮЛЬПАН', 'СЫР', 'ВЕЛИК', 'МЕЛЬНИЦА'], ocean: ['ЯКОРЬ', 'РЫБА', 'МАЯК', 'ШТОРМ TV'],
   dunes: ['ВЕРБЛЮД', 'АЙРАГ', 'ЮРТА', 'ГОБИ TV'], colonnade: ['ДЖЕЛАТО', 'ФРЕСКА', 'КЛЮЧИ', 'ГЕЛАТО'], reef: ['КОРАЛЛ', 'ЖЕМЧУГ', 'ПУЗЫРИ', 'НЕПТУН'],
+  cavern: ['КРИСТАЛЛЫ', 'МАГМА TV', 'ВХОД С ПОЛЮСА', 'МАМОНТЫ'],
 };
 const BOARDCOL = [['#1d4f8f','#ffffff'], ['#d8344a','#ffffff'], ['#f4f1e6','#1d4f8f'], ['#1a1420','#f2c230'], ['#4aa8f0','#ffffff'], ['#ffffff','#d8344a']];
 // paints the strip above the ad boards (0..bot) for a theme: stands, sky, landscape
@@ -1762,6 +1787,13 @@ function drawBack(g, kind, bot, FW, rr) {
         R(x, bot - h, 3, h, c); R(x - 2, bot - h + 2, 2, 3, c); R(x + 3, bot - h + 4, 2, 3, c); }
       for (let k = 0; k < FW/40; k++) { const x = rr()*FW, y = 6 + rr()*(bot - 20); R(x, y, 5, 3, '#ffd23a'); R(x + 5, y + 1, 2, 1, '#ffd23a'); R(x - 2, y, 2, 3, '#ff8a1a'); }
       break; }
+    case 'cavern': {   // the hollow Earth: a rock vault, stalactites, glowing crystals and the inner sun
+      sky(['#1a0e2a', '#24123a', '#2e184a', '#3a1e5a']);
+      const sx = FW/2; for (let k = 6; k > 0; k--) R(sx - k*5, 2 + (6 - k)*0.6, k*10, k*2, k > 4 ? 'rgba(255,210,60,.12)' : k > 2 ? 'rgba(255,200,60,.35)' : '#ffe14a');
+      for (let x = 0; x < FW; x += 8 + (rr()*14|0)) { const h = 4 + (rr()*12|0); R(x, 0, 4, h, '#120a1e'); R(x + 1, h, 2, 2, '#120a1e'); }
+      for (let x = 0; x < FW; x += 12 + (rr()*18|0)) { const c = ['#b86aff', '#2ad8c8', '#e0b8ff'][rr()*3|0], h = 4 + (rr()*9|0);
+        R(x, bot - h, 3, h, c); R(x + 1, bot - h - 2, 1, 2, c); R(x + 3, bot - h + 3, 2, h - 3, c); R(x, bot - h, 1, h, 'rgba(255,255,255,.4)'); }
+      break; }
     default: crowd('#100e1a', false);
   }
 }
@@ -1773,6 +1805,7 @@ function drawFore(g, kind, FW, FH, rr) {
     const y = top + 2 + rr()*Math.max(1, FH - top - 12);
     switch (kind) {
       case 'savanna': R(x, y, 1, 6, '#8a7a2a'); R(x + 2, y - 2, 1, 8, '#a89a3a'); R(x + 4, y + 1, 1, 5, '#8a7a2a'); if (rr() < 0.2) R(x + 8, y + 3, 6, 3, '#9a8a7a'); break;
+      case 'cavern': { const c = ['#b86aff', '#2ad8c8'][rr()*2|0]; R(x, y - 5, 2, 7, c); R(x + 2, y - 2, 2, 4, c); R(x, y - 5, 1, 7, '#ffffff'); break; }
       case 'bamboo': R(x, y - 6, 2, 12, '#4aa83a'); R(x, y - 2, 2, 1, '#1a5014'); R(x + 3, y - 3, 2, 9, '#3a8a2a'); R(x + 2, y - 5, 4, 1, '#6ad05a'); break;
       case 'snowcrowd': R(x, y, 12, 4, '#ffffff'); R(x + 2, y - 2, 8, 2, '#f4f8fc'); R(x + 1, y + 3, 10, 1, '#c8d8e8'); break;
       case 'icebergs': if (rr() < 0.5) { R(x, y - 4, 4, 6, '#202030'); R(x + 1, y - 2, 2, 4, '#ffffff'); R(x + 1, y - 4, 2, 1, '#ff9a1a'); } else { R(x, y, 10, 5, '#d8f0fc'); R(x, y, 10, 1, '#ffffff'); } break;
@@ -1799,6 +1832,9 @@ function drawFlagIcon(g, c, x, y, w, h) {
       R(cx - 1, 2, 2, 1, '#ffd23a'); R(cx - 2, 4, 4, 2, '#ffd23a'); R(cx - 1, 7, 2, Math.max(1, h - 9), '#ffd23a'); break; }
     case 'kaz': { R(0, 0, w, h, f[0]); const cx = w >> 1, cy = (h >> 1) - 1; R(cx - 2, cy - 2, 4, 4, '#ffd23a'); R(cx - 1, cy - 3, 2, 6, '#ffd23a'); R(cx - 3, cy - 1, 6, 2, '#ffd23a');
       R(cx - 4, cy + 3, 8, 1, '#ffd23a'); R(1, 1, 1, h - 2, '#ffd23a'); break; }
+    case 'sun': { R(0, 0, w, h, f[0]); const cx = w >> 1, cy = h >> 1, r = Math.max(2, Math.floor(h/3));   // the inner sun in the hollow Earth
+      for (let dy = -r; dy <= r; dy++) { const hw = Math.round(Math.sqrt(r*r - dy*dy)); R(cx - hw, cy + dy, hw*2, 1, f[1]); }
+      R(cx - 1, cy - 1, 2, 2, f[2]); R(0, 0, w, 1, f[1]); R(0, h - 1, w, 1, f[1]); break; }
     default: for (let i = 0; i < f.length; i++) R(Math.floor(w*i/f.length), 0, Math.ceil(w/f.length), h, f[i]);
   }
 }
@@ -1923,6 +1959,7 @@ function buildSnap() {
     it: items.map(i => [ITEMS.indexOf(i.type), r1(i.x), r1(i.y), r1(i.t)]),
     pe: pees.map(q => [Math.round(q.x), Math.round(q.y)]), sk: [r1(game.skillCd[0]), r1(game.skillCd[1])], bm: ball.miracle ? 1 : 0,
     ru: game.runners.map(r => [RK.indexOf(r.k), r1(r.x), r1(r.y), r1(r.z || 0), r.dir || 1, r.team]),
+    tm: TEAMS.map(t => CLUB_KEYS.find(k => CLUBS[k] === t) || 'fra'),
     ho: [game.half, game.flip, game.show ? (game.show.kind === 'half' ? 2 : 1) : 0, game.show ? r2(game.show.t) : 0, game.show ? game.show.j : 0, game.show && game.show.wx || 0, game.mode === 'count' ? r2(game.count) : 0],
     bk: game.block ? [game.block.team, Math.round(game.block.taps)] : 0,
     ev: NET.ev };
@@ -2028,12 +2065,12 @@ function renderLobby() {
   if (!NET.ready) {
     view(null); back.textContent = 'НАЗАД';
     st.textContent = NET.room === false ? 'ОНЛАЙН НЕДОСТУПЕН' : 'ПОДКЛЮЧЕНИЕ…';
-    if (NET.room === false) hint.textContent = 'Модуль связи не загрузился. Проверь интернет и обнови страницу. Против Ромы можно играть и без него.';
+    if (NET.room === false) hint.textContent = 'Модуль связи не загрузился. Проверь интернет и обнови страницу. Против компьютера можно играть и без него.';
     return;
   }
   back.textContent = NET.role === 'solo' && !NET.joining && NET.ui !== 'enter' ? 'НАЗАД' : 'ОТМЕНА';
   if (NET.role === 'host') {
-    const what = NET.mode === 'vs' ? 'ДРУГ ПРОТИВ ДРУГА' : 'ВМЕСТЕ ПРОТИВ РОМЫ';
+    const what = NET.mode === 'vs' ? 'ДРУГ ПРОТИВ ДРУГА' : 'ВМЕСТЕ ПРОТИВ КОМПА';
     if (!NET.hostReady) { view(null); st.textContent = what + ' · СОЗДАЁМ ИГРУ…'; return; }
     view('nCode'); $('codeBig').textContent = NET.code;
     const L = NET.room.links ? NET.room.links() : null, up = !L || L.direct || L.relay;
@@ -2080,7 +2117,7 @@ function guestSendInput() {
 }
 function applySnap(s) {
   if (s.mid !== NET.mid) {
-    NET.mid = s.mid; NET.mode = s.md; MODE = s.md === 'vs' ? 1 : 2; setTeams('nap', 'rom'); setTheme('stadium'); setPitch(MODE); buildTeams(MODE); game.pv = -1; parts = [];
+    NET.mid = s.mid; NET.mode = s.md; MODE = s.md === 'vs' ? 1 : 2; setTeams(...(s.tm && CLUBS[s.tm[0]] && CLUBS[s.tm[1]] ? s.tm : ['fra', 'ger'])); setTheme('stadium'); setPitch(MODE); buildTeams(MODE); game.pv = -1; parts = [];
     NET.lastEv = s.ev && s.ev.length ? s.ev[s.ev.length-1][0] : 0; showOv(null); startMusic();
     s.P.forEach((a, i) => { if (players[i]) { players[i].x = a[0]; players[i].y = a[1]; } });
     ball.x = s.B[0]; ball.y = s.B[1]; updCamera(0, true);
@@ -2235,7 +2272,7 @@ function updShow(dt) {
   startCount();
 }
 // ---- 3..2..1 and somebody yells something stupid, then the match runs
-const SHOUTS = ['ПОЕХАЛИ!', 'ЗА МАМУ!', 'ЗА ГУСЯ!', 'БЕЙ-БЕГИ!', 'ГДЕ МОИ БУТСЫ?!', 'ДАВИ ИХ!', 'ПОГНАЛИ!', 'ОРА-ОРА!', 'БАНЗАЙ!',
+const SHOUTS = ['ПОЕХАЛИ!', 'ЗА МАМУ!', 'ЗА ГУСЯ!', 'БЕЙ-БЕГИ!', 'ГДЕ МОИ БУТСЫ?!', 'ДАВИ ИХ!', 'ПОГНАЛИ!', 'НА-НА-НА!', 'БАНЗАЙ!',
   'ФОРЦА!', 'НАЧИНАЕМ БЕЗОБРАЗИЕ!', 'КТО НЕ СКАЧЕТ...', 'МАМА, Я В ТЕЛЕКЕ!', 'ВКЛЮЧАЙ ЧИТЫ!', 'Я ЗАБЫЛ ПРАВИЛА!', 'А ГДЕ СУДЬЯ?'];
 const COUNT_LEN = 2.4;
 function startCount() { game.mode = 'count'; game.count = COUNT_LEN; game.countN = 4; sfx('beep'); }
@@ -2284,11 +2321,11 @@ function drawCount() {
 // A spec paints the body with the helpers below; legs and arms are shared: walk frames swing them, 'dance'
 // raises the arms, 'flex' shows the biceps. Cached per type, pose, blink and club (some wear the club's kit).
 const MW = 48, MH = 60, MCX = 24, MFY = 58, MSPR = new Map();
-const MASC_STYLE = { penguin: 'flex', bull: 'flex', wolf: 'flex', horse: 'flex', ghost: 'float' };
+const MASC_STYLE = { penguin: 'flex', bull: 'flex', wolf: 'flex', horse: 'flex', mammoth: 'flex', ghost: 'float' };
 const MASC_BY_EMO = { pizza: 'pizza', volcano: 'pizza', wolf: 'wolf', ghost: 'ghost', money: 'note', rocket: 'rocket', horse: 'horse', ger: 'horse', bow: 'horse',
   eagle: 'eagle', bowl: 'eagle', baguette: 'baguette', croissant: 'baguette', beret: 'baguette', sausage: 'sausage', pretzel: 'sausage', tea: 'teapot', umbrella: 'teapot',
   bull: 'bull', paella: 'bull', rooster: 'rooster', sardine: 'fish', cheese: 'cheese', tulip: 'cheese', clog: 'cheese', penguin: 'penguin', snowflake: 'penguin',
-  crab: 'crab', anchor: 'crab', candle: 'candle', key: 'candle', fish: 'fish', trident: 'fish' };
+  crab: 'crab', anchor: 'crab', candle: 'candle', key: 'candle', fish: 'fish', trident: 'fish', crystal: 'mammoth', innersun: 'mammoth' };
 function mascotSprite(type, pose, blink, club) {
   const key = type + '|' + pose + '|' + (blink ? 1 : 0) + '|' + club.code; let c = MSPR.get(key); if (c) return c;
   c = document.createElement('canvas'); c.width = MW; c.height = MH; const g = c.getContext('2d');
@@ -2334,6 +2371,15 @@ function mascotSprite(type, pose, blink, club) {
   outline(g, PAL.ink, MW, MH); MSPR.set(key, c); return c;
 }
 const MASC = {
+  mammoth(R, E, H, f) {   // a shaggy mammoth from the hollow Earth, walking upright, crystal necklace
+    H.legs(45, '#8a5a2a', '#4a2a10', { w: 5, gap: 1, shoeW: 7, shoeH: 3 });
+    E(MCX, 34, 12, 12, '#8a5a2a'); for (let k = 0; k < 6; k++) R(14 + k*4, 38 + (k % 2)*2, 2, 6, '#6a4220'); R(16, 28, 3, 2, '#a8743a'); R(26, 30, 3, 2, '#a8743a');
+    E(25, 16, 9, 8, '#8a5a2a'); R(16, 10, 4, 12, '#6a4220'); R(31, 18, 4, 14, '#8a5a2a'); R(33, 30, 3, 3, '#8a5a2a');
+    R(27, 22, 7, 2, '#f4f0dc'); R(33, 20, 2, 3, '#f4f0dc'); R(18, 7, 10, 3, '#6a4220');
+    R(18, 26, 14, 2, '#5a2a9a'); E(25, 29, 2, 2, '#b86aff'); R(24, 28, 1, 1, '#ffffff');
+    H.eyes(24, 13, { one: true, brow: 1 }); if (f.talk) R(28, 21, 3, 1, PAL.ink);
+    H.arms(11, 30, '#8a5a2a', '#6a4220', { w: 5, len: 9, hw: 5, hh: 3, hi: '#a8743a' });
+  },
   penguin(R, E, H, f) {   // ПИНГВИН-КАЧОК: abs, chain, sweatband and huge flippers
     H.legs(49, '#ff9a1a', '#ff9a1a', { w: 3, shoeW: 7 });
     E(MCX, 35, 11, 15, '#202030'); E(MCX + 1, 38, 7, 11, '#f4f4f4');
@@ -2575,8 +2621,8 @@ function showOv(id) {
 function startMatch(mode, opt) {
   if (NET.role === 'guest') return;
   game.career = !!(opt && opt.career); game.lastOpt = opt || null; game.myGoals = 0;
-  if (opt) setTeams(opt.a, opt.b); else if (mode === 11) setTeams(CLUB_KEYS[pick[0]], CLUB_KEYS[pick[1]]); else setTeams('nap', 'rom');
-  setTheme(opt ? opt.theme : mode === 11 ? (fieldPick || TEAMS[1].home) : 'stadium');
+  if (opt) setTeams(opt.a, opt.b); else setTeams(CLUB_KEYS[pick[0]], CLUB_KEYS[pick[1]]);
+  setTheme(opt ? opt.theme : NET.role !== 'solo' ? 'stadium' : (fieldPick || TEAMS[1].home));
   game.critter = null; game.critterT = rnd(8, 14);
   MODE = mode; setPitch(mode); buildTeams(mode); if (game.career) placeMe(); NET.mid = (NET.mid + 1) % 100000; NET.rK = NET.rT = -1;
   game.len = mode === 11 ? MATCH11 : MATCH;
@@ -2596,7 +2642,8 @@ function derbyLine() {
   const c = TEAMS.map(t => t.code).sort().join('');
   if (MODE !== 11) return '';
   if (c === 'RHOZIM') return 'ДЕРБИ ОДНОЙ СТРАНЫ!';
-  if (c === 'NAPROM') return 'ДЕРБИ СОЛНЦА!';
+  if (c === 'AGAATL') return 'ДЕРБИ МИФОВ!';
+  if (c === 'AGAANT') return 'ВХОД ЧЕРЕЗ ПОЛЮС!';
   if (c === 'ENGGER') return 'ВЕЧНОЕ ПРОТИВОСТОЯНИЕ!';
   if (c === 'ESPPOR') return 'ИБЕРИЙСКОЕ ДЕРБИ!';
   if (c === 'FRAGER') return 'КЛАССИКА ЕВРОПЫ!';
@@ -2604,7 +2651,7 @@ function derbyLine() {
   return '';
 }
 function attract() {
-  game.mode = 'title'; game.paused = false; stopMusic(); MODE = 2; game.flip = 0; game.show = null; setTeams('nap', 'rom'); game.critter = null; game.career = false;
+  game.mode = 'title'; game.paused = false; stopMusic(); MODE = 2; game.flip = 0; game.show = null; setTeams(CLUB_KEYS[pick[0]], CLUB_KEYS[pick[1]]); game.critter = null; game.career = false;
   const th = themeKey !== 'stadium'; setTheme('stadium'); if (setPitch(2) || th) setWeather(game.weather === 'snow' ? 'rain' : game.weather || 'rain'); buildTeams(2);
   const c = WID/2;
   [[LEN/2-40, c-20], [LEN/2-90, c+30], [LEN/2+40, c+20], [LEN/2+90, c-30], [20, c], [LEN-20, c]].forEach(([x, y], i) => Object.assign(players[i], { x, y, fx: i % 4 < 2 && i !== 5 ? 1 : -1 }));
@@ -2625,7 +2672,9 @@ function syncSound() { for (const id of ['miSound', 'miSnd']) { $(id).innerHTML 
 const store = { get(k, d) { try { const v = localStorage.getItem('azz-' + k); return v === null ? d : JSON.parse(v); } catch (e) { return d; } },
   set(k, v) { try { localStorage.setItem('azz-' + k, JSON.stringify(v)); } catch (e) {} } };
 diff = clamp(store.get('diff', 1) | 0, 0, DIFFS.length - 1); chaosOn = store.get('chaos', true) !== false; weatherOn = store.get('wx', true) !== false;
-let pick = store.get('pick', [0, 2]), fieldPick = null;   // null = the opponent's home pitch
+let pick = store.get('pick', [0, 2]), fieldPick = null;
+if (!Array.isArray(pick) || pick.some(i => !(i >= 0 && i < CLUB_KEYS.length)) || pick[0] === pick[1]) pick = [CLUB_KEYS.indexOf('fra'), CLUB_KEYS.indexOf('ger')];   // old saves pointed at removed clubs
+let teamMode = 11;   // which match the team screen starts: 1, 2 or 11   // null = the opponent's home pitch
 const THEME_KEYS = Object.keys(THEMES);
 if (!Array.isArray(pick) || pick.length !== 2 || pick.some(v => !(v >= 0 && v < CLUB_KEYS.length)) || pick[0] === pick[1]) pick = [0, 2];
 function syncOpts() {
@@ -2646,7 +2695,7 @@ function renderTeams() {
   const codes = pick.map(k => CLUBS[CLUB_KEYS[k]].code).sort().join('');
   const opp = CLUBS[CLUB_KEYS[pick[1]]];
   $('miField').innerHTML = 'ПОЛЕ <b>' + (fieldPick ? THEMES[fieldPick].name : THEMES[opp.home].name + ' (ДОМА)') + '</b>';
-  $('derby').textContent = codes === 'RHOZIM' ? 'ДЕРБИ ОДНОЙ СТРАНЫ!' : codes === 'NAPROM' ? 'ДЕРБИ СОЛНЦА!' : codes.includes('PRK') ? 'МАТЧ ПОКАЖЕТ ЦТ КНДР' : '';
+  $('derby').textContent = codes === 'RHOZIM' ? 'ДЕРБИ ОДНОЙ СТРАНЫ!' : codes === 'AGAATL' ? 'ДЕРБИ МИФОВ!' : codes === 'AGAANT' ? 'ВХОД ЧЕРЕЗ ПОЛЮС!' : codes.includes('PRK') ? 'МАТЧ ПОКАЖЕТ ЦТ КНДР' : '';
 }
 function cycleField() {
   const i = fieldPick === null ? -1 : THEME_KEYS.indexOf(fieldPick);
@@ -2739,7 +2788,7 @@ function burst(kind, x, y, team, relayed) {
   if (kind === 'pick') { for (let i = 0; i < 16; i++) spawn(x, y, rnd(-70, 70), rnd(-90, -10), rnd(0.3, 0.6), ['#ffffff', '#ffd23a', '#ff6a5a'][i%3], 2, 160);
     const it = ITEMS[team || 0]; pops.push({ text: ITEMNAME[it], col: it === 'pizza' ? '#ffd23a' : it === 'pepper' ? '#ff6a3a' : '#ff9a9a', x, y: y - 8, t: 1 }); }
   if (kind === 'ora') { for (let i = 0; i < 6; i++) spawn(x, y, rnd(-80, 80), rnd(-80, 40), rnd(0.15, 0.3), i%2 ? '#ffe14a' : '#ffffff', 2, 0);
-    if (Math.random() < 0.15) pops.push({ text: 'ОРА!', col: Math.random() < 0.5 ? '#ffe14a' : '#ff6a9a', x: x + rnd(-10, 10), y, t: 0.6 }); }
+    if (Math.random() < 0.15) pops.push({ text: 'НА!', col: Math.random() < 0.5 ? '#ffe14a' : '#ff6a9a', x: x + rnd(-10, 10), y, t: 0.6 }); }
   if (kind === 'txt') pops.push({ text: TXTS[team || 0] || '!', col: TXTS[team] === 'ОПИСАЛСЯ!' ? '#ffe14a' : TXTS[team] === 'БУ!' ? '#ff6a6a' : '#ffffff', x, y, t: 1.3 });
   if (kind === 'lava') for (let i = 0; i < 24; i++) spawn(x, y, rnd(-80, 80), rnd(-120, -20), rnd(0.4, 0.9), ['#ff3a10', '#ff9a1a', '#ffe14a', '#3a2a2a'][i % 4], i % 3 ? 2 : 3, 300);
   if (kind === 'ding') for (let i = 0; i < 10; i++) spawn(x, y, rnd(-60, 60), rnd(-60, 20), rnd(0.2, 0.4), i%2 ? '#ffd23a' : '#ffffff', 2, 0);
@@ -2872,6 +2921,7 @@ function spriteFor(p) {
   return { spr: getSprite(p.team, pose, expr, frame, view, lookOf(p)), flip };
 }
 function drawPlayer(p) {
+  if (p.freeze && p.freeze.k === 'under') return;   // in the hollow Earth right now
   const s = S(p.x, p.y), x = Math.round(s.x), z = Math.round(p.z || 0), y = Math.round(s.y) - z, { spr, flip } = spriteFor(p);
   if (ball.owner === p && game.mode !== 'title') {   // who has the ball: a ring in the team colour
     const k = Math.floor(game.t*8) % 2; pellipseRing(x, y + z + 1, 13, 5, '#100810'); pellipseRing(x, y + z, 13, 5, k ? TEAMS[p.team].color : '#ffffff');
@@ -3026,7 +3076,7 @@ function drawHUD() {
   ptext(ctx, String(game.score[0]), c-11, HUD.y+7, 8, '#f2c230', 'center');
   ptext(ctx, ':', c+1, HUD.y+7, 8, '#ffffff', 'center');
   ptext(ctx, String(game.score[1]), c+13, HUD.y+7, 8, '#f2c230', 'center');
-  { // FURIA meters: NAP fills to the right, ROM to the left, blink when full
+  { // FURIA meters: side 0 fills to the right, side 1 to the left, blink when full
     const by = HUD.y + HUD.h + 1, half = Math.floor((sw - 8)/2);
     ctx.fillStyle = '#100810'; ctx.fillRect(x+2, by, sw-4, 5);
     for (const t of [0, 1]) {
@@ -3068,13 +3118,13 @@ function render() {
   if ((game.mode === 'goal' || game.banner) && ['crowd', 'snowcrowd', 'bricks'].includes(TH.back) && Math.floor(game.t*8) % 2)   // the crowd jumps
     ctx.drawImage(FCV, 0, 0, FCV.width, standH, -cam.x, -cam.y - 2, FCV.width, standH);
   if (chaosIs('ice')) { ctx.fillStyle = 'rgba(220,248,255,.34)'; ctx.fillRect(0, 0, W, H); }
-  for (const p of players) { const s = S(p.x, p.y), k = clamp(1 - (p.z || 0)/120, 0.4, 1); pellipse(s.x, s.y, Math.round(9*k), 2, 'rgba(0,30,0,.35)'); }
+  for (const p of players) { if (p.freeze && p.freeze.k === 'under') continue; const s = S(p.x, p.y), k = clamp(1 - (p.z || 0)/120, 0.4, 1); pellipse(s.x, s.y, Math.round(9*k), 2, 'rgba(0,30,0,.35)'); }
   if (game.mode === 'play' || game.mode === 'goal') for (const p of players) if (p.tag) {   // your player: a bright ring under the feet
     const s = S(p.x, p.y), col = p.tag === 2 ? '#7fe0ff' : '#f2c230', r = 11 + (Math.floor(game.t*4) % 2);
     pellipseRing(s.x, s.y + 1, r, 4, '#100810'); pellipseRing(s.x, s.y, r, 4, col); }
   for (const it of items) { const s = S(it.x, it.y); pellipse(s.x, s.y, 5, 1, 'rgba(0,30,0,.35)'); }
   for (const q of pees) { const s = S(q.x, q.y); pellipse(s.x, s.y, 9, 3, 'rgba(240,210,40,.75)'); pellipse(s.x - 2, s.y - 1, 4, 1, 'rgba(255,245,160,.9)'); }
-  for (const r of game.runners) if (r.k === 'wave') drawWave(r);
+  for (const r of game.runners) if (r.k === 'wave') drawWave(r); else if (r.k === 'hole') drawHole(r);
   { const s = S(ball.x, ball.y), k = clamp(1 - ball.z/180, 0.4, 1)*(giant() ? BIGK : 1); pellipse(s.x, s.y, Math.max(2, Math.round(6*k)), giant() ? 4 : 2, 'rgba(0,30,0,.4)'); }
   if (ball.passAt && !ball.owner && ball.passTo && game.mode === 'play') {   // where the pass will land
     const s = S(ball.passAt.x, ball.passAt.y), k = Math.floor(game.t*8) % 2, col = TEAMS[ball.passTo.team].color;
@@ -3086,7 +3136,7 @@ function render() {
   for (const it of items) ents.push({ y: it.y, f: () => drawItem(it) });
   if (game.vespa) ents.push({ y: game.vespa.y, f: drawVespa });
   if (game.critter) ents.push({ y: game.critter.y, f: drawCritter });
-  for (const r of game.runners) if (r.k !== 'wave') ents.push({ y: r.y, f: () => drawRunner(r) });
+  for (const r of game.runners) if (r.k !== 'wave' && r.k !== 'hole') ents.push({ y: r.y, f: () => drawRunner(r) });
   if (game.show) for (const t of [0, 1]) ents.push({ y: mascotPos(t, game.show.t, game.show.kind).y, f: () => drawMascot(t) });
   ents.push({ y: Y1 + 0.1, f: () => ctx.drawImage(FRONT, -cam.x, -cam.y) });
   ents.push({ y: WID + 0.1, f: () => { for (const x of [0, LEN]) { const p = P(x, WID); drawFlag(ctx, { x: p.x - cam.x, y: p.y - cam.y }); } } });
@@ -3129,7 +3179,7 @@ const KITNAME = ['КРАСНЫЙ', 'СИНИЙ', 'ЗЕЛЁНЫЙ', 'ЖЁЛТЫЙ
 const EMO_RU = { pizza:'ПИЦЦА', volcano:'ВУЛКАН', wolf:'ВОЛК', ghost:'ПРИЗРАК', money:'ДЕНЬГИ', rocket:'РАКЕТА', horse:'КОНЬ', bowl:'БЕШБАРМАК', eagle:'ОРЁЛ',
   baguette:'БАГЕТ', croissant:'КРУАССАН', beret:'БЕРЕТ', pretzel:'КРЕНДЕЛЬ', sausage:'СОСИСКА', tea:'ЧАЙ', umbrella:'ЗОНТ', bull:'БЫК', paella:'ПАЭЛЬЯ',
   sardine:'САРДИНА', rooster:'ПЕТУХ', tulip:'ТЮЛЬПАН', cheese:'СЫР', clog:'САБО', penguin:'ПИНГВИН', snowflake:'СНЕЖИНКА', anchor:'ЯКОРЬ', crab:'КРАБ',
-  key:'КЛЮЧ', candle:'СВЕЧА', trident:'ТРЕЗУБЕЦ', fish:'РЫБА', ger:'ЮРТА', bow:'ЛУК', camel:'ВЕРБЛЮД' };
+  key:'КЛЮЧ', candle:'СВЕЧА', trident:'ТРЕЗУБЕЦ', fish:'РЫБА', ger:'ЮРТА', bow:'ЛУК', camel:'ВЕРБЛЮД', crystal:'КРИСТАЛЛ', innersun:'ВНУТР. СОЛНЦЕ' };
 const SKINS = [['light', 'СВЕТЛАЯ'], ['tan', 'СМУГЛАЯ'], ['dark', 'ТЁМНАЯ'], ['east', 'АЗИАТСКАЯ'], ['pale', 'БЛЕДНАЯ']];
 const HAIRS = [['spiky', '#1a1420', '#463c5e', 'ЁЖИК'], ['pomp', '#141010', '#3a3030', 'ЧЁЛКА'], ['crop', '#3a2414', '#6a4428', 'КОРОТКАЯ'],
   ['spiky', '#d8b040', '#fff0a0', 'БЛОНД'], ['pomp', '#a8381c', '#d8622e', 'РЫЖАЯ'], ['long', '#141010', '#3a3030', 'ДЛИННАЯ'], ['long', '#d8b040', '#fff0a0', 'ЛОКОНЫ']];
@@ -3364,7 +3414,7 @@ function drawFace(who, talk) {
     else g.drawImage(getSprite(CLUBS[myKey()], 'idle', expr, 0, 'side', { look: 0, num: 1, feat: 'mus' }), 0, 1);
     return;
   }
-  if (who === 'rival') { const rc = CLUBS[career.story.rival.club] || CLUBS.nap;
+  if (who === 'rival') { const rc = CLUBS[career.story.rival.club] || CLUBS.fra;
     g.drawImage(getSprite(rc, 'idle', talk ? 'shout' : 'grit', 0, 'side', { look: 0, num: 10, ssj: true, feat: 'band' }), 0, 1); return; }
   if (c.kit) g.drawImage(getSprite(castClub(who, c), 'idle', expr, 0, 'side', { num: 0, feat: c.feat }), 0, 1);
 }
@@ -3440,7 +3490,7 @@ function ceremony(done) {
 // ================== rules screen: looping mini-animations ==================
 // Each card replays its move in an 80x48 scene drawn with the game's own sprites (Napoli vs Roma).
 const HELP = (() => {
-  const P0 = { look: 0, num: 10 }, sp = (team, pose, expr, frame, ssj) => getSprite(team ? CLUBS.rom : CLUBS.nap, pose, expr, frame, 'side', { ...P0, ssj });
+  const P0 = { look: 0, num: 10 }, sp = (team, pose, expr, frame, ssj) => getSprite(team ? CLUBS.eng : CLUBS.fra, pose, expr, frame, 'side', { ...P0, ssj });
   const grass = g => { for (let y = 0; y < 48; y += 8) { g.fillStyle = (y/8) % 2 ? '#3cbc38' : '#46cf40'; g.fillRect(0, y, 80, 8); } };
   const put = (g, s, x, y, flip) => { if (flip) { g.save(); g.translate(Math.round(x), 0); g.scale(-1, 1); g.drawImage(s, -20, Math.round(y) - 39); g.restore(); } else g.drawImage(s, Math.round(x) - 20, Math.round(y) - 39); };
   const ballAt = (g, x, y, t) => g.drawImage(BALLSPR[Math.floor(t*20) % 8], Math.round(x) - 6, Math.round(y) - 12);
@@ -3466,7 +3516,7 @@ const HELP = (() => {
       if (t < 0.6) { put(g, sp(1, 'run', 'normal', run(t)), 46, 44, true); ballAt(g, 40, 44, t); }
       else { const ft = t - 0.6; g.save(); g.translate(52 + ft*24, 30 - Math.sin(Math.min(1, ft)*Math.PI)*16); g.rotate((Math.floor(ft*14) % 4)*Math.PI/2); g.drawImage(sp(1, 'idle', 'bulge', 0), -20, -20); g.restore();
         if (ft < 0.8) for (let k = 0; k < 4; k++) dot(g, 40 + Math.random()*16, 20 + Math.random()*16, k % 2 ? '#ffe14a' : '#ffffff', 2);
-        if (ft < 0.8 && Math.floor(ft*6) % 2) ptext(g, 'ОРА!', 52, 4, 8, '#ff6a9a', 'center', '#100810'); } },
+        if (ft < 0.8 && Math.floor(ft*6) % 2) ptext(g, 'НА!', 52, 4, 8, '#ff6a9a', 'center', '#100810'); } },
     pass(g, t) { grass(g); put(g, sp(0, 'idle', 'normal', 0), 12, 44); const k = Math.min(1, Math.max(0, (t - 0.4)/1.2));
       put(g, sp(0, k < 1 ? 'run' : 'idle', 'normal', run(t)), 60 - (1 - k)*6, 34 + k*4); const tx = 58, ty = 38;
       if (k < 1) { if (Math.floor(t*8) % 2) { g.fillStyle = '#4aa8f0'; g.fillRect(tx - 6, ty, 12, 1); g.fillRect(tx - 1, ty - 5, 2, 4); } ballAt(g, 20 + (tx - 20)*k, 44 + (ty - 44)*k, t); }
@@ -3482,12 +3532,12 @@ const HELP = (() => {
       g.fillStyle = '#100810'; g.fillRect(28, 1, 18, 17); g.fillStyle = '#ffffff'; g.fillRect(29, 2, 16, 15); g.drawImage(EMO.tongue, 30, 3);
       if (t > 0.8) { g.fillStyle = '#100810'; g.fillRect(60, 1, 18, 17); g.fillStyle = '#ffffff'; g.fillRect(61, 2, 16, 15); g.drawImage(EMO.angry, 62, 3); } },
     block(g, t) { grass(g); goal(g, 70); const k = Math.min(1, t/0.9), bx = 8 + k*52;
-      put(g, getSprite(CLUBS.rom, t > 0.8 && t < 1.6 ? 'cheer' : 'idle', 'grit', 0, 'side', { gk: true }), 64, 44, true);
+      put(g, getSprite(CLUBS.eng, t > 0.8 && t < 1.6 ? 'cheer' : 'idle', 'grit', 0, 'side', { gk: true }), 64, 44, true);
       if (t < 0.9) { for (let j = 0; j < 5; j++) dot(g, bx - j*5, 37 + (j % 2), j % 2 ? '#100810' : '#ff9a1a', 3); ballAt(g, bx, 43, t); ptext(g, 'ЖМИ!', 40, 2, 8, Math.floor(t*10) % 2 ? '#7fe0ff' : '#ffffff', 'center', '#100810'); }
       else { ballAt(g, 60 - (t - 0.9)*50, 40 - Math.sin(Math.min(1, t - 0.9)*Math.PI)*20, t); if (Math.floor(t*6) % 2) ptext(g, 'БЛОК!', 34, 2, 8, '#7fe0ff', 'center', '#100810'); } },
     gk(g, t) { grass(g); goal(g, 70); const k = Math.min(1, t/0.6), bx = 10 + k*56, by = 44 - k*14;
-      if (t < 0.45) put(g, CLUBS.rom && getSprite(CLUBS.rom, 'idle', 'grit', 0, 'side', { gk: true }), 64, 44, true);
-      else { g.save(); g.translate(62, 26); g.drawImage(getSprite(CLUBS.rom, 'dive', 'grit', 0, 'side', { gk: true }), -20, -20); g.restore(); }
+      if (t < 0.45) put(g, getSprite(CLUBS.eng, 'idle', 'grit', 0, 'side', { gk: true }), 64, 44, true);
+      else { g.save(); g.translate(62, 26); g.drawImage(getSprite(CLUBS.eng, 'dive', 'grit', 0, 'side', { gk: true }), -20, -20); g.restore(); }
       if (t < 0.6) ballAt(g, bx, by, t); else { ballAt(g, 52 - (t - 0.6)*30, 30 + (t - 0.6)*20, t); if (Math.floor(t*6) % 2) ptext(g, 'СЕЙВ!', 30, 2, 8, '#ffffff', 'center', '#100810'); } },
     chaos(g, t) { grass(g); put(g, sp(0, 'idle', 'bulge', 0), 40, 44); const x = -20 + t*60; g.drawImage(VESPA, Math.round(x) - 18, 17);
       if (x > 30) { g.save(); g.translate(40, 20 - (x - 30)*0.5); g.rotate((Math.floor(t*14) % 4)*Math.PI/2); g.drawImage(sp(0, 'idle', 'bulge', 0), -20, -20); g.restore(); } },
@@ -3532,9 +3582,9 @@ click('miPlay', () => menuPage('mPlay'));
 click('miBack', () => menuPage('mMain'));
 click('miOpts', () => menuPage('mOpts'));
 click('miOptsBack', () => menuPage('mMain'));
-click('miReal', () => { renderTeams(); showOv('ovTeams'); });
+click('miReal', () => openTeams(11));
 click('miTeamsBack', () => { showOv('ovMenu'); menuPage('mPlay'); });
-click('miKick', () => startMatch(11));
+click('miKick', () => startMatch(teamMode));
 click('miCareer', openCareer);
 click('miCarGo', openTour);
 click('miCarNew', () => { $('carHub').hidden = true; $('carNew').hidden = false; $('carInfo').textContent = 'НАЧНЁМ С НУЛЯ?'; });
@@ -3550,8 +3600,9 @@ click('miToTour', () => { attract(); openTour(); });
 $('stScene').addEventListener('click', () => { audioInit(); sceneTap(); });
 click('miField', cycleField);
 for (const side of [0, 1]) { click('tPrev' + side, () => cycleTeam(side, -1)); click('tNext' + side, () => cycleTeam(side, 1)); }
-click('mi11', () => startMatch(1));
-click('mi22', () => startMatch(2));
+const openTeams = m => { teamMode = m; $('teamsTitle').innerHTML = (m === 11 ? '11 НА 11' : m === 2 ? '2 НА 2' : '1 НА 1') + '<span>ВЫБОР СТРАН</span>'; renderTeams(); showOv('ovTeams'); };
+click('mi11', () => openTeams(1));
+click('mi22', () => openTeams(2));
 for (const id of ['miDiff', 'miDiffA', 'miDiffT']) click(id, nextDiff);
 click('miSnd', () => { muted = !muted; syncSound(); });
 click('miChaos', () => { chaosOn = !chaosOn; store.set('chaos', chaosOn); syncOpts(); });

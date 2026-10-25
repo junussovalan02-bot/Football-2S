@@ -5,10 +5,10 @@ Main menu (v0.18.1): **КАРЬЕРА · АРКАДА · С ДРУГОМ · НА
 - **11 НА 11** (in АРКАДА; calmer CAOS than 1v1/2v2) — team screen: pick your club and the opponent (◀ ▶, can't pick the same twice;
   saved in the browser). Pitch 1200×380, 4-4-2 with keepers, 3-minute match. Everything else works as in
   arcade: weather, КАОС, supers, pickups, taunts. Not available online yet.
-- **АРКАДА** — the classic Napoli vs Roma on the small pitch (720×200): **1 НА 1** and **2 НА 2**, now with
-  a keeper on each side.
-- **С ДРУГОМ** (online, arcade only) — host picks *ВМЕСТЕ ПРОТИВ РОМЫ* (2v2, both on Napoli: 1P + 2P) or
-  *ДРУГ ПРОТИВ ДРУГА* (1v1, guest plays Roma) and gets a 5-character code (no O/0/I/1/L) plus
+- **АРКАДА** — **1 НА 1** and **2 НА 2** on the small pitch (720×200) with a keeper on each side; since v0.19 they also
+  go through the team screen (any two countries, the opponent's home pitch). Napoli and Roma were removed in v0.19.
+- **С ДРУГОМ** (online, arcade only) — host picks *ВМЕСТЕ ПРОТИВ КОМПА* (2v2, both on the host's team: 1P + 2P) or
+  *ДРУГ ПРОТИВ ДРУГА* (1v1, guest plays the host's chosen opponent; teams synced as `tm`, pitch is always the stadium) and gets a 5-character code (no O/0/I/1/L) plus
   ПОДЕЛИТЬСЯ (share sheet / copy link `?join=CODE`). The friend taps ВОЙТИ ПО КОДУ (auto-joins at the
   5th character) or just opens the link. If the guest drops mid-match (screen lock, bad network),
   their player turns AI and "2P ВЫШЕЛ" shows; re-entering the same code brings them back into the same
@@ -32,8 +32,24 @@ Main menu (v0.18.1): **КАРЬЕРА · АРКАДА · С ДРУГОМ · НА
   Everything that used to assume «team 0 attacks right» goes through `dirOf` (AI, keepers, skills, kickoffs, scoring).
 - Online: `ho: [half, flip, showKind, showT, joke, weather]` in the snapshot; the guest draws the show itself.
 
+## Names (v0.19): nothing borrowed
+Super shots and items have our own parody names instead of anime/brand names: ТИГРОПЕНДАЛЬ, КЕФИРХАМЕХА,
+ВЕРТОПЕЛЬМЕНЬ, НА-НА-НА (super tackle), ЗОЛОТАЯ БАШКА (full FURIA), МОПЕД (was Vespa), РОЖОК (was Cornetto); story
+clubs are made up (ДИВАН ЮНАЙТЕД…); no real clubs (Napoli/Roma removed), the rude finger emote is a thumbs down.
+Internal keys (tiger/kame/rasen/ora/vespa/horn) stay for code and online compatibility.
+
+## Агарта (v0.19)
+The legendary civilisation inside the hollow Earth (Jacolliot 1873, moved underground by Saint-Yves d'Alveydre
+1886; the hollow-Earth meme: entrance at the poles, an inner sun, surviving mammoths). Code AGA, purple kit with
+teal sleeves and gold trim, lavender skin, white/purple/teal hair, flag = the inner sun on purple (`dir:'sun'`).
+Skill **ПОЛАЯ ЗЕМЛЯ** (`hole`): the 4 opponents nearest the ball fall into pits (freeze `under`, hidden, ball
+dropped) and climb out 1.6 s later near their own goal («ГДЕ Я?!»). Home pitch **ПОЛАЯ ЗЕМЛЯ** (`cavern`): moss,
+glowing lines, rock vault with stalactites, crystals and the inner sun, gravity ×0.75, sparkles; critter МАМОНТ.
+Mascot МАМОНТ ГЕНА («МЫ СНИЗУ!»), emojis crystal and inner sun. Derbies: vs Atlantis «ДЕРБИ МИФОВ!», vs Antarctica
+«ВХОД ЧЕРЕЗ ПОЛЮС!».
+
 ## Clubs (v0.15, data in `src/data.js`)
-17 countries/clubs, all names invented: МОНГОЛИЯ (uniform, like North Korea), НАПОЛИ, РОМА, РОДЕЗИЯ, ЗИМБАБВЕ, КНДР, КАЗАХСТАН, ФРАНЦИЯ, ГЕРМАНИЯ, АНГЛИЯ,
+17 countries (v0.19: Napoli and Roma out, АГАРТА in), all names invented: МОНГОЛИЯ (uniform, like North Korea), РОДЕЗИЯ, ЗИМБАБВЕ, КНДР, КАЗАХСТАН, ФРАНЦИЯ, ГЕРМАНИЯ, АНГЛИЯ,
 ИСПАНИЯ, ПОРТУГАЛИЯ, НИДЕРЛАНДЫ, АНТАРКТИДА, СИЛЕНД, ВАТИКАН, АТЛАНТИДА. Each has: kit (+ pattern: stripes, hoops, sash,
 penguin front), keeper kit, flag (`dir`: v / h / cross / diag / kaz), 2–4 looks (skin, hair colour and style: spiky,
 pomp, crop, long), 11 surnames (one joke name each), taunt emojis `emo`, home pitch `home`.
@@ -241,7 +257,7 @@ Fills by:
 | being taunted (Napoli only) | 6 |
 | conceding a goal | 30 |
 
-At 100 it blinks, plays a jingle and shows СУПЕР-САЙЯН!: the team's hair turns gold (arcade: whole team;
+At 100 it blinks, plays a jingle and shows ЗОЛОТАЯ БАШКА!: the team's hair turns gold (arcade: whole team;
 11v11: your player and the ball carrier). **One super empties it.** In 11v11 every gain is ×0.35 (22 players
 make many more events); the computer's side gains ×`fury` of the difficulty.
 
@@ -251,10 +267,10 @@ make many more events); the computer's side gains ×`fury` of the difficulty.
 | normal | tap УДАР | aim assist toward goal mouth when facing the goal |
 | сильный | hold УДАР, FURIA not full | ×1.22 power |
 | volley | ball in the air at head height (`aerial`: z 9–46, close), tap УДАР | hard low shot |
-| **ТИГРИНЫЙ УДАР** (Captain Tsubasa) | FURIA + hold УДАР while running | flat tiger ball, orange/black trail, ignores wind, knocks everyone down incl. the keeper |
-| **КАМЕХАМЕХА** (Dragon Ball) | FURIA + hold УДАР standing | energy ball charges between the hands; a straight beam (×1.3 speed, no gravity, aim assist at any distance), knocks everyone in its path; stops being a super below 120 u/s or at the end line |
-| **РАСЕНГАН** (Naruto) | FURIA + ball at head height, tap УДАР | overhead kick; spinning blue sphere zigzags across the box, knocks defenders down |
-| **ОРА-ОРА-ОРА** (JoJo) | FURIA + ПОДКАТ when an opponent with the ball is within 70 | barrage tackle: ×1.6 dash, hit radius 26, 0.65 s, everyone hit flies (lift 190); AI uses it half of the time |
+| **ТИГРОПЕНДАЛЬ** | FURIA + hold УДАР while running | flat tiger ball, orange/black trail, ignores wind, knocks everyone down incl. the keeper |
+| **КЕФИРХАМЕХА** | FURIA + hold УДАР standing | energy ball charges between the hands; a straight beam (×1.3 speed, no gravity, aim assist at any distance), knocks everyone in its path; stops being a super below 120 u/s or at the end line |
+| **ВЕРТОПЕЛЬМЕНЬ** | FURIA + ball at head height, tap УДАР | overhead kick; spinning blue sphere zigzags across the box, knocks defenders down |
+| **НА-НА-НА** | FURIA + ПОДКАТ when an opponent with the ball is within 70 | barrage tackle: ×1.6 dash, hit radius 26, 0.65 s, everyone hit flies (lift 190); AI uses it half of the time |
 
 Keepers never use supers. While charging, the short name (ТИГР / КАМЕ / РАСЕН) shows under the player.
 
@@ -300,7 +316,7 @@ depend on difficulty. Both detour for pickups.
 - At half-time the weather may change (not on pitches with their own climate).
 
 ## Taunts
-Roma players pop up emotes (laugh, tongue, middle finger, angry, cry, zzz) when they knock you down,
+Roma players pop up emotes (laugh, tongue, thumbs down, angry, cry, zzz) when they knock you down,
 steal, you miss, they score / concede, or randomly every 7–12 s.
 
 ## Tuning constants (top of "game state" in game.js)
@@ -336,7 +352,7 @@ blinks the last 2 s. Picked up by running over it (11 u, not while flying). AI d
 |---|---|
 | ПИЦЦА | +35 FURIA to the team. |
 | ПЕРЧИК | 6 s: speed and acceleration ×1.4, flames; running (>70 u/s) into an opponent knocks them over (force 200, lift 120), +8 FURIA. |
-| КОРНЕТТО | 7 s: immune to tackles, super shots, the Vespa, quakes and lightning (golden ring, «динь»); your ball can't be stolen. |
+| РОЖОК (ice-cream cone) | 7 s: immune to tackles, super shots, the Vespa, quakes and lightning (golden ring, «динь»); your ball can't be stolen. |
 
 ### Полёты
 `knockDown(p, dx, dy, force, expr, lift)` — with `lift` the player flies (`p.z`, `p.vz`), spins in 90° steps
