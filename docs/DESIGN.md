@@ -1,8 +1,8 @@
 # Game design
 
 ## Modes (v0.11)
-Main menu: **РЕАЛЬНОСТЬ 11x11 · АРКАДА · С ДРУГОМ · НАСТРОЙКИ · ПРАВИЛА**.
-- **РЕАЛЬНОСТЬ 11 НА 11** — team screen: pick your club and the opponent (◀ ▶, can't pick the same twice;
+Main menu (v0.18.1): **КАРЬЕРА · АРКАДА · С ДРУГОМ · НАСТРОЙКИ · ПРАВИЛА · КОЛЛЕКЦИЯ**. АРКАДА holds 1 НА 1, 2 НА 2 and 11 НА 11.
+- **11 НА 11** (in АРКАДА; calmer CAOS than 1v1/2v2) — team screen: pick your club and the opponent (◀ ▶, can't pick the same twice;
   saved in the browser). Pitch 1200×380, 4-4-2 with keepers, 3-minute match. Everything else works as in
   arcade: weather, КАОС, supers, pickups, taunts. Not available online yet.
 - **АРКАДА** — the classic Napoli vs Roma on the small pitch (720×200): **1 НА 1** and **2 НА 2**, now with

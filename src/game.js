@@ -3533,7 +3533,7 @@ click('miBack', () => menuPage('mMain'));
 click('miOpts', () => menuPage('mOpts'));
 click('miOptsBack', () => menuPage('mMain'));
 click('miReal', () => { renderTeams(); showOv('ovTeams'); });
-click('miTeamsBack', () => { showOv('ovMenu'); menuPage('mMain'); });
+click('miTeamsBack', () => { showOv('ovMenu'); menuPage('mPlay'); });
 click('miKick', () => startMatch(11));
 click('miCareer', openCareer);
 click('miCarGo', openTour);
