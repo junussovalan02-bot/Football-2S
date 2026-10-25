@@ -24,40 +24,8 @@ function norm(x, y) { const l = hyp(x, y) || 1; return { x: x/l, y: y/l }; }
 
 // ================== palette ==================
 const PAL = { skin:'#ffb88a', skinS:'#e0845a', white:'#ffffff', ink:'#100810', mouth:'#b4243a', tongue:'#ff7a8a', tear:'#8fe0ff', blush:'#ff8f8f', bone:'#f3f0dc', ghost:'#1b2a6e' };
-// Clubs. Each has kit colours, keeper kit, a few looks (skin / hair) mixed across the squad and 11 surnames
-// in squad order: GK, 4 defenders, 4 midfielders, 2 forwards. All names are made up.
-const LOOK = {
-  light: { skin:'#ffb88a', skinS:'#e0845a' }, tan: { skin:'#e8a070', skinS:'#c07848' },
-  dark: { skin:'#8a5634', skinS:'#663c22' }, east: { skin:'#f6c898', skinS:'#d89c68' },
-};
-const hairOf = (hair, hairHi, style) => ({ hair, hairHi, style });
-const CLUBS = {
-  nap: { code:'NAP', name:'НАПОЛИ', jersey:'#4aa8f0', jerseyS:'#2a74c4', sleeve:'#4aa8f0', sleeveS:'#2a74c4', trim:'#ffffff',
-    shorts:'#ffffff', shortsS:'#b8c8e4', socks:'#4aa8f0', socksS:'#2a74c4', boots:'#202030', color:'#4aa8f0', hudBg:'#3d9be9',
-    gk: { jersey:'#3ac85a', jerseyS:'#249a40', sleeve:'#3ac85a', sleeveS:'#249a40', shorts:'#202030', shortsS:'#101018', socks:'#3ac85a', socksS:'#249a40', trim:'#ffffff' },
-    looks: [{ ...LOOK.light, ...hairOf('#1a1420', '#463c5e', 'spiky') }, { ...LOOK.tan, ...hairOf('#3a2414', '#6a4428', 'spiky') }, { ...LOOK.light, ...hairOf('#2a1a10', '#5a3a20', 'crop') }],
-    names: ['ЭСПОЗИТО', 'РУССО', 'КАПУАНО', 'ЙОРИО', 'АМАТО', 'ДЕ ЛУКА', 'ФЕРРАРА', 'ПАГАНО', 'КОППОЛА', 'ЧИРО', 'САВАСТАНО'] },
-  rom: { code:'ROM', name:'РОМА', jersey:'#ffffff', jerseyS:'#cfc4c8', sleeve:'#a01c2c', sleeveS:'#6c0e1a', trim:'#a01c2c',
-    shorts:'#a01c2c', shortsS:'#6c0e1a', socks:'#ffffff', socksS:'#cfc4c8', boots:'#202030', color:'#ff5a6a', hudBg:'#2a1a20',
-    gk: { jersey:'#ff9a2a', jerseyS:'#d0701a', sleeve:'#ff9a2a', sleeveS:'#d0701a', shorts:'#202030', shortsS:'#101018', socks:'#ff9a2a', socksS:'#d0701a', trim:'#100810' },
-    looks: [{ ...LOOK.light, ...hairOf('#a8381c', '#d8622e', 'pomp') }, { ...LOOK.tan, ...hairOf('#3a2414', '#6a4428', 'pomp') }, { ...LOOK.light, ...hairOf('#d8b040', '#fff0a0', 'crop') }],
-    names: ['ДЖЕНТИЛЕ', 'РИЧЧИ', 'МАРКЕТТИ', 'КОНТИ', 'ГАЛЛИ', 'ФОНТАНА', 'РИНАЛЬДИ', 'БАССИ', 'ТЕСТА', 'СЕРРА', 'МАНКУЗО'] },
-  rho: { code:'RHO', name:'РОДЕЗИЯ', jersey:'#2f9a4a', jerseyS:'#1f6e34', sleeve:'#ffffff', sleeveS:'#c8d0c8', trim:'#ffffff',
-    shorts:'#ffffff', shortsS:'#c8d0c8', socks:'#2f9a4a', socksS:'#1f6e34', boots:'#202030', color:'#4ac86a', hudBg:'#1f6e34',
-    gk: { jersey:'#2a2a3a', jerseyS:'#16161e', sleeve:'#2a2a3a', sleeveS:'#16161e', shorts:'#2a2a3a', shortsS:'#16161e', socks:'#2a2a3a', socksS:'#16161e', trim:'#ffd23a' },
-    looks: [{ ...LOOK.light, ...hairOf('#d8b040', '#fff0a0', 'pomp') }, { ...LOOK.dark, ...hairOf('#141010', '#3a3030', 'crop') }, { ...LOOK.light, ...hairOf('#6a4020', '#9a6438', 'crop') }, { ...LOOK.dark, ...hairOf('#141010', '#3a3030', 'spiky') }],
-    names: ['ХАРТЛИ', 'ПРАЙС', 'ШУМБА', 'ДОЙЛ', 'ВЕНТЕР', 'МАРОНГА', 'ЛАНД', 'ГИББ', 'ОРМОНД', 'БЭНКС', 'МАКАЛИСТЕР'] },
-  zim: { code:'ZIM', name:'ЗИМБАБВЕ', jersey:'#ffd23a', jerseyS:'#e0a020', sleeve:'#2a9a3a', sleeveS:'#1a6a26', trim:'#1a6a26',
-    shorts:'#2a9a3a', shortsS:'#1a6a26', socks:'#ffd23a', socksS:'#e0a020', boots:'#202030', color:'#ffd23a', hudBg:'#2a9a3a',
-    gk: { jersey:'#3a6ad8', jerseyS:'#2448a0', sleeve:'#3a6ad8', sleeveS:'#2448a0', shorts:'#3a6ad8', shortsS:'#2448a0', socks:'#3a6ad8', socksS:'#2448a0', trim:'#ffffff' },
-    looks: [{ ...LOOK.dark, ...hairOf('#141010', '#3a3030', 'crop') }, { ...LOOK.dark, ...hairOf('#141010', '#3a3030', 'spiky') }, { ...LOOK.dark, ...hairOf('#141010', '#3a3030', 'pomp') }],
-    names: ['МОЙО', 'НКУБЕ', 'ДУБЕ', 'ЧИКОРЕ', 'МУТАСА', 'СИБАНДА', 'МХЛАНГА', 'ЧИРВА', 'ГУМБО', 'МАРУФУ', 'ЧАРИ'] },
-  prk: { code:'PRK', name:'КНДР', jersey:'#e83a2a', jerseyS:'#a8140a', sleeve:'#e83a2a', sleeveS:'#a8140a', trim:'#ffffff',
-    shorts:'#ffffff', shortsS:'#c8c8d4', socks:'#e83a2a', socksS:'#a8140a', boots:'#202030', color:'#ff6a4a', hudBg:'#a8140a',
-    gk: { jersey:'#7a8aa0', jerseyS:'#56647a', sleeve:'#7a8aa0', sleeveS:'#56647a', shorts:'#202030', shortsS:'#101018', socks:'#7a8aa0', socksS:'#56647a', trim:'#ffffff' },
-    looks: [{ ...LOOK.east, ...hairOf('#141018', '#3a3a4a', 'pomp') }, { ...LOOK.east, ...hairOf('#141018', '#3a3a4a', 'crop') }],
-    names: ['РИ ЧХОЛ', 'КИМ ХЁН', 'ПАК УН', 'ЧХВЕ МЁН', 'ХАН СОН', 'ЧО КВАН', 'РЮ ЧХОН', 'СО ИЛЬ', 'КАН ХЁК', 'РИМ ТЭ', 'ЮН ОК'] },
-};
+// Clubs, emoji icons and pitch themes are plain data in src/data.js
+const { clubs: CLUBS, icons: ICONS, themes: THEMES } = window.AZZ_DATA;
 const CLUB_KEYS = Object.keys(CLUBS);
 const SSJ = { hair:'#ffe14a', hairHi:'#fff6b0', style:'spiky' };   // full FURIA: super saiyan hair
 let TEAMS = [CLUBS.nap, CLUBS.rom];                                  // side 0 (you) and side 1 in the current match
@@ -75,21 +43,31 @@ const DIG = { '0':['XXX','X.X','X.X','X.X','XXX'], '1':['.X.','XX.','.X.','.X.',
   '4':['X.X','X.X','XXX','..X','..X'], '5':['XXX','X..','XXX','..X','XXX'], '6':['XXX','X..','XXX','X.X','XXX'], '7':['XXX','..X','.X.','.X.','.X.'],
   '8':['XXX','X.X','XXX','X.X','XXX'], '9':['XXX','X.X','XXX','..X','XXX'] };
 
+// Player features (T.f): bald, beard, mus(tache), glasses, long hair, band; 'short' is handled in getSprite
 function headSide(r, T, expr) {
-  if (T.style === 'crop') { r(2,4,4,6,T.hair); r(3,2,18,4,T.hair); } else { r(2,3,5,9,T.hair); r(3,1,19,6,T.hair); }
+  const f = T.f || {};
+  if (f.bald) { r(2,6,4,6,T.hair); r(4,2,16,5,T.skin); r(3,4,2,3,T.skin); r(8,2,4,1,'#ffe0c8'); }   // horseshoe of hair, shiny top
+  else if (T.style === 'crop') { r(2,4,4,6,T.hair); r(3,2,18,4,T.hair); } else { r(2,3,5,9,T.hair); r(3,1,19,6,T.hair); }
+  if (T.style === 'long' && !f.bald) { r(1,4,6,15,T.hair); r(2,18,4,2,T.hairHi); }
   r(5,6,16,10,T.skin); r(6,16,14,1,T.skin); r(8,17,10,1,T.skinS); r(5,13,1,3,T.skinS); r(6,16,2,1,T.skinS);
-  if (T.style === 'spiky') {
+  if (f.bald) {}
+  else if (T.style === 'spiky') {
     r(5,0,2,1,T.hair); r(10,0,3,1,T.hair); r(16,0,2,1,T.hair); r(20,2,3,2,T.hair); r(22,4,1,1,T.hair);
     r(6,7,4,1,T.hair); r(7,8,2,1,T.hair); r(12,7,3,1,T.hair); r(17,7,4,1,T.hair); r(19,8,2,1,T.hair);
     r(8,2,3,1,T.hairHi); r(15,2,2,1,T.hairHi); r(3,5,1,3,T.hairHi);
   } else if (T.style === 'crop') {
     r(5,6,3,1,T.hair); r(17,6,3,1,T.hair); r(8,3,4,1,T.hairHi); r(15,3,3,1,T.hairHi);
+  } else if (T.style === 'long') {
+    r(6,0,13,2,T.hair); r(5,6,14,1,T.hair); r(8,1,6,1,T.hairHi);
   } else {
     r(6,0,12,1,T.hair); r(18,0,4,2,T.hair); r(21,1,2,4,T.hair);
     r(6,7,6,1,T.hair); r(16,7,5,1,T.hair); r(7,8,3,1,T.hair);
     r(9,1,6,1,T.hairHi); r(19,1,2,1,T.hairHi); r(3,5,1,3,T.hairHi);
   }
   r(4,10,2,3,T.skin); r(5,11,1,1,T.skinS);
+  if (f.band) { r(3,5,18,2,T.trim); r(3,5,18,1,'#ffffff'); }
+  const bc = f.beardCol || T.hair;
+  if (f.beard) { r(5,12,2,5,bc); r(6,16,14,2,bc); r(8,18,10,1,bc); r(18,14,3,3,bc); }
   const I = PAL.ink, Wt = PAL.white;
   const brows = () => { r(8,8,2,1,I); r(10,9,2,1,I); r(14,9,2,1,I); r(16,8,3,1,I); };
   const eyes = () => { r(9,10,3,1,I); r(9,11,3,2,Wt); r(11,11,1,2,I); r(15,10,3,1,I); r(15,11,3,2,Wt); r(17,11,1,2,I); };
@@ -103,8 +81,15 @@ function headSide(r, T, expr) {
       r(10,13,1,4,PAL.tear); r(16,13,1,4,PAL.tear); r(13,15,4,1,PAL.mouth); r(12,16,1,1,I); r(17,16,1,1,I); break;
     default: brows(); eyes(); nose(); r(13,15,4,1,I);
   }
+  if (f.mus && expr !== 'shout' && expr !== 'bulge') { r(12,13,8,2,bc); r(11,14,1,1,bc); r(20,14,1,1,bc); }
+  if (f.glasses && expr !== 'bulge') { const G = '#202030', L = '#bfe8ff';
+    r(8,9,5,1,G); r(8,13,5,1,G); r(8,10,1,3,G); r(12,10,1,3,G); r(9,10,3,1,L);
+    r(14,9,5,1,G); r(14,13,5,1,G); r(14,10,1,3,G); r(18,10,1,3,G); r(15,10,3,1,L); r(13,10,1,1,G); r(19,10,3,1,G); }
 }
 function headBack(r, T) {
+  const f = T.f || {};
+  if (f.bald) { r(3,2,18,9,T.skin); r(2,9,20,5,T.hair); r(4,14,16,2,T.skin); r(9,16,6,2,T.skinS); r(1,9,2,3,T.skin); r(21,9,2,3,T.skin); r(8,3,4,1,'#ffe0c8'); return; }
+  if (T.style === 'long') { r(3,1,18,19,T.hair); r(7,3,3,1,T.hairHi); r(13,4,4,1,T.hairHi); r(1,9,2,3,T.skin); r(21,9,2,3,T.skin); return; }
   if (T.style === 'crop') { r(3,2,18,9,T.hair); r(4,11,16,5,T.skin); r(7,4,3,1,T.hairHi); r(13,5,4,1,T.hairHi); r(9,16,6,2,T.skinS); r(1,9,2,3,T.skin); r(21,9,2,3,T.skin); return; }
   r(3,1,18,15,T.hair);
   if (T.style === 'spiky') { r(5,0,2,1,T.hair); r(10,0,3,1,T.hair); r(16,0,2,1,T.hair); r(2,4,1,6,T.hair); r(21,4,1,6,T.hair); }
@@ -123,6 +108,10 @@ function body(r, T, pose, frame, view) {
   } else { leg(8,30,6,0); leg(13,30,6,0); }
   r(6,26,12,4,T.shorts); r(6,26,2,4,T.shortsS); r(11,29,2,1,T.shortsS);
   r(6,18,12,8,T.jersey); r(6,18,2,8,T.jerseyS); r(6,25,12,1,T.jerseyS);
+  if (T.pattern === 'stripes') for (let x = 9; x < 18; x += 3) r(x,18,1,7,T.stripe);
+  else if (T.pattern === 'hoops') { r(8,20,10,1,T.stripe); r(8,23,10,1,T.stripe); }
+  else if (T.pattern === 'sash') for (let k = 0; k < 7; k++) r(16-k*1.5|0,18+k,2,1,T.trim);
+  else if (T.pattern === 'penguin' && view === 'side') { r(10,19,7,6,'#ffffff'); r(11,25,5,1,'#ffffff'); }
   if (view === 'side') { r(10,18,4,1,T.trim); r(11,19,2,1,T.trim); }
   else {
     r(8,18,8,1,T.trim);
@@ -166,10 +155,13 @@ const SPR = new Map();
 function getSprite(team, pose, expr, frame, view, v) {
   if (view === 'back') expr = 'normal';
   const C = typeof team === 'number' ? TEAMS[team] : team, o = v || {};
-  const key = C.code+'|'+pose+'|'+expr+'|'+frame+'|'+view+'|'+(o.look||0)+'|'+(o.gk?1:0)+'|'+(o.ssj?1:0)+'|'+(o.num||'');
+  const key = C.code+'|'+pose+'|'+expr+'|'+frame+'|'+view+'|'+(o.look||0)+'|'+(o.gk?1:0)+'|'+(o.ssj?1:0)+'|'+(o.num||'')+'|'+(o.feat||'')+'|'+(o.lookObj ? JSON.stringify(o.lookObj) : '');
   let c = SPR.get(key); if (c) return c;
   c = document.createElement('canvas'); c.width = c.height = CELL;
-  const T = Object.assign({}, C, C.looks[(o.look || 0) % C.looks.length], o.gk ? C.gk : null, o.gk ? { gloves:'#f4f4f4' } : null, o.ssj ? SSJ : null, { num: String(o.num || 10) });
+  const fl = {}; for (const w of (o.feat || '').split(' ')) if (w) fl[w] = true;
+  if (fl.white) fl.beardCol = '#e8eef4';
+  const T = Object.assign({}, C, o.lookObj || C.looks[(o.look || 0) % C.looks.length], o.gk ? C.gk : null, o.gk ? { gloves:'#f4f4f4' } : null,
+    o.ssj ? SSJ : null, { num: String(o.num || 10), f: fl });
   const g = c.getContext('2d');
   const base = pose === 'tackle' ? 'kick' : pose === 'dive' ? 'cheer' : (pose === 'fall' || pose === 'shock') ? 'idle' : pose;
   const ox = 8, oy = ((base === 'run' && frame === 1) || (base === 'cheer' && frame === 1)) ? 0 : 1;
@@ -179,6 +171,11 @@ function getSprite(team, pose, expr, frame, view, v) {
     body(r, T, base, frame, view);
     if (view === 'back') headBack(r, T); else headSide(r, T, pose === 'shock' ? 'bulge' : expr);
     arms(r, T, base, frame);
+    if (fl.short) {   // a short player: same head, squeezed body (head lowered 7 px)
+      const t = document.createElement('canvas'); t.width = t.height = CELL; t.getContext('2d').drawImage(c, 0, 0); g.clearRect(0, 0, CELL, CELL);
+      g.drawImage(t, 0, 0, CELL, 19, 0, 7, CELL, 19); g.drawImage(t, 0, 19, CELL, 6, 0, 26, CELL, 6);
+      g.drawImage(t, 0, 27, CELL, 3, 0, 32, CELL, 3); g.drawImage(t, 0, 35, CELL, 5, 0, 35, CELL, 5);
+    }
     outline(g, PAL.ink, CELL, CELL);
     if (pose === 'shock') { g.globalCompositeOperation = 'source-atop'; g.fillStyle = 'rgba(255,228,60,.55)'; g.fillRect(0,0,CELL,CELL); g.globalCompositeOperation = 'source-over'; }
   }
@@ -243,11 +240,14 @@ const VESPA = (() => {
   r(3,21,7,7,TIRE); r(5,23,3,3,'#a4acc4'); r(25,21,7,7,TIRE); r(27,23,3,3,'#a4acc4');                   // wheels
   outline(g, PAL.ink, 36, 28); return c;
 })();
+for (const [k, ic] of Object.entries(ICONS)) EMO[k] = makeIcon(r => ic.rows.forEach((row, y) => [...row].forEach((ch, x) => { if (ch !== '.') r(x, y, 1, 1, ic.pal[ch]); })));
 const TAUNTS = ['tongue', 'finger', 'laugh', 'zzz', 'finger'];
+const clubEmo = team => { const e = TEAMS[team].emo || []; return e[Math.floor(Math.random()*e.length)] || 'laugh'; };
 function emote(p, type, force) {
-  if (!p || p.team !== 1) return;
+  if (!p || (p.team !== 1 && !force)) return;
   if (!force && (game.emoCd > 0 || (p.emote && p.emote.t > 0.8))) return;
-  p.emote = { type, t: 2.8, age: 0 }; game.emoCd = 1.4; fury(0, 6);   // being mocked makes you angrier
+  if (p.team === 1 && Math.random() < 0.55 && !['cry', 'angry'].includes(type)) type = clubEmo(1);   // their country's own taunts
+  p.emote = { type, t: 2.8, age: 0 }; game.emoCd = 1.4; if (p.team === 1) fury(0, 6);   // being mocked makes you angrier
   if (AC && !muted) { try { tone('square', 880, 1320, 0.07, 0.06); tone('square', 1320, 1760, 0.06, 0.05, 0.07); } catch (e) {} }
 }
 const nearestRival = q => players.filter(p => p.team === 1 && p.state <= ST.KICK).sort((a, b) => dist(a, q) - dist(b, q))[0];
@@ -412,10 +412,22 @@ let MODE = 2, weatherOn = true;
 const F442 = [['gk',.03,.5], ['def',.2,.14], ['def',.17,.38], ['def',.17,.62], ['def',.2,.86],
   ['mid',.38,.14], ['mid',.34,.4], ['mid',.34,.6], ['mid',.38,.86], ['att',.5,.42], ['att',.5,.58]];
 const NUMS = [1, 2, 4, 5, 3, 7, 8, 6, 11, 10, 9];
+// faces of a squad: a deterministic mix of beards, moustaches, glasses, bald heads, long hair, headbands
+function featFor(c, slot) {
+  if (c.uniform) return '';
+  if (c.special && c.special[slot]) return c.special[slot];
+  let h = 7; for (const ch of c.code + slot) h = (h*31 + ch.charCodeAt(0)) % 1000003;
+  const rnd01 = () => { h = (h*1103515245 + 12345) % 2147483648; return h/2147483648; };
+  const out = [], beardy = c.beardy ? 0.25 : 0;
+  const b = rnd01(); if (b < 0.2 + beardy) out.push('beard'); else if (b < 0.34 + beardy) out.push('mus');
+  if (rnd01() < 0.14) out.push('bald'); if (rnd01() < 0.13) out.push('glasses'); if (rnd01() < 0.08) out.push('band');
+  if (c.code === 'ANT' && out.includes('beard')) out.push('white');
+  return out.join(' ');
+}
 // arcade keeps its old order (outfield first, keepers last) so online snapshots line up
 function buildTeams(mode) {
   const mk = (team, slot, role) => { const q = new Player(team, role || F442[slot][0]), c = TEAMS[team];
-    Object.assign(q, { slot, name: c.names[slot], num: NUMS[slot], look: (slot*7 + team*3) % c.looks.length, home: { x: F442[slot][1], y: F442[slot][2] } }); return q; };
+    Object.assign(q, { slot, name: c.names[slot], num: NUMS[slot], look: (slot*7 + team*3) % c.looks.length, feat: featFor(c, slot), home: { x: F442[slot][1], y: F442[slot][2] } }); return q; };
   if (mode === 11) players = [0, 1].flatMap(t => F442.map((f, k) => mk(t, k)));
   else if (mode === 1) players = [mk(0, 10, 'att'), mk(1, 10, 'att'), mk(0, 0), mk(1, 0)];
   else players = [mk(0, 10, 'att'), mk(0, 2, 'def'), mk(1, 10, 'att'), mk(1, 2, 'def'), mk(0, 0), mk(1, 0)];
@@ -1651,7 +1663,8 @@ function scored(team) {
   ball.owner = null; ball.superType = null; ball.gs = 1;
   for (const p of players) { p.mood = p.team === team ? 'cheer' : 'sad'; p.charge = 0; }
   const rivals = players.filter(p => p.team === 1);
-  rivals.forEach((p, k) => emote(p, team === 1 ? (k === 0 ? 'finger' : 'laugh') : (k === 0 ? 'cry' : 'angry'), true));
+  rivals.slice(0, 3).forEach((p, k) => emote(p, team === 1 ? (k === 0 ? clubEmo(1) : 'laugh') : (k === 0 ? 'cry' : 'angry'), true));
+  if (team === 0) players.filter(p => p.team === 0 && p.role !== 'gk').sort((a, b) => dist(a, ball) - dist(b, ball)).slice(0, 2).forEach(p => emote(p, clubEmo(0), true));
   game.banner = { text: (team === 0 ? 'GOOOL!' : 'GOL ' + TEAMS[1].code) + (pts > 1 ? ' x2' : ''), col: TEAMS[team].color, t: 0 };
   game.flash = Math.max(game.flash, 0.35); game.shake = 0.4; sfx('goal');
   const s = P(ball.x, ball.y, ball.z);
@@ -1683,6 +1696,9 @@ function derbyLine() {
   if (MODE !== 11) return '';
   if (c === 'RHOZIM') return 'ДЕРБИ ОДНОЙ СТРАНЫ!';
   if (c === 'NAPROM') return 'ДЕРБИ СОЛНЦА!';
+  if (c === 'ENGGER') return 'ВЕЧНОЕ ПРОТИВОСТОЯНИЕ!';
+  if (c === 'ESPPOR') return 'ИБЕРИЙСКОЕ ДЕРБИ!';
+  if (c === 'FRAGER') return 'КЛАССИКА ЕВРОПЫ!';
   if (c.includes('PRK')) return 'ЭФИР ЦТ КНДР';
   return '';
 }
@@ -1735,6 +1751,15 @@ function endLine(a, b) {
   if (codes.includes('PRK')) return win && win.code === 'PRK' ? 'ЦТАК сообщает: великая победа. Как всегда.' : 'ЦТАК сообщает: КНДР победила 7:0. Табло было неисправно.';
   if (win && win.code === 'ZIM') return 'Премиальные: 100 триллионов зимбабвийских долларов. Хватит на булочку.';
   if (win && win.code === 'RHO') return 'Результат не засчитан: такой страны нет с 1980 года.';
+  const lose = !win ? null : win === A ? B : A;
+  if (lose && lose.code === 'ENG') return 'Англия проиграла. Футбол снова не вернулся домой.';
+  const J = { KAZ: 'Казахстан побеждает! Бешбармак за счёт федерации.', FRA: 'Франция побеждает. Багеты летят на поле.',
+    GER: 'Германия побеждает. Строго по расписанию.', ENG: 'Футбол вернулся домой!', ESP: 'Испания побеждает. Сиеста заслужена.',
+    POR: 'Португалия побеждает. Сардины за счёт заведения.', NED: 'Тотальный футбол и тотальные тюльпаны.',
+    ANT: 'Пингвины в восторге. Полярники тоже.', SEA: 'Силенд побеждает. Отпраздновали всем населением — 27 человек.',
+    VAT: 'Ватикан побеждает. Победа одобрена свыше.', ATL: 'Атлантида побеждает. Где стадион — до сих пор неизвестно.' };
+  if (win && J[win.code]) return J[win.code];
+  if (lose && lose.code === 'ANT') return 'Антарктида проиграла, но сохранила хладнокровие.';
   return win ? win.name.charAt(0) + win.name.slice(1).toLowerCase() + ' забирает матч. Весь стадион поёт.' : 'Ничья. Решим в реванше.';
 }
 function endMatch() {
@@ -1846,7 +1871,7 @@ function drawGoalFront(right, g, S) {
   ln(S(xl, Y1, GH), S(xb, Y1, zb), '#d8d8e0', 2);
 }
 // super saiyan hair: the whole team in arcade; on the big pitch only your player and the ball carrier, so it stays readable
-const lookOf = p => ({ look: p.look, gk: p.role === 'gk', num: p.num,
+const lookOf = p => ({ look: p.look, gk: p.role === 'gk', num: p.num, feat: p.feat, lookObj: p.lookObj,
   ssj: p.role !== 'gk' && game.fury[p.team] >= 100 && game.mode !== 'title' && (MODE !== 11 || p.local || ball.owner === p) });
 function spriteFor(p) {
   let pose = 'idle', expr = 'normal', frame = 0, view = p.fy < -0.5 ? 'back' : 'side';
