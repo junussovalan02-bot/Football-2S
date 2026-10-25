@@ -183,14 +183,22 @@ function getSprite(team, pose, expr, frame, view, v) {
   SPR.set(key, c);
   return c;
 }
-const BALLSPR = [0, 1].map(f => {
+// the ball: a shaded sphere with patches that roll around it (8 frames)
+const BALLSPR = [0, 1, 2, 3, 4, 5, 6, 7].map(f => {
   const c = document.createElement('canvas'); c.width = c.height = 12; const g = c.getContext('2d');
-  let rows = ['..wwwwww..','.wwkkwwww.','wwkkkwwkww','wwwkwwkkkw','wwwwwwwkww','wkwwwwwwww','kkkwwkkwww','wkwwkkkwww','.wwwwkwww.','..wwwwww..'];
-  if (f) rows = rows.map(s => [...s].reverse().join(''));
-  rows.forEach((row, y) => [...row].forEach((ch, x) => { if (ch === '.') return;
-    g.fillStyle = ch === 'k' ? '#1a1a24' : (x + y > 12 ? '#c4cadc' : '#ffffff'); g.fillRect(x+1, y+1, 1, 1); }));
+  const spots = [[0, 0], [1.25, -0.55], [-1.25, -0.55], [2.5, 0.35], [-2.5, 0.35], [0.6, 1.15], [-0.6, -1.25], [3.14, -0.9]];
+  for (let y = 0; y < 12; y++) for (let x = 0; x < 12; x++) {
+    const dx = (x - 5.5)/5.2, dy = (y - 5.5)/5.2; if (dx*dx + dy*dy > 1) continue;
+    const lon = Math.asin(clamp(dx/Math.sqrt(Math.max(0.01, 1 - dy*dy)), -1, 1)) + f*Math.PI/8, lat = Math.asin(clamp(dy, -1, 1));
+    let spot = false;
+    for (const [sl, sb] of spots) { let d = Math.abs(((lon - sl + Math.PI*3) % (Math.PI*2)) - Math.PI); if (d*d*0.9 + (lat - sb)**2 < 0.16) spot = true; }
+    const light = -dx*0.6 - dy*0.8;
+    g.fillStyle = spot ? (light > 0.3 ? '#3a3a4a' : '#1a1a24') : light > 0.45 ? '#ffffff' : light > -0.35 ? '#e8ecf4' : '#b8c0d4';
+    g.fillRect(x, y, 1, 1);
+  }
   outline(g, PAL.ink, 12, 12); return c;
 });
+
 
 // ================== taunt emotes (pixel icons) ==================
 function makeIcon(fn) {
@@ -1491,6 +1499,18 @@ function drawFore(g, kind, FW, FH, rr) {
     }
   }
 }
+// a country flag from club.flag / club.dir (used on the HUD, team picker and the world tour)
+function drawFlagIcon(g, c, x, y, w, h) {
+  const f = c.flag || [c.jersey], R = (a, b, ww, hh, col) => { g.fillStyle = col; g.fillRect(x + a, y + b, ww, hh); };
+  switch (c.dir) {
+    case 'h': for (let i = 0; i < f.length; i++) R(0, Math.floor(h*i/f.length), w, Math.ceil(h/f.length), f[i]); break;
+    case 'cross': R(0, 0, w, h, f[0]); R(0, (h >> 1) - 1, w, 2 + (h & 1), f[1]); R((w >> 1) - 1, 0, 2 + (w & 1), h, f[1]); break;
+    case 'diag': for (let k = 0; k < h; k++) { const b = Math.round(w - (k + 0.5)*w/h); R(0, k, b, 1, f[0]); R(b, k, w - b, 1, f[2]); R(b - 1, k, 2, 1, f[1]); } break;
+    case 'kaz': { R(0, 0, w, h, f[0]); const cx = w >> 1, cy = (h >> 1) - 1; R(cx - 2, cy - 2, 4, 4, '#ffd23a'); R(cx - 1, cy - 3, 2, 6, '#ffd23a'); R(cx - 3, cy - 1, 6, 2, '#ffd23a');
+      R(cx - 4, cy + 3, 8, 1, '#ffd23a'); R(1, 1, 1, h - 2, '#ffd23a'); break; }
+    default: for (let i = 0; i < f.length; i++) R(Math.floor(w*i/f.length), 0, Math.ceil(w/f.length), h, f[i]);
+  }
+}
 function drawFlag(g, p) {
   const x = Math.round(p.x), y = Math.round(p.y);
   g.fillStyle = '#100810'; g.fillRect(x-1, y-22, 3, 23);
@@ -1977,7 +1997,8 @@ function renderTeams() {
   for (const side of [0, 1]) {
     const c = CLUBS[CLUB_KEYS[pick[side]]], g = $('kit' + side).getContext('2d');
     $('club' + side).textContent = c.name; $('star' + side).textContent = 'ЗВЕЗДА: ' + c.names[10];
-    g.imageSmoothingEnabled = false; g.clearRect(0, 0, 40, 40); g.drawImage(getSprite(c, 'cheer', 'shout', 0, 'side', { look: 0, num: 9 }), 0, 0);
+    g.imageSmoothingEnabled = false; g.clearRect(0, 0, 40, 40); g.drawImage(getSprite(c, 'cheer', 'shout', 0, 'side', { look: 0, num: 9, feat: featFor(c, 9) }), 0, 0);
+    g.fillStyle = '#100810'; g.fillRect(0, 0, 14, 10); drawFlagIcon(g, c, 1, 1, 12, 8);
   }
   const codes = pick.map(k => CLUBS[CLUB_KEYS[k]].code).sort().join('');
   const opp = CLUBS[CLUB_KEYS[pick[1]]];
@@ -2208,8 +2229,9 @@ function drawBall() {
   if (t === 'kame') { pellipse(x, y-6, 11, 9, 'rgba(120,220,255,.5)'); pellipse(x, y-6, 8, 7, 'rgba(255,255,255,.8)'); }
   if (t === 'rasen') { pellipse(x, y-6, 10, 9, 'rgba(70,170,255,.55)'); const a = game.t*25; for (let k = 0; k < 3; k++) { ctx.fillStyle = '#ffffff';
     ctx.fillRect(Math.round(x + Math.cos(a + k*2.1)*7), Math.round(y - 6 + Math.sin(a + k*2.1)*6), 2, 2); } }
-  if (giant()) { const d = Math.round(12*BIGK); ctx.drawImage(BALLSPR[Math.floor(b.rot/16) % 2], x - (d >> 1), y - d, d, d); return; }
-  ctx.drawImage(BALLSPR[Math.floor(b.rot/8) % 2], x-6, y-12);
+  const fr = ((Math.floor(b.rot/5) % 8) + 8) % 8;
+  if (giant()) { const d = Math.round(12*BIGK); ctx.drawImage(BALLSPR[fr], x - (d >> 1), y - d, d, d); return; }
+  ctx.drawImage(BALLSPR[fr], x-6, y-12);
 }
 function drawItem(it) {
   if (it.t < 2 && Math.floor(game.t*10) % 2) return;   // blinks before it disappears
@@ -2261,12 +2283,10 @@ function drawHUD() {
   ptext(ctx, mm+':'+ss, x+tw/2, HUD.y+7, 8, game.time < 15 && game.mode === 'play' && Math.floor(game.t*3)%2 ? '#ff6a6a' : '#ffffff', 'center');
   x += tw + 2;
   box(x, sw); const c = x + sw/2;
-  const f0 = getSprite(0,'idle','grit',0,'side',{ look: 0 }), f1 = getSprite(1,'idle','grit',0,'side',{ look: 0 });
-  ctx.fillStyle = TEAMS[0].hudBg; ctx.fillRect(x+2, HUD.y+2, 19, HUD.h-4);
-  ctx.drawImage(f0, 11, 1, 19, 17, x+2, HUD.y+2, 19, 17);
+  // country flags on both ends of the score box
+  ctx.fillStyle = TEAMS[0].hudBg; ctx.fillRect(x+2, HUD.y+2, 19, HUD.h-4); drawFlagIcon(ctx, TEAMS[0], x+3, HUD.y+5, 17, 11);
   ctx.fillStyle = '#ffffff'; ctx.fillRect(x+21, HUD.y+2, 1, HUD.h-4); ctx.fillRect(x+sw-22, HUD.y+2, 1, HUD.h-4);
-  ctx.fillStyle = TEAMS[1].hudBg; ctx.fillRect(x+sw-21, HUD.y+2, 19, HUD.h-4);
-  ctx.save(); ctx.translate(x+sw-2, 0); ctx.scale(-1, 1); ctx.drawImage(f1, 11, 1, 19, 17, 0, HUD.y+2, 19, 17); ctx.restore();
+  ctx.fillStyle = TEAMS[1].hudBg; ctx.fillRect(x+sw-21, HUD.y+2, 19, HUD.h-4); drawFlagIcon(ctx, TEAMS[1], x+sw-20, HUD.y+5, 17, 11);
   ptext(ctx, TEAMS[0].code, x+25, HUD.y+7, 8, '#ffffff'); ptext(ctx, TEAMS[1].code, x+sw-25, HUD.y+7, 8, '#ffffff', 'right');
   ptext(ctx, String(game.score[0]), c-11, HUD.y+7, 8, '#f2c230', 'center');
   ptext(ctx, ':', c+1, HUD.y+7, 8, '#ffffff', 'center');
@@ -2309,6 +2329,9 @@ function render() {
   const cx = cam.x, cy = cam.y; cam.x = Math.round(cx) + shx; cam.y = Math.round(cy) + shy;
   ctx.fillStyle = '#100e1a'; ctx.fillRect(0, 0, W, H);
   ctx.drawImage(FCV, -cam.x, -cam.y);
+  const standH = Math.round(OY - 14*SY - 26);
+  if ((game.mode === 'goal' || game.banner) && ['crowd', 'snowcrowd', 'bricks'].includes(TH.back) && Math.floor(game.t*8) % 2)   // the crowd jumps
+    ctx.drawImage(FCV, 0, 0, FCV.width, standH, -cam.x, -cam.y - 2, FCV.width, standH);
   if (chaosIs('ice')) { ctx.fillStyle = 'rgba(220,248,255,.34)'; ctx.fillRect(0, 0, W, H); }
   for (const p of players) { const s = S(p.x, p.y), k = clamp(1 - (p.z || 0)/120, 0.4, 1); pellipse(s.x, s.y, Math.round(9*k), 2, 'rgba(0,30,0,.35)'); }
   for (const it of items) { const s = S(it.x, it.y); pellipse(s.x, s.y, 5, 1, 'rgba(0,30,0,.35)'); }
