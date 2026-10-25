@@ -13,93 +13,94 @@
   const gk = (jersey, jerseyS, shorts, shortsS, trim) => ({ jersey, jerseyS, sleeve:jersey, sleeveS:jerseyS, shorts, shortsS, socks:jersey, socksS:jerseyS, trim });
   const BLACK = '#141010', BLACKHI = '#3a3030';
 
+  // mascot: [name, icon, chant] — the costume that walks out before the match and at half-time
   // emo: taunt emojis (keys of ICONS); home: pitch theme; flag: [colours], dir 'v' | 'h' | special;
   // uniform: every player looks the same (no beards/glasses...); special: slot -> features for one player
   const clubs = {
     nap: Object.assign(kit('#4aa8f0','#2a74c4','#4aa8f0','#2a74c4','#ffffff','#ffffff','#b8c8e4','#4aa8f0','#2a74c4','#4aa8f0','#3d9be9'), {
-      code:'NAP', skill:'lava', name:'НАПОЛИ', home:'stadium', emo:['pizza','volcano'], flag:['#4aa8f0','#ffffff','#4aa8f0'], dir:'v',
+      code:'NAP', mascot:['ПИЦЦАЙОЛО','pizza','ФОРЦА!'], skill:'lava', name:'НАПОЛИ', home:'stadium', emo:['pizza','volcano'], flag:['#4aa8f0','#ffffff','#4aa8f0'], dir:'v',
       gk: gk('#3ac85a','#249a40','#202030','#101018','#ffffff'),
       looks: [{ ...LOOK.light, ...hair('#1a1420','#463c5e','spiky') }, { ...LOOK.tan, ...hair('#3a2414','#6a4428','spiky') }, { ...LOOK.light, ...hair('#2a1a10','#5a3a20','crop') }],
       names: ['ЭСПОЗИТО','РУССО','КАПУАНО','ЙОРИО','АМАТО','ДЕ ЛУКА','ФЕРРАРА','ПАГАНО','КОППОЛА','ЧИРО','САВАСТАНО'] }),
     rom: Object.assign(kit('#ffffff','#cfc4c8','#a01c2c','#6c0e1a','#a01c2c','#a01c2c','#6c0e1a','#ffffff','#cfc4c8','#ff5a6a','#2a1a20'), {
-      code:'ROM', skill:'shields', name:'РОМА', home:'piazza', emo:['wolf','pizza'], flag:['#a01c2c','#ffd23a'], dir:'v',
+      code:'ROM', mascot:['ВОЛЧОК','wolf','АУУУ!'], skill:'shields', name:'РОМА', home:'piazza', emo:['wolf','pizza'], flag:['#a01c2c','#ffd23a'], dir:'v',
       gk: gk('#ff9a2a','#d0701a','#202030','#101018','#100810'),
       looks: [{ ...LOOK.light, ...hair('#a8381c','#d8622e','pomp') }, { ...LOOK.tan, ...hair('#3a2414','#6a4428','pomp') }, { ...LOOK.light, ...hair('#d8b040','#fff0a0','crop') }],
       names: ['ДЖЕНТИЛЕ','РИЧЧИ','МАРКЕТТИ','КОНТИ','ГАЛЛИ','ФОНТАНА','РИНАЛЬДИ','БАССИ','ТЕСТА','СЕРРА','МАНКУЗО'] }),
     rho: Object.assign(kit('#2f9a4a','#1f6e34','#ffffff','#c8d0c8','#ffffff','#ffffff','#c8d0c8','#2f9a4a','#1f6e34','#4ac86a','#1f6e34'), {
-      code:'RHO', skill:'ghost', name:'РОДЕЗИЯ', home:'savanna', emo:['ghost','money'], flag:['#2f9a4a','#ffffff','#2f9a4a'], dir:'v',
+      code:'RHO', mascot:['ПРИЗРАК','ghost','У-У-У!'], skill:'ghost', name:'РОДЕЗИЯ', home:'savanna', emo:['ghost','money'], flag:['#2f9a4a','#ffffff','#2f9a4a'], dir:'v',
       gk: gk('#2a2a3a','#16161e','#2a2a3a','#16161e','#ffd23a'),
       looks: [{ ...LOOK.light, ...hair('#d8b040','#fff0a0','pomp') }, { ...LOOK.dark, ...hair(BLACK,BLACKHI,'crop') }, { ...LOOK.light, ...hair('#6a4020','#9a6438','crop') }, { ...LOOK.dark, ...hair(BLACK,BLACKHI,'spiky') }],
       names: ['ХАРТЛИ','ПРАЙС','ШУМБА','ДОЙЛ','ВЕНТЕР','МАРОНГА','ЛАНД','ГИББ','ОРМОНД','БЭНКС','МАКАЛИСТЕР'] }),
     zim: Object.assign(kit('#ffd23a','#e0a020','#2a9a3a','#1a6a26','#1a6a26','#2a9a3a','#1a6a26','#ffd23a','#e0a020','#ffd23a','#2a9a3a'), {
-      code:'ZIM', skill:'inflation', name:'ЗИМБАБВЕ', home:'savanna', emo:['money','ghost'], flag:['#2a9a3a','#ffd23a','#d8243a','#141010'], dir:'h',
+      code:'ZIM', mascot:['БИЛЛИОНЕР','money','ДЕНЬГИ!'], skill:'inflation', name:'ЗИМБАБВЕ', home:'savanna', emo:['money','ghost'], flag:['#2a9a3a','#ffd23a','#d8243a','#141010'], dir:'h',
       gk: gk('#3a6ad8','#2448a0','#3a6ad8','#2448a0','#ffffff'),
       looks: [{ ...LOOK.dark, ...hair(BLACK,BLACKHI,'crop') }, { ...LOOK.dark, ...hair(BLACK,BLACKHI,'spiky') }, { ...LOOK.dark, ...hair(BLACK,BLACKHI,'pomp') }],
       names: ['МОЙО','НКУБЕ','ДУБЕ','ЧИКОРЕ','МУТАСА','СИБАНДА','МХЛАНГА','ЧИРВА','ГУМБО','МАРУФУ','ЧАРИ'] }),
     prk: Object.assign(kit('#e83a2a','#a8140a','#e83a2a','#a8140a','#ffffff','#ffffff','#c8c8d4','#e83a2a','#a8140a','#ff6a4a','#a8140a'), {
-      code:'PRK', skill:'rocket', name:'КНДР', home:'bamboo', emo:['rocket'], flag:['#2448a0','#ffffff','#d8243a','#ffffff','#2448a0'], dir:'h', uniform:true,
+      code:'PRK', mascot:['ТОВ. РАКЕТА','rocket','ЧУЧХЕ!'], skill:'rocket', name:'КНДР', home:'bamboo', emo:['rocket'], flag:['#2448a0','#ffffff','#d8243a','#ffffff','#2448a0'], dir:'h', uniform:true,
       gk: gk('#7a8aa0','#56647a','#202030','#101018','#ffffff'),
       looks: [{ ...LOOK.east, ...hair('#141018','#3a3a4a','pomp') }],
       names: ['РИ ЧХОЛ','КИМ ХЁН','ПАК УН','ЧХВЕ МЁН','ХАН СОН','ЧО КВАН','РЮ ЧХОН','СО ИЛЬ','КАН ХЁК','РИМ ТЭ','ЮН ОК'] }),
     kaz: Object.assign(kit('#2fb8e8','#1a86b8','#2fb8e8','#1a86b8','#ffd23a','#2fb8e8','#1a86b8','#2fb8e8','#1a86b8','#4ad0ff','#1a86b8'), {
-      code:'KAZ', skill:'eagle', name:'КАЗАХСТАН', home:'steppe', emo:['horse','bowl','eagle'], flag:['#2fb8e8'], dir:'kaz',
+      code:'KAZ', mascot:['БЕШБАРМАК','bowl','АЛГА!'], skill:'eagle', name:'КАЗАХСТАН', home:'steppe', emo:['horse','bowl','eagle'], flag:['#2fb8e8'], dir:'kaz',
       gk: gk('#ffd23a','#e0a020','#202030','#101018','#1a86b8'),
       looks: [{ ...LOOK.east, ...hair(BLACK,BLACKHI,'crop') }, { ...LOOK.tan, ...hair(BLACK,BLACKHI,'spiky') }, { ...LOOK.east, ...hair('#2a1a10','#5a3a20','pomp') }],
       names: ['ЕСЕНОВ','ОМАРОВ','ЖУМАБАЕВ','КАСЫМОВ','ИСКАКОВ','НУРЛАНОВ','АБДРАХМАНОВ','БЕКОВ','ЕРЖАНОВ','ДАУЛЕТОВ','САРСЕНОВ'] }),
     mng: Object.assign(kit('#c8202e','#901620','#2a4ab8','#1a3488','#ffd23a','#2a4ab8','#1a3488','#c8202e','#901620','#ff4a5a','#1a3488', { pattern:'sash' }), {
-      code:'MNG', skill:'herd', name:'МОНГОЛИЯ', home:'gobi', emo:['ger','bow','horse'], flag:['#c8202e','#2a4ab8','#c8202e'], dir:'mng', uniform:true,
+      code:'MNG', mascot:['ЮРТА-КУН','ger','ХУРРА!'], skill:'herd', name:'МОНГОЛИЯ', home:'gobi', emo:['ger','bow','horse'], flag:['#c8202e','#2a4ab8','#c8202e'], dir:'mng', uniform:true,
       gk: gk('#ffd23a','#e0a020','#2a4ab8','#1a3488','#c8202e'),
       looks: [{ ...LOOK.east, ...hair('#141018','#3a3a4a','crop') }],
       names: ['ГАНБААТАР','БОЛД','ДОРЖ','ЭНХ','ОЧИР','ТУМЭН','НЭРГУЙ','МУНХ','ЖАРГАЛ','ЦЭРЭН','БАТАР'] }),
     fra: Object.assign(kit('#2a3a9a','#1a2470','#2a3a9a','#1a2470','#ffffff','#ffffff','#c8d0e4','#e8243a','#a8141e','#6a8aff','#1a2470'), {
-      code:'FRA', skill:'strike', name:'ФРАНЦИЯ', home:'stadium', emo:['baguette','croissant','beret'], flag:['#2a3a9a','#ffffff','#e8243a'], dir:'v',
+      code:'FRA', mascot:['БАГЕТТО','baguette','ОН-ЛЯ-ЛЯ!'], skill:'strike', name:'ФРАНЦИЯ', home:'stadium', emo:['baguette','croissant','beret'], flag:['#2a3a9a','#ffffff','#e8243a'], dir:'v',
       gk: gk('#9ae04a','#6ab02a','#202030','#101018','#202030'),
       looks: [{ ...LOOK.light, ...hair('#3a2414','#6a4428','pomp') }, { ...LOOK.dark, ...hair(BLACK,BLACKHI,'crop') }, { ...LOOK.tan, ...hair(BLACK,BLACKHI,'spiky') }, { ...LOOK.light, ...hair('#d8b040','#fff0a0','crop') }],
       names: ['ЛЕРУА','МОРО','ЖИРАР','БОНЕ','ДЮРАН','ЛЕФЕВР','ФОНТЕН','ШЕВАЛЬЕ','ГАРНЬЕ','ДЮПОН','БАГЕТТ'] }),
     ger: Object.assign(kit('#ffffff','#cfcfd8','#ffffff','#cfcfd8','#141010','#141010','#000000','#ffffff','#cfcfd8','#e8e8f0','#141010'), {
-      code:'GER', skill:'order', name:'ГЕРМАНИЯ', home:'snow', emo:['pretzel','sausage'], flag:['#141010','#d8243a','#ffd23a'], dir:'h',
+      code:'GER', mascot:['КРЕНДЕЛЬ','pretzel','ОРДНУНГ!'], skill:'order', name:'ГЕРМАНИЯ', home:'snow', emo:['pretzel','sausage'], flag:['#141010','#d8243a','#ffd23a'], dir:'h',
       gk: gk('#3ac85a','#249a40','#141010','#000000','#ffffff'),
       looks: [{ ...LOOK.light, ...hair('#d8b040','#fff0a0','crop') }, { ...LOOK.light, ...hair('#6a4020','#9a6438','pomp') }, { ...LOOK.tan, ...hair(BLACK,BLACKHI,'crop') }],
       names: ['НОЙМАН','ШМИДТ','ВАГНЕР','БЕККЕР','ШУЛЬЦ','ХОФМАН','КЛЯЙН','ВОЛЬФ','БРАУН','ШРЁДЕР','ШНИЦЕЛЬ'] }),
     eng: Object.assign(kit('#ffffff','#d0d4e4','#ffffff','#d0d4e4','#d8243a','#1a2a6a','#0e1a48','#ffffff','#d0d4e4','#ff7a8a','#1a2a6a'), {
-      code:'ENG', skill:'home', name:'АНГЛИЯ', home:'rainy', emo:['tea','umbrella'], flag:['#ffffff','#d8243a'], dir:'cross',
+      code:'ENG', mascot:['СЭР ЧАЙ','tea','ЧАЙ В 5!'], skill:'home', name:'АНГЛИЯ', home:'rainy', emo:['tea','umbrella'], flag:['#ffffff','#d8243a'], dir:'cross',
       gk: gk('#ffd23a','#e0a020','#ffd23a','#e0a020','#1a2a6a'),
       looks: [{ ...LOOK.pale, ...hair('#c8501c','#ff8a3a','crop') }, { ...LOOK.dark, ...hair(BLACK,BLACKHI,'crop') }, { ...LOOK.light, ...hair('#6a4020','#9a6438','spiky') }],
       names: ['УОКЕР','СМИТ','ДЖОНС','ТЕЙЛОР','БРАУН','УИЛСОН','ЭВАНС','РОБЕРТС','РАЙТ','ГРИН','ЭРЛГРЕЙ'] }),
     esp: Object.assign(kit('#d8243a','#a0141e','#d8243a','#a0141e','#ffd23a','#1a2a6a','#0e1a48','#1a2a6a','#0e1a48','#ff4a5a','#a0141e'), {
-      code:'ESP', skill:'bull', name:'ИСПАНИЯ', home:'stadium', emo:['bull','paella'], flag:['#d8243a','#ffd23a','#ffd23a','#d8243a'], dir:'h',
+      code:'ESP', mascot:['ТОРО','bull','ОЛЕ!'], skill:'bull', name:'ИСПАНИЯ', home:'stadium', emo:['bull','paella'], flag:['#d8243a','#ffd23a','#ffd23a','#d8243a'], dir:'h',
       gk: gk('#202030','#101018','#202030','#101018','#ffd23a'),
       looks: [{ ...LOOK.tan, ...hair(BLACK,BLACKHI,'pomp') }, { ...LOOK.light, ...hair('#3a2414','#6a4428','spiky') }, { ...LOOK.tan, ...hair('#3a2414','#6a4428','crop') }],
       names: ['КАСАС','ГАРСИЯ','ЛОПЕС','МАРТИНЕС','САНЧЕС','ПЕРЕС','ГОМЕС','РУИС','ДИАС','МОРЕНО','ПАЭЛЬЯС'] }),
     por: Object.assign(kit('#a8142a','#780a1c','#a8142a','#780a1c','#2a9a3a','#2a9a3a','#1a6a26','#a8142a','#780a1c','#ff5a6a','#780a1c'), {
-      code:'POR', skill:'feint', name:'ПОРТУГАЛИЯ', home:'beach', emo:['sardine','rooster'], flag:['#2a9a3a','#d8243a','#d8243a'], dir:'v',
+      code:'POR', mascot:['САРДИНЬЮ','sardine','СИУУУ!'], skill:'feint', name:'ПОРТУГАЛИЯ', home:'beach', emo:['sardine','rooster'], flag:['#2a9a3a','#d8243a','#d8243a'], dir:'v',
       gk: gk('#ffd23a','#e0a020','#202030','#101018','#202030'),
       looks: [{ ...LOOK.tan, ...hair(BLACK,BLACKHI,'spiky') }, { ...LOOK.tan, ...hair('#3a2414','#6a4428','pomp') }, { ...LOOK.dark, ...hair(BLACK,BLACKHI,'crop') }],
       names: ['КОШТА','СИЛВА','САНТУШ','ФЕРРЕЙРА','ПЕРЕЙРА','ОЛИВЕЙРА','РОДРИГЕШ','МАРТИНШ','СОУЗА','ГОМЕШ','САРДИНЬЯ'] }),
     ned: Object.assign(kit('#ff8a1a','#d0600a','#ff8a1a','#d0600a','#ffffff','#ff8a1a','#d0600a','#ff8a1a','#d0600a','#ffa040','#d0600a'), {
-      code:'NED', skill:'bikes', name:'НИДЕРЛАНДЫ', home:'tulips', emo:['tulip','cheese','clog'], flag:['#d8243a','#ffffff','#2448a0'], dir:'h',
+      code:'NED', mascot:['ГАУДА','cheese','ХУП-ХУП!'], skill:'bikes', name:'НИДЕРЛАНДЫ', home:'tulips', emo:['tulip','cheese','clog'], flag:['#d8243a','#ffffff','#2448a0'], dir:'h',
       gk: gk('#2448a0','#1a3478','#2448a0','#1a3478','#ffffff'),
       looks: [{ ...LOOK.light, ...hair('#d8b040','#fff0a0','crop') }, { ...LOOK.light, ...hair('#e8c060','#fff4b0','pomp') }, { ...LOOK.dark, ...hair(BLACK,BLACKHI,'crop') }],
       names: ['БОС','ДЕ ЙОНГ','ЯНСЕН','ДЕ ВРИС','ВАН ДАМ','БАККЕР','ВИССЕР','МЕЙЕР','ДЕ БУР','МУЛДЕР','ВАН ТЮЛЬПАН'] }),
     ant: Object.assign(kit('#202030','#101018','#202030','#101018','#ffffff','#202030','#101018','#ff9a1a','#d0700a','#c8e0ff','#202030', { pattern:'penguin' }), {
-      code:'ANT', skill:'blizzard', name:'АНТАРКТИДА', home:'ice', emo:['penguin','snowflake'], flag:['#4a8ad8','#ffffff','#4a8ad8'], dir:'h',
+      code:'ANT', mascot:['ПИНГВИН','penguin','КУА!'], skill:'blizzard', name:'АНТАРКТИДА', home:'ice', emo:['penguin','snowflake'], flag:['#4a8ad8','#ffffff','#4a8ad8'], dir:'h',
       gk: gk('#ffffff','#c8d4e0','#202030','#101018','#4a8ad8'),
       looks: [{ ...LOOK.pale, ...hair('#e8eef4','#ffffff','crop') }, { ...LOOK.pale, ...hair('#6a4020','#9a6438','spiky') }, { ...LOOK.light, ...hair('#c8501c','#ff8a3a','pomp') }],
       names: ['АЙСБЕРГ','ХОЛОДОВ','ТЮЛЕНЕВ','ВЬЮГИН','ПУРГА','МОРОЗОВ','СНЕЖОК','ФРОСТ','ЛЕДЯНСКИЙ','ПОЛЯРНИКОВ','ПИНГВИНОВ'],
       beardy: true }),
     sea: Object.assign(kit('#d8243a','#a0141e','#202030','#101018','#ffffff','#202030','#101018','#d8243a','#a0141e','#ff5a5a','#202030', { pattern:'sash' }), {
-      code:'SEA', skill:'cannon', name:'СИЛЕНД', home:'platform', emo:['anchor','crab'], flag:['#d8243a','#ffffff','#141010'], dir:'diag',
+      code:'SEA', mascot:['КРАБ','crab','ЩЁЛК!'], skill:'cannon', name:'СИЛЕНД', home:'platform', emo:['anchor','crab'], flag:['#d8243a','#ffffff','#141010'], dir:'diag',
       gk: gk('#ffd23a','#e0a020','#202030','#101018','#202030'),
       looks: [{ ...LOOK.light, ...hair('#6a4020','#9a6438','crop') }, { ...LOOK.pale, ...hair('#c8501c','#ff8a3a','spiky') }, { ...LOOK.tan, ...hair(BLACK,BLACKHI,'pomp') }],
       names: ['ЯКОРЬ','ТРОС','ШТОРМ','ВОЛНА','БАРНАКЛ','КРЮК','ЧАЙКА','ПРИЛИВ','МАЯК','МАЛЫШ','ГАРПУН'],
       special: { 9: 'short beard' }, beardy: true }),
     vat: Object.assign(kit('#ffd23a','#e0a020','#2a4ad8','#1a3498','#d8243a','#2a4ad8','#1a3498','#ffd23a','#e0a020','#ffe14a','#2a4ad8', { pattern:'stripes', stripe:'#2a4ad8' }), {
-      code:'VAT', skill:'miracle', name:'ВАТИКАН', home:'piazza', emo:['key','candle'], flag:['#ffd23a','#ffffff'], dir:'v',
+      code:'VAT', mascot:['КЛЮЧИК','key','АМИНЬ!'], skill:'miracle', name:'ВАТИКАН', home:'piazza', emo:['key','candle'], flag:['#ffd23a','#ffffff'], dir:'v',
       gk: gk('#d8243a','#a0141e','#202030','#101018','#ffd23a'),
       looks: [{ ...LOOK.light, ...hair('#6a6a70','#9a9aa0','crop') }, { ...LOOK.light, ...hair('#3a2414','#6a4428','pomp') }, { ...LOOK.pale, ...hair('#d8b040','#fff0a0','crop') }],
       names: ['ГУГГЕНБЮЛЬ','ЦУРБРИГГЕН','ШТАЙНЕР','МАЙЕР','КЕЛЛЕР','ВЕБЕР','ФИШЕР','ЭГГЕР','ХУБЕР','ГАФНЕР','ЛАНЦ'] }),
     atl: Object.assign(kit('#2ad8c8','#1aa098','#2ad8c8','#1aa098','#ffe14a','#1a5a8a','#0e3a62','#2ad8c8','#1aa098','#5af0e0','#1a5a8a', { pattern:'hoops', stripe:'#ffe14a' }), {
-      code:'ATL', skill:'tsunami', name:'АТЛАНТИДА', home:'underwater', emo:['trident','fish'], flag:['#1a5a8a','#2ad8c8','#1a5a8a'], dir:'h',
+      code:'ATL', mascot:['ТРЕЗУБЧИК','trident','БУЛЬ!'], skill:'tsunami', name:'АТЛАНТИДА', home:'underwater', emo:['trident','fish'], flag:['#1a5a8a','#2ad8c8','#1a5a8a'], dir:'h',
       gk: gk('#ff8a6a','#d8604a','#1a5a8a','#0e3a62','#ffe14a'),
       looks: [{ ...LOOK.sea, ...hair('#2a8a3a','#5ac86a','long') }, { ...LOOK.sea, ...hair('#1a5a6a','#3a8a9a','spiky') }, { ...LOOK.sea, ...hair('#ffe14a','#fff4b0','long') }],
       names: ['КРАБОС','НЕПТУНИС','ТРИТОНОС','КОРАЛЛИС','МЕДУЗИС','ЖЕМЧУГОС','ПРИЛИВИС','РИФОС','СКАТОС','АКВАРИС','ОСЬМИНОС'] }),
@@ -158,6 +159,12 @@
       '....kkkk....','...kkkkkk...','..kkwkkwkk..','..kkkookkk..','..kwwwwwwk..','.kkwwwwwwkk.','.kkwwwwwwkk.','kk.wwwwww.kk','...wwwwww...','...kwwwwk...','...oo..oo...','............']),
     snowflake: P({ w:'#ffffff', b:'#8fe0ff' }, [
       '.....w......','...w.w.w....','....www.....','.w..bwb..w..','..w.bwb.w...','wwwwwbwwwww.','..w.bwb.w...','.w..bwb..w..','....www.....','...w.w.w....','.....w......','............']),
+    goose: P({ w:'#f4f4f4', s:'#c8c8d0', o:'#ff9a1a', k:'#141010' }, [
+      '....www.....','...wwkw.....','...wwwwoo...','....ww.oo...','....ww......','....ww......','...wwww.....','.wwwwwwwww..','wwwwwwwwwsw.','.wwwwwwwsw..','..sssssss...','...o...o....']),
+    mic: P({ k:'#3a3a48', s:'#8a8a9a', w:'#d8d8e4', r:'#d8243a' }, [
+      '....kkkk....','...kwswsk...','...kswswk...','...kwswsk...','...kswswk...','....kkkk....','....rrrr....','.....kk.....','.....kk.....','.....kk.....','.....kk.....','...kkkkkk...']),
+    trophy: P({ y:'#ffd23a', o:'#c89a1a', w:'#fff6b0', b:'#8a5a2a' }, [
+      '.yyyyyyyyy..','yyywyyyyyyy.','y.ywyyyyy.y.','y.ywyyyyy.y.','.yywyyyyyy..','..yyyyyyy...','...yyyyy....','....yyy.....','.....y......','....ooo.....','...bbbbb....','...bbbbb....']),
     anchor: P({ k:'#3a4a5a', s:'#6a7a8a' }, [
       '....kkk.....','....k.k.....','....kkk.....','..kkkkkkk...','.....k......','.....k......','.....k......','k....k....k.','kk...k...kk.','.kk..k..kk..','..kkkkkkk...','....kkk.....']),
     crab: P({ r:'#e84a2a', d:'#a82a1a', k:'#141010', w:'#ffffff' }, [

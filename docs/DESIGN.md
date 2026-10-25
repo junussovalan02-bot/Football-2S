@@ -14,7 +14,18 @@ Main menu: **РЕАЛЬНОСТЬ 11x11 · АРКАДА · С ДРУГОМ · Н
   their player turns AI and "2P ВЫШЕЛ" shows; re-entering the same code brings them back into the same
   match ("2P ВЕРНУЛСЯ"). The guest's lobby keeps the last code filled in for that.
 - **НАСТРОЙКИ** — СЛОЖНОСТЬ (also on the arcade and team screens), ПОГОДА, КАОС, ЗВУК. Saved in localStorage.
-- Match: 2 minutes (arcade) / 3 minutes (11 on 11). After a goal the team that conceded kicks off.
+- Match: 2 minutes (arcade) / 3 minutes (11 on 11), two halves. After a goal the team that conceded kicks off.
+
+## Mascots and half-time (v0.17, `// ==== mascots & half-time` in game.js)
+- **Walk-out** before every match (`game.mode = 'show'`, `game.show = {kind:'intro'}`, 4.6 s): both clubs' mascots
+  (`mascot: [name, icon, chant]` in data.js, e.g. БАГЕТТО, КРЕНДЕЛЬ, СЭР ЧАЙ, ЮРТА-КУН; a custom club gets one from its
+  emoji) walk in from the sides, dance at the centre circle with confetti, shout their chant and walk off. Body in the
+  club's kit, head = the club emoji at 2×. УДАР skips it (solo only).
+- **Half-time** when the clock reaches half: whistle, mascots again (5 s), a board with ПЕРЕРЫВ, the score, a silly
+  stat («ВЛАДЕНИЕ: 50% ПАНИКИ») and the new weather (the old mid-match weather change moved here). Then the teams
+  **swap ends**: `game.flip = 1`, `dirOf(team)` / `goalX` / `ownX` / `mirX` flip, the other team kicks off, «2-Й ТАЙМ!».
+  Everything that used to assume «team 0 attacks right» goes through `dirOf` (AI, keepers, skills, kickoffs, scoring).
+- Online: `ho: [half, flip, showKind, showT, joke, weather]` in the snapshot; the guest draws the show itself.
 
 ## Clubs (v0.15, data in `src/data.js`)
 17 countries/clubs, all names invented: МОНГОЛИЯ (uniform, like North Korea), НАПОЛИ, РОМА, РОДЕЗИЯ, ЗИМБАБВЕ, КНДР, КАЗАХСТАН, ФРАНЦИЯ, ГЕРМАНИЯ, АНГЛИЯ,
@@ -102,6 +113,29 @@ Main menu КАРЬЕРА. Saved in localStorage (`azz-career`).
 - **Мировое турне**: 8 away matches against random countries on their home pitches, 3 min, 11 on 11. Before each a
   2.4 s flight animation (your flag → theirs). Win 3 / draw 1. At the end: ≥19 pts ЧЕМПИОН, ≥13 ПРИЗЁР, ≥7 СЕРЕДНЯК,
   else ТУРИСТ; 8+ own goals in player mode = ЗОЛОТАЯ БУТСА. Then НОВЫЙ СЕЗОН with a new route.
+
+### Story (v0.17, texts in `src/story.js`, engine `// ==== career story` in game.js)
+A parody of sports-game career modes, exaggerated. Scenes are typed lines with a talking pixel portrait (the cast are
+drawn with the player sprite in their own outfits: МАМА, АГЕНТ ЖОРА «мне всего 95%», ПРЕЗИДЕНТ КЛУБА, ТРЕНЕР ПАЛЫЧ,
+ДОКТОР, ФАНАТ, ШАМАН; ЖУРНАЛИСТ / ГУСЬ / ВЕДУЩИЙ are icons) and 3 answers: СКРОМНЯГА (calm) / ДЕРЗКИЙ (fire) /
+ПОЕХАВШИЙ (mad).
+- **Chapters** = seasons: 1 «ПАРЕНЬ ИЗ ДВОРА» (agent signs you with a goose's paw, the rival appears, transfer
+  rumour paid in pearls, training where the cone wins, the final), 2 «СЛАВА И ЛАПША» (reality show, the rival is your
+  long-lost twin, the stadium sold for a parking lot, «ушиб эго»), 3+ «ЛЕГЕНДА (ВРОДЕ)». Beats before rounds 1, 2, 4,
+  6, 8; before the other rounds a random event (70 %): tabloids, energy-drink sponsor, a fan's goat, 1-1-8 tactics,
+  your video-game rating is lower than the goose's, mum asks if you ate, shaman, barber, naming rights.
+- **Rival** (made-up name, ПАОЛО ПАФОСНИ etc.) — his club is always the last match of the season.
+- **Board demand** for every match (ПОБЕДИТЬ, НЕ ПРОИГРАТЬ, ЗАБИТЬ 2, ПРОПУСТИТЬ ≤1, РАЗНИЦА 2, ЗАБИТЬ САМОМУ; the
+  final = win) with a threat; met +12 trust, failed −18. Trust 0 → fired… and rehired at 30 % (nobody else wants it).
+- **Press conference** after every match (button ПРЕСС-КОНФЕРЕНЦИЯ): a question by result, three answers, a headline
+  goes to the news feed on the route screen. calm +3 trust +3 fans, fire +12 fans −6 trust, mad +8 fans.
+- **Match modifiers** from choices (shown at kick-off): fury (start with full FURIA), skill (skill ready),
+  tired (the rival starts with full FURIA), curse (their keeper plays like a beginner), promise (score or the fans laugh).
+- **ЗОЛОТОЙ МЯЧ** ceremony after the season: gold (≥19 pts or 10 own goals), «ПОЧТИ» (≥13), else the rival wins;
+  the season's title by your most frequent answer type.
+- Route screen shows ФАНАТЫ, ДОВЕРИЕ, personality, the next modifier, the president's demand and the last headlines.
+- State `career.story` = {fame, board, trait, news, seen, fired, mod, goal, pending, rival, big}; an old save gets it on
+  the next visit.
 
 ## Rules screen
 Cards with looping 80×48 mini-animations drawn with the game sprites (`HELP`, `helpLoop`): super-saiyan, tiger, beam,
@@ -220,6 +254,7 @@ depend on difficulty. Both detour for pickups.
 - **Storm**: more puddles, strong wind that changes every 7–11 s and pushes the ball in the air,
   lightning every 5–10 s stuns a random player.
 - **Clear**: a couple of mud patches. **Off**: clean pitch, no wind.
+- At half-time the weather may change (not on pitches with their own climate).
 
 ## Taunts
 Roma players pop up emotes (laugh, tongue, middle finger, angry, cry, zzz) when they knock you down,

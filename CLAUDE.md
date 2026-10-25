@@ -26,7 +26,8 @@ can be inlined into one HTML file for a Claude artifact.
 |---|---|
 | `index.html` | Page shell: canvas, menus (overlays `ov*`: main with pages mMain/mPlay/mOpts, ovTeams, …), touch pad. Loads `src/net/*.js` then `src/game.js`. |
 | `src/style.css` | Menus, CRT screen effect, touch controls, portrait/landscape layout. |
-| `src/data.js` | Plain data: `clubs` (kits, flags, looks, names, emojis, home pitch), `icons` (12×12 emoji char maps), `themes` (pitches). Loaded before game.js. |
+| `src/data.js` | Plain data: `clubs` (kits, flags, looks, names, emojis, home pitch, mascot), `icons` (12×12 emoji char maps), `themes` (pitches). Loaded before game.js. |
+| `src/story.js` | Career story texts: cast, chapters/beats, random events, press conferences, headlines, board demands, ceremony. |
 | `src/game.js` | Everything else, one IIFE, sections marked `// ====`. See code map below. |
 | `src/net/index.js` | Picks the online transport → `window.AzzNet.connect()` returns `{room, user}`. |
 | `src/net/local.js` | Dev transport over BroadcastChannel (two tabs). |
@@ -76,7 +77,12 @@ All graphics are drawn by code (sprites built pixel by pixel in `getSprite`, fie
 - **Pitch themes** — `TH`/`setTheme`, physics multipliers `ph()`, scenery `drawBack`/`drawFore`, ad boards `ADS`,
   critters `CRIT`/`CRITSPR`/`spawnCritter`/`updCritter`. Posts/crossbar and `ball.curve` in `updBall`.
 - **Career** — `career` (localStorage), `makeClub`, `registerCareer` (custom club = `CLUBS.my`), `newTour`, `placeMe`
-  (your player, `p.me`, `meLocked`), `careerResult`, screens `openCareer`/`openCreate`/`openTour`/`fly`.
+  (your player, `p.me`, `meLocked`), `careerResult`, screens `openCareer`/`openCreate`/`openTour`/`fly`/`flyGo`.
+- **Career story** — `ensureStory` (`career.story`), scene player `playScene`/`sceneNext`/`sceneTap` (overlay `ovStory`,
+  portraits `drawFace`/`castClub`), `preMatch` (beat or event + board demand), `postMatch` (verdict, press conference,
+  firing), `ceremony`, `newGoal`/`goalMet`, modifiers via `startMatch(…, {mod})` (`game.curse`, `game.modTxt`).
+- **Mascots & half-time** — `game.mode = 'show'`, `game.show`, `startShow('intro'|'half')`, `updShow`, `drawMascot`,
+  `drawHalfBoard`, `halfWeather`; ends swap via `game.flip` → `dirOf`/`goalX`/`ownX`/`mirX`.
 - **Skills & silliness** — `SKILLS`, `useSkill`, runners `game.runners`/`updRunners`/`drawRunner`, `freeze`, `scare`, `boo`,
   `pee`/`pees`, gags `updGags`, words `say` (TXTS). Pad button `bK`.
 - **Rules screen** — `HELP` scene painters + `helpLoop`.
@@ -119,5 +125,6 @@ See also the prioritized backlog in `docs/research/azzurri-audit.md` (goalkeeper
 2. ~~Static hosting~~ — GitHub Pages workflow; https://junussovalan02-bot.github.io/Football-2S/
 3. ~~Goalkeepers, more clubs, difficulty, 11 on 11~~ — v0.11.
 4. ~~Career, 16 countries, themed pitches, rules cards~~ — v0.15.
-5. Ideas not done yet: 11v11 online, career difficulty curve, replay of goals, PWA install (manifest + icon), tornado /
+5. ~~Mascots, half-time with switching ends, story career (parody)~~ — v0.17.
+6. Ideas not done yet: 11v11 online, career difficulty curve, replay of goals, PWA install (manifest + icon), tornado /
    goats / bomb ball events, crowd sounds, aftertouch, headers.

@@ -154,7 +154,7 @@ body.portrait.touch .rot{display:block}
 .namein{font-size:14px;letter-spacing:.1em;padding:8px 0 8px .1em;width:100%}
 #crFields{min-width:240px;gap:5px}
 #crFields .mi{font-size:10px;padding:7px 12px}
-.tour{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:4px 14px;width:min(640px,100%);text-align:left}
+.tour{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:4px 14px;width:min(640px,92vw);text-align:left}
 .tour li{display:flex;align-items:center;gap:8px;font-size:8px;color:#9fb0d0;padding:4px 6px;background:var(--panel)}
 .tour li canvas{width:28px;height:20px;image-rendering:pixelated;flex:0 0 auto}
 .tour li.w{color:#7ae070} .tour li.d{color:#ffd23a} .tour li.l{color:#ff6a6a}
@@ -186,3 +186,21 @@ body.portrait.touch .rot{display:block}
 @keyframes blink{50%{opacity:0}}
 body.in-menu #pad{visibility:hidden}
 @media (prefers-reduced-motion:reduce){.pb.on{transform:none}.stamp{animation:none}}
+/* career story: a portrait and a speech box, choices below */
+.story{gap:12px;width:min(680px,94vw)}
+.story .scene{display:flex;gap:12px;align-items:flex-start;width:100%}
+#stFace{width:120px;height:120px;flex:0 0 auto;image-rendering:pixelated;background:#1c2a52;box-shadow:0 0 0 3px var(--ink),0 0 0 5px var(--line)}
+.story .bubble{flex:1;text-align:left;background:var(--panel);padding:10px 12px;box-shadow:0 0 0 3px var(--ink);min-height:96px;cursor:pointer}
+.story .bubble b{display:block;font-size:9px;color:var(--gold);margin-bottom:8px;font-weight:400}
+.story .bubble p{margin:0;font-size:10px;line-height:1.8;color:#e8ecff}
+.story .scene.narr #stFace{display:none}
+.story .scene.narr .bubble p{color:#9fe8ff}
+.story .items .mi{font-size:10px;width:100%}
+#stChoices{width:100%;max-width:460px}
+.tag.meta{color:#9fe8ff;margin:-10px 0 0}
+.tag.goal{color:#ff9a5a;margin:-10px 0 0;line-height:1.6}
+.news{list-style:none;margin:-10px 0 0;padding:0;font-size:8px;line-height:1.7;color:#c8cde0;max-width:640px;text-align:left}
+.news li::before{content:'» ';color:var(--gold)}
+@media (orientation:landscape) and (max-height:520px){ #stFace{width:84px;height:84px} .story .bubble{min-height:70px} .story .items .mi{padding:6px 10px} .story{gap:8px} }
+@media (orientation:portrait){ .story .scene{flex-direction:column;align-items:center} }
+@media (orientation:landscape) and (max-height:520px){ #ovTour .menu{gap:14px} #ovTour .logo.sm{margin:0} .news li:nth-child(n+3){display:none} }

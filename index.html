@@ -163,7 +163,21 @@ img{max-width:100%}
         <h2 class="logo sm">МИРОВОЕ ТУРНЕ<span id="tourWho"></span></h2>
         <ol class="tour" id="tourList"></ol>
         <p class="tag" id="tourStats"></p>
+        <p class="tag meta" id="tourMeta"></p>
+        <p class="tag goal" id="tourGoal"></p>
+        <ul class="news" id="tourNews"></ul>
         <div class="items row"><button class="mi big go" id="miFly">ЛЕТИМ!</button><button class="mi dim" id="miTourBack">В МЕНЮ</button></div>
+      </div>
+    </div>
+
+    <div class="ov" id="ovStory" hidden>
+      <div class="menu story">
+        <p class="tag" id="stTitle"></p>
+        <div class="scene" id="stScene">
+          <canvas id="stFace" width="40" height="40" aria-hidden="true"></canvas>
+          <div class="bubble"><b id="stWho"></b><p id="stText" aria-live="polite"></p></div>
+        </div>
+        <div class="items" id="stChoices"></div>
       </div>
     </div>
 
@@ -221,6 +235,7 @@ img{max-width:100%}
 <script src="src/net/peer.js"></script>
 <script src="src/net/index.js"></script>
 <script src="src/data.js"></script>
+<script src="src/story.js"></script>
 <script src="src/game.js"></script>
 </body>
 </html>
