@@ -77,6 +77,12 @@ body.portrait.touch .rot{display:block}
 .rules b{font-weight:400;color:var(--gold);margin-right:6px}
 .rules b.f{color:#ff8a3a} .rules b.v{color:#ff5a3a} .rules b.g{color:#7fe0ff}
 #gameList:empty{display:none}
+.code{margin:0;font-size:clamp(28px,9vw,44px);letter-spacing:.18em;padding-left:.18em;color:var(--gold);text-shadow:0 4px 0 #000}
+.codein{font-family:var(--f-pixel);font-size:24px;letter-spacing:.3em;text-transform:uppercase;text-align:center;width:min(260px,80vw);
+  padding:12px 0 12px .3em;margin:0 auto;background:var(--panel);color:var(--gold);border:3px solid var(--line);border-radius:6px;
+  -webkit-user-select:text;user-select:text;caret-color:var(--gold)}
+.codein:focus{outline:none;border-color:var(--gold)}
+.codein::placeholder{color:#3a4770}
 .hint{margin:0;max-width:300px;font-size:7px;line-height:2;color:#7f89a6}
 .final{font-size:clamp(18px,5vw,26px);margin:0;line-height:1.4;color:#fff}
 .final .sc{color:var(--gold)}

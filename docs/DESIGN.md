@@ -5,7 +5,11 @@
 - **2 НА 2** — you control one Napoli player; control auto-switches to whoever reaches the ball first
   (`reachTime`), or press СМЕНА / `L`.
 - **С ДРУГОМ** (online) — host picks *ВМЕСТЕ ПРОТИВ РОМЫ* (2v2, both on Napoli: 1P + 2P) or
-  *ДРУГ ПРОТИВ ДРУГА* (1v1, guest plays Roma).
+  *ДРУГ ПРОТИВ ДРУГА* (1v1, guest plays Roma) and gets a 5-character code (no O/0/I/1/L) plus
+  ПОДЕЛИТЬСЯ (share sheet / copy link `?join=CODE`). The friend taps ВОЙТИ ПО КОДУ (auto-joins at the
+  5th character) or just opens the link. If the guest drops mid-match (screen lock, bad network),
+  their player turns AI and "2P ВЫШЕЛ" shows; re-entering the same code brings them back into the same
+  match ("2P ВЕРНУЛСЯ"). The guest's lobby keeps the last code filled in for that.
 - **ПОГОДА ВКЛ/ВЫКЛ** — when on, weather is random at kickoff and may change once at half time.
 - Match: 2 minutes. After a goal the team that conceded kicks off.
 

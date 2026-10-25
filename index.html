@@ -49,12 +49,22 @@ img{max-width:100%}
       <div class="menu">
         <h2 class="logo" style="font-size:20px">С ДРУГОМ<span>ONLINE</span></h2>
         <p class="tag" id="netStatus" style="margin:0" aria-live="polite">ПОДКЛЮЧЕНИЕ…</p>
-        <div class="items">
+        <div class="items" id="nIdle">
           <button class="mi" id="miHostCoop">ВМЕСТЕ ПРОТИВ РОМЫ</button>
           <button class="mi" id="miHostVs">ДРУГ ПРОТИВ ДРУГА</button>
+          <button class="mi" id="miJoinCode">ВОЙТИ ПО КОДУ</button>
           <div class="items" id="gameList"></div>
-          <button class="mi dim" id="miNetBack">НАЗАД</button>
         </div>
+        <div class="items" id="nCode" hidden>
+          <p class="code" id="codeBig" aria-label="Код игры"></p>
+          <button class="mi" id="miShare">ПОДЕЛИТЬСЯ</button>
+        </div>
+        <form class="items" id="nJoin" hidden>
+          <input class="codein" id="codeIn" maxlength="5" autocomplete="off" autocorrect="off" autocapitalize="characters"
+            spellcheck="false" enterkeyhint="go" placeholder="ABCDE" aria-label="Код игры">
+          <button class="mi" id="miJoinGo" type="submit">ВОЙТИ</button>
+        </form>
+        <div class="items"><button class="mi dim" id="miNetBack">НАЗАД</button></div>
         <p class="hint" id="netHint"></p>
       </div>
     </div>
@@ -114,7 +124,9 @@ img{max-width:100%}
     </div>
   </div>
 </div>
+<script src="src/vendor/peerjs.min.js"></script>
 <script src="src/net/local.js"></script>
+<script src="src/net/peer.js"></script>
 <script src="src/net/index.js"></script>
 <script src="src/game.js"></script>
 </body>

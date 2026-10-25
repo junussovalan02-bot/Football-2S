@@ -8,13 +8,16 @@
 //
 // Order of preference:
 //   1. ?net=local in the URL        -> BroadcastChannel (two tabs of one browser, for development)
-//   2. window.claude.use('room')    -> running inside a Claude artifact
-//   3. window.AzzNetCustom          -> your own transport (WebSocket / WebRTC) — see docs/ONLINE.md
-//   4. nothing                      -> online menu says "unavailable", offline modes still work
+//   2. PeerJS loaded (src/vendor)   -> WebRTC, friends join by a 5-letter code (src/net/peer.js)
+//   3. window.claude.use('room')    -> running inside a Claude artifact (or forced with ?net=claude)
+//   4. window.AzzNetCustom          -> your own transport (WebSocket / WebRTC) — see docs/ONLINE.md
+//   5. nothing                      -> online menu says "unavailable", offline modes still work
+// Transports with room.host(code) / room.join(code) get the code lobby; the others list open games.
 (function () {
   async function connect() {
     const q = new URLSearchParams(location.search);
     if (q.get('net') === 'local' && window.AzzNetLocal) return { room: window.AzzNetLocal.create(), user: null };
+    if (q.get('net') !== 'claude' && window.Peer && window.AzzNetPeer) return { room: window.AzzNetPeer.create(), user: null };
     if (window.claude && typeof window.claude.use === 'function') {
       const room = await window.claude.use('room');
       if (room) { const user = await window.claude.use('user').catch(() => null); return { room, user }; }

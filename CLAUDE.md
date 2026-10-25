@@ -11,10 +11,11 @@ Talk to the owner in **Russian**; code, comments and commit messages in English.
 npx --yes serve -l 8080 .        # or: python3 -m http.server 8080
 open http://localhost:8080/            # single player
 open http://localhost:8080/?net=local  # in TWO tabs: test online (BroadcastChannel, no server)
+open http://localhost:8080/?peer=127.0.0.1:9000  # PeerJS against a local PeerServer (docs/ONLINE.md)
 python3 tools/build-single.py          # -> dist/azzurri-arcade.html (one self-contained file)
 ```
 
-No build step, no dependencies. Plain ES2020 in classic `<script>` tags (not modules) so the same code
+No build step, no npm dependencies (PeerJS is vendored). Plain ES2020 in classic `<script>` tags (not modules) so the same code
 can be inlined into one HTML file for a Claude artifact.
 
 ## Files
@@ -26,6 +27,9 @@ can be inlined into one HTML file for a Claude artifact.
 | `src/game.js` | Everything else, one IIFE, sections marked `// ====`. See code map below. |
 | `src/net/index.js` | Picks the online transport → `window.AzzNet.connect()` returns `{room, user}`. |
 | `src/net/local.js` | Dev transport over BroadcastChannel (two tabs). |
+| `src/net/peer.js` | Real online: PeerJS/WebRTC, `room.host(code)` / `room.join(code)` / `leave()`. |
+| `src/vendor/peerjs.min.js` | PeerJS 1.5.4, vendored (MIT). Don't edit. |
+| `.github/workflows/pages.yml` | Deploys `index.html` + `src/` to GitHub Pages on every push. |
 | `tools/build-single.py` | Inlines CSS/JS into `dist/azzurri-arcade.html`. |
 | `docs/GDD.md` | Game design document: vision, pillars, references (with images), art direction, modes, roadmap. |
 | `docs/DESIGN.md` | Game rules, controls, FURIA meter, super shots, AI, tuning constants. |
@@ -56,7 +60,8 @@ All graphics are drawn by code (sprites built pixel by pixel in `getSprite`, fie
 - **Input** — keyboard + floating touch joystick (`zoneL`) + hold buttons; `humanInput`, auto player switch `updControl`.
 - **Field / weather** — `buildField` bakes pitch, stands, ad boards and goal nets into canvases;
   `setWeather` (clear/rain/storm/off), puddles & mud `patches`, wind, lightning.
-- **Online** — `NET`, host/guest, `buildSnap`/`applySnap`, `guestUpdate`, lobby `renderLobby`. See docs/ONLINE.md.
+- **Online** — `NET`, host/guest, `hostGame`/`joinByCode`/`joinGame`, `buildSnap`/`applySnap`, `guestUpdate`,
+  lobby `renderLobby`, share link `shareGame`, `?join=` in `tryAutoJoin`. See docs/ONLINE.md.
 - **Match flow / menus** — `kickoff`, `scored`, `startMatch(mode)`, `toMenu`, `setPaused`, `endMatch`, `showOv`.
 - **Render** — `render()`, depth-sorted by `y`; HUD drawn on canvas (`drawHUD`) incl. FURIA bars.
 - **Layout** — `fit()` resizes canvas for portrait/landscape; the joystick zone follows the canvas.
@@ -85,9 +90,7 @@ playtester → fix → commit.
 
 See also the prioritized backlog in `docs/research/azzurri-audit.md` (goalkeepers are #1 there).
 
-1. **Real online with a friend on two phones, joined by a code/password.** Inside Claude artifacts the
-   live room only admits people from one organization, so two personal accounts can't meet there.
-   Build a transport outside Claude — plan and protocol in `docs/ONLINE.md` — and a lobby with
-   "СОЗДАТЬ ИГРУ" (shows a 4–6 char code) / "ВОЙТИ ПО КОДУ" (enter code).
-2. Deploy to a static host (GitHub Pages / Netlify / itch.io) so the friend just opens a link.
+1. ~~Online with a friend by code~~ — done in v0.9 (PeerJS, `docs/ONLINE.md`). Needs a real two-phone
+   test on Wi-Fi + 4G; add our own TURN if some networks can't connect.
+2. ~~Static hosting~~ — GitHub Pages workflow; https://junussovalan02-bot.github.io/Football-2S/
 3. Ideas not done yet: goalkeepers, 3v3, more clubs, a GIF-ish replay of goals, PWA install (manifest + icon).

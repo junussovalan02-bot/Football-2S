@@ -597,7 +597,7 @@ function ai(p, dt) {
 
 // ================== human input ==================
 const keys = new Set(); let touchStick = null, touchKick = false, touchTackle = false, prevKick = false, prevTackle = false;
-addEventListener('keydown', e => { audioInit(); const k = e.key.toLowerCase(); keys.add(k);
+addEventListener('keydown', e => { audioInit(); if (e.target && e.target.tagName === 'INPUT') return; const k = e.key.toLowerCase(); keys.add(k);
   if (['arrowup','arrowdown','arrowleft','arrowright',' '].includes(k)) e.preventDefault(); });
 addEventListener('keyup', e => keys.delete(e.key.toLowerCase()));
 addEventListener('blur', () => { keys.clear(); touchKick = touchTackle = false; touchStick = null; });
@@ -841,21 +841,29 @@ function updRain(dt) {
 function makeRain(w) { rain = []; if (w === 'rain' || w === 'storm') for (let i = 0; i < (w === 'storm' ? 120 : 80); i++) rain.push({ x: rnd(0, W), y: rnd(0, H), s: rnd(200, 300) }); }
 
 // ================== online: two friends, one host runs the match ==================
-// Built on the artifact's live room. Each page keeps one "presence" object:
+// Built on a pluggable "room" (src/net/). Each page keeps one "presence" object:
 //   host  → {app, role:'host', code, mode, open, gp (guest peer), s (match snapshot ~20/s)}
 //   guest → {app, role:'guest', code, in (buttons and stick)}
 // The host simulates everything; the guest sends its input and draws the host's snapshot.
 const NET = { role: 'solo', room: null, user: null, ready: false, myPeer: null, mode: null, code: null, guestPeer: null, hostPeer: null,
-  ev: [], evId: 0, lastEv: -1, lastS: null, mid: 0, rK: -1, rT: -1, lastPres: 0, kr: 0, tc: 0, pk: false, pt: false, names: {}, msg: '' };
+  ev: [], evId: 0, lastEv: -1, lastS: null, mid: 0, rK: -1, rT: -1, lastPres: 0, kr: 0, tc: 0, pk: false, pt: false, names: {}, msg: '',
+  hostReady: false, started: false, joining: null, lastCode: '', ui: 'idle', booted: false,
+  autoJoin: (new URLSearchParams(location.search).get('join') || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 5) || null };
+// game codes: 5 characters without look-alikes (no O/0, I/1/L)
+const CODE_ABC = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+const newCode = () => Array.from({ length: 5 }, () => CODE_ABC[Math.floor(Math.random()*CODE_ABC.length)]).join('');
+const cleanCode = v => String(v || '').toUpperCase().split('').filter(c => CODE_ABC.includes(c)).join('').slice(0, 5);
 const EXPR = ['normal', 'grit', 'shout', 'bulge', 'cry'], EMOS = Object.keys(EMO), SUPS = [null, 'fire', 'vesuvio', 'golfo'];
 function netEv(...a) { if (NET.role !== 'host') return; NET.ev.push([++NET.evId, ...a]); if (NET.ev.length > 14) NET.ev.shift(); }
 function setPresence(patch) { if (!NET.room) return; NET.room.presence(patch).catch(() => {}); }
 function myPeerId() { const me = NET.room && NET.room.peers().find(p => p.sameTab); return me ? me.peer : null; }
+// the friend plays Roma's striker head to head, or Napoli's defender together
+const friendPlayer = () => players.find(p => NET.mode === 'vs' ? p.team === 1 && p.role === 'att' : p.team === 0 && p.role === 'def');
 function assignControl(na, nd, ra) {
   for (const p of players) { p.human = p.local = false; p.tag = 0; }
   if (NET.role === 'host') {
     Object.assign(na, { human: true, local: true, tag: 1 });
-    const friend = NET.mode === 'vs' ? ra : nd;
+    const friend = friendPlayer();
     if (friend && NET.guestPeer) Object.assign(friend, { human: true, tag: 2 });
   } else setHuman(na);
 }
@@ -889,12 +897,43 @@ function hostBroadcast() {
   const now = performance.now(); if (now - NET.lastPres < 50 || !NET.guestPeer) return; NET.lastPres = now;
   setPresence({ s: buildSnap() });
 }
-function hostGame(mode) {
-  if (!NET.ready) return;
-  NET.role = 'host'; NET.mode = mode; NET.guestPeer = null; NET.code = Math.random().toString(36).slice(2, 7);
-  NET.ev = []; NET.evId = 0;
+async function hostGame(mode) {
+  if (!NET.ready || NET.role !== 'solo' || NET.joining) return;
+  NET.msg = ''; NET.role = 'host'; NET.mode = mode; NET.guestPeer = null; NET.started = false; NET.ev = []; NET.evId = 0;
+  const room = NET.room; NET.hostReady = !room.host;
+  for (let tries = 0; ; tries++) {
+    const code = NET.code = newCode(); renderLobby();
+    if (!room.host) break;
+    try { await room.host(code); if (NET.role !== 'host' || NET.code !== code) return; NET.hostReady = true; break; }
+    catch (e) {
+      if (NET.role !== 'host' || NET.code !== code) return;
+      if (e.message === 'taken' && tries < 3) continue;
+      NET.role = 'solo'; NET.msg = 'НЕТ СВЯЗИ С СЕРВЕРОМ'; renderLobby(); lobbyFocus(); return;
+    }
+  }
   setPresence({ app: 'azz', role: 'host', code: NET.code, mode, open: true, gp: null, s: null, in: null });
-  renderLobby();
+  renderLobby(); lobbyFocus();
+}
+async function joinByCode(raw) {
+  const code = cleanCode(raw);
+  if (!NET.ready || NET.role !== 'solo' || NET.joining) return;
+  if (code.length !== 5) { NET.msg = 'В КОДЕ 5 СИМВОЛОВ'; renderLobby(); return; }
+  NET.msg = ''; NET.joining = code; NET.lastCode = code; renderLobby();
+  const room = NET.room;
+  if (room.join) {
+    try { await room.join(code); }
+    catch (e) {
+      if (NET.joining !== code) return;
+      NET.joining = null; NET.ui = 'enter';
+      NET.msg = e.message === 'notfound' ? 'ИГРА ' + code + ' НЕ НАЙДЕНА' : e.message === 'timeout' ? 'ДРУГ НЕ ОТВЕЧАЕТ' : 'НЕТ СВЯЗИ С СЕРВЕРОМ';
+      renderLobby(); lobbyFocus(); return;
+    }
+    if (NET.joining !== code) return;
+  }
+  NET.joining = null;
+  const h = room.peers().find(p => !p.isMe && p.presence && p.presence.app === 'azz' && p.presence.role === 'host' && p.presence.code === code);
+  if (!h) { if (room.leave) room.leave(); NET.ui = 'enter'; NET.msg = 'ИГРА ' + code + ' НЕ НАЙДЕНА'; renderLobby(); lobbyFocus(); return; }
+  joinGame(h.peer);
 }
 function joinGame(peer) {
   const h = NET.room && NET.room.peers().find(p => p.peer === peer); if (!h) return;
@@ -905,11 +944,14 @@ function joinGame(peer) {
 }
 function netLeave() {
   if (NET.role === 'solo') return;
-  NET.role = 'solo'; NET.guestPeer = NET.hostPeer = null;
+  NET.role = 'solo'; NET.guestPeer = NET.hostPeer = null; NET.hostReady = false;
   setPresence({ app: 'azz', role: 'idle', code: null, mode: null, open: null, gp: null, s: null, in: null });
+  if (NET.room && NET.room.leave) NET.room.leave();
 }
 function netLost(msg) {
-  netLeave(); stopMusic(); NET.msg = msg; attract(); showOv('ovOnline');
+  const rejoin = NET.role === 'guest' && NET.lastCode && NET.room && NET.room.join;
+  netLeave(); stopMusic(); NET.msg = msg; NET.ui = rejoin ? 'enter' : 'idle'; attract(); showOv('ovOnline');
+  if (rejoin) $('codeIn').value = NET.lastCode;
 }
 function onNetPeers() {
   NET.myPeer = myPeerId();
@@ -917,33 +959,57 @@ function onNetPeers() {
   if (NET.role === 'host') {
     if (!NET.guestPeer) {
       const g = peers.find(p => !p.isMe && p.presence && p.presence.app === 'azz' && p.presence.role === 'guest' && p.presence.code === NET.code);
-      if (g) { NET.guestPeer = g.peer; setPresence({ open: false, gp: g.peer }); weatherOn = weatherOn; startMatch(NET.mode === 'vs' ? 1 : 2);
-        game.announce = { text: '2P В ИГРЕ!', col: '#7fe0ff', t: 1.6 }; }
+      if (g) {
+        NET.guestPeer = g.peer; NET.rK = NET.rT = -1; setPresence({ open: false, gp: g.peer });
+        if (NET.started && game.mode !== 'title') {   // the friend came back (e.g. after locking the phone): same match goes on
+          const f = friendPlayer(); if (f) Object.assign(f, { human: true, tag: 2 });
+          game.announce = { text: '2P ВЕРНУЛСЯ', col: '#7fe0ff', t: 1.6 };
+        } else {
+          NET.started = true; startMatch(NET.mode === 'vs' ? 1 : 2);
+          game.announce = { text: '2P В ИГРЕ!', col: '#7fe0ff', t: 1.6 };
+        }
+      }
     } else if (!peers.find(p => p.peer === NET.guestPeer)) {
       const rp = players.find(p => p.tag === 2); if (rp) { rp.human = false; rp.tag = 0; }
-      NET.guestPeer = null; setPresence({ gp: null, s: null });
+      NET.guestPeer = null; setPresence({ gp: null, s: null, open: true });
       if (game.mode === 'play' || game.mode === 'goal') game.announce = { text: '2P ВЫШЕЛ', col: '#ff6a6a', t: 2 };
     }
   } else if (NET.role === 'guest') {
     const h = peers.find(p => p.peer === NET.hostPeer);
-    if (!h || !h.presence || h.presence.role !== 'host') netLost('ДРУГ ЗАКРЫЛ ИГРУ');
+    if (!h) netLost('СВЯЗЬ С ДРУГОМ ПРОПАЛА');
+    else if (!h.presence || h.presence.role !== 'host') netLost('ДРУГ ЗАКРЫЛ ИГРУ');
     else if (h.presence.gp && h.presence.gp !== NET.myPeer) netLost('ЭТА ИГРА УЖЕ ЗАНЯТА');
   }
   if (!$('ovOnline').hidden) renderLobby();
 }
 function renderLobby() {
-  const st = $('netStatus'), list = $('gameList'), hc = $('miHostCoop'), hv = $('miHostVs'), back = $('miNetBack');
-  list.textContent = '';
-  if (!NET.ready) { st.textContent = NET.room === false ? 'ОНЛАЙН НЕДОСТУПЕН В ЭТОМ ОКНЕ' : 'ПОДКЛЮЧЕНИЕ…'; hc.hidden = hv.hidden = true; back.textContent = 'НАЗАД';
-    $('netHint').textContent = NET.room === false ? 'По публичной ссылке онлайн не работает. Создатель игры: меню «…» → «Поделиться» → пригласи друга по почте его аккаунта Claude. Друг открывает игру из этого приглашения, а не по ссылке из чата.' : ''; return; }
-  $('netHint').textContent = 'Друг открывает эту же ссылку: ИГРАТЬ → С ДРУГОМ и входит в твою игру.';
-  if (NET.role === 'host') { st.textContent = (NET.mode === 'vs' ? 'ДРУГ ПРОТИВ ДРУГА' : 'ВМЕСТЕ ПРОТИВ РОМЫ') + ' · ЖДЁМ ДРУГА…';
-    hc.hidden = hv.hidden = true; back.textContent = 'ОТМЕНА'; return; }
-  if (NET.role === 'guest') { st.textContent = 'ПОДКЛЮЧАЕМСЯ К ИГРЕ…'; hc.hidden = hv.hidden = true; back.textContent = 'ОТМЕНА'; return; }
-  hc.hidden = hv.hidden = false; back.textContent = 'НАЗАД';
+  const st = $('netStatus'), list = $('gameList'), back = $('miNetBack'), hint = $('netHint');
+  const view = id => { for (const k of ['nIdle', 'nCode', 'nJoin']) $(k).hidden = k !== id; };
+  list.textContent = ''; hint.textContent = '';
+  if (!NET.ready) {
+    view(null); back.textContent = 'НАЗАД';
+    st.textContent = NET.room === false ? 'ОНЛАЙН НЕДОСТУПЕН' : 'ПОДКЛЮЧЕНИЕ…';
+    if (NET.room === false) hint.textContent = 'Модуль связи не загрузился. Проверь интернет и обнови страницу. Против Ромы можно играть и без него.';
+    return;
+  }
+  back.textContent = NET.role === 'solo' && !NET.joining && NET.ui !== 'enter' ? 'НАЗАД' : 'ОТМЕНА';
+  if (NET.role === 'host') {
+    const what = NET.mode === 'vs' ? 'ДРУГ ПРОТИВ ДРУГА' : 'ВМЕСТЕ ПРОТИВ РОМЫ';
+    if (!NET.hostReady) { view(null); st.textContent = what + ' · СОЗДАЁМ ИГРУ…'; return; }
+    view('nCode'); $('codeBig').textContent = NET.code; st.textContent = what + ' · ЖДЁМ ДРУГА…';
+    hint.textContent = 'Отправь другу ссылку или продиктуй код. Друг: ИГРАТЬ > С ДРУГОМ > ВОЙТИ ПО КОДУ.';
+    return;
+  }
+  if (NET.role === 'guest' || NET.joining) { view(null); st.textContent = 'ПОДКЛЮЧАЕМСЯ К ' + (NET.joining || NET.code) + '…'; return; }
+  if (NET.ui === 'enter') {
+    view('nJoin'); st.textContent = NET.msg || 'ВВЕДИ КОД С ЭКРАНА ДРУГА';
+    hint.textContent = 'Код из 5 букв и цифр виден на экране у того, кто создал игру.';
+    return;
+  }
+  view('nIdle');
+  hint.textContent = 'Создай игру и получишь код. Друг открывает эту же ссылку и входит по коду.';
   const open = NET.room.peers().filter(p => !p.isMe && p.presence && p.presence.app === 'azz' && p.presence.role === 'host' && p.presence.open);
-  st.textContent = NET.msg || (open.length ? 'ДРУГ УЖЕ ЖДЁТ — ЗАХОДИ' : 'СОЗДАЙ ИГРУ ИЛИ ДОЖДИСЬ ПРИГЛАШЕНИЯ');
-  NET.msg = '';
+  st.textContent = NET.msg || (open.length ? 'ДРУГ УЖЕ ЖДЁТ — ЗАХОДИ' : 'СОЗДАЙ ИГРУ ИЛИ ВОЙДИ ПО КОДУ');
   const need = [];
   for (const p of open) {
     const b = document.createElement('button'); b.className = 'mi join';
@@ -1021,6 +1087,31 @@ function guestUpdate(dt) {
   if (game.announce) { game.announce.t -= dt; if (game.announce.t <= 0) game.announce = null; }
   updCamera(dt, false);
 }
+function lobbyFocus() {
+  if ($('ovOnline').hidden) return;
+  const el = !$('nJoin').hidden ? $('codeIn') : $('ovOnline').querySelector('.items:not([hidden]) .mi');
+  if (el) setTimeout(() => el.focus({ preventScroll: true }), 30);
+}
+// a shared link ?join=CODE goes straight to joining
+function tryAutoJoin() {
+  if (!NET.autoJoin || !NET.booted) return;
+  showOv('ovOnline');
+  if (!NET.ready) return;
+  const code = NET.autoJoin; NET.autoJoin = null;
+  try { const u = new URL(location.href); u.searchParams.delete('join'); history.replaceState(null, '', u); } catch (e) {}
+  NET.ui = 'enter'; $('codeIn').value = code; joinByCode(code);
+}
+function shareLink() {
+  const u = new URL(location.href); u.hash = ''; u.searchParams.set('join', NET.code);
+  return u.toString();
+}
+async function shareGame() {
+  const url = shareLink(), text = 'Сыграем в Azzurri Arcade? Код игры: ' + NET.code;
+  const done = t => { $('miShare').textContent = t; setTimeout(() => { $('miShare').textContent = 'ПОДЕЛИТЬСЯ'; }, 2000); };
+  if (navigator.share) { try { await navigator.share({ title: 'Azzurri Arcade', text, url }); return; } catch (e) { if (e && e.name === 'AbortError') return; } }
+  try { await navigator.clipboard.writeText(text + '\n' + url); done('ССЫЛКА СКОПИРОВАНА'); }
+  catch (e) { $('netHint').textContent = url; done('СКОПИРУЙ ССЫЛКУ НИЖЕ'); }
+}
 // connect to the room when the viewer offers one
 (async () => {
   try {
@@ -1033,6 +1124,7 @@ function guestUpdate(dt) {
     await room.presence({ app: 'azz', role: 'idle' });
     NET.ready = true; NET.myPeer = myPeerId();
     if (!$('ovOnline').hidden) renderLobby();
+    tryAutoJoin();
   } catch (e) { NET.room = false; NET.ready = false; if (!$('ovOnline').hidden) renderLobby(); }
 })();
 
@@ -1085,7 +1177,8 @@ function attract() {
 function toMenu() { netLeave(); attract(); $('mMain').hidden = false; $('mPlay').hidden = true; showOv('ovMenu'); }
 function setPaused(v) {
   if (game.mode !== 'play' && game.mode !== 'goal') return;
-  game.paused = v && NET.role === 'solo';   // online the match keeps running for your friend keys.clear(); touchKick = touchTackle = touchSwitch = false; prevKick = prevTackle = false;
+  game.paused = v && NET.role === 'solo';   // online the match keeps running for your friend
+  keys.clear(); touchKick = touchTackle = touchSwitch = false; prevKick = prevTackle = false;
   syncSound(); showOv(v ? 'ovPause' : null);
 }
 function syncSound() { $('miSound').innerHTML = 'ЗВУК <b>' + (muted ? 'ВЫКЛ' : 'ВКЛ') + '</b>'; $('miSound').classList.toggle('off', muted); }
@@ -1372,12 +1465,25 @@ click('miResume', () => setPaused(false));
 click('miSound', () => { muted = !muted; syncSound(); });
 click('miQuit', toMenu);
 click('miAgain', () => startMatch(MODE));
-click('miOnline', () => showOv('ovOnline'));
+click('miOnline', () => { NET.ui = 'idle'; NET.msg = ''; showOv('ovOnline'); });
 click('miHelp', () => showOv('ovHelp'));
 click('miHelpBack', () => { showOv('ovMenu'); });
 click('miHostCoop', () => hostGame('coop'));
 click('miHostVs', () => hostGame('vs'));
-click('miNetBack', () => { if (NET.role !== 'solo') netLeave(); showOv('ovMenu'); $('mMain').hidden = true; $('mPlay').hidden = false; });
+click('miJoinCode', () => { NET.ui = 'enter'; NET.msg = ''; if (!$('codeIn').value) $('codeIn').value = NET.lastCode; renderLobby(); lobbyFocus(); });
+click('miShare', shareGame);
+$('nJoin').addEventListener('submit', e => { e.preventDefault(); audioInit(); joinByCode($('codeIn').value); });
+$('codeIn').addEventListener('input', e => {
+  const el = e.target, v = cleanCode(el.value); if (el.value !== v) el.value = v;
+  if (v.length === 5 && e.inputType !== 'deleteContentBackward') { audioInit(); joinByCode(v); }
+});
+click('miNetBack', () => {
+  NET.msg = '';
+  if (NET.joining) { NET.joining = null; if (NET.room && NET.room.leave) NET.room.leave(); NET.ui = 'enter'; renderLobby(); lobbyFocus(); return; }
+  if (NET.role !== 'solo') { netLeave(); renderLobby(); lobbyFocus(); return; }
+  if (NET.ui === 'enter') { NET.ui = 'idle'; renderLobby(); lobbyFocus(); return; }
+  showOv('ovMenu'); $('mMain').hidden = true; $('mPlay').hidden = false;
+});
 click('miToMenu', toMenu);
 // keyboard: arrows move the menu cursor, P / Esc pauses
 addEventListener('keydown', e => {
@@ -1387,7 +1493,7 @@ addEventListener('keydown', e => {
     const items = [...open.querySelectorAll('.items:not([hidden]) .mi')], i = items.indexOf(document.activeElement);
     const n = items[(i + (k === 'arrowdown' ? 1 : -1) + items.length) % items.length]; if (n) n.focus({ preventScroll: true });
   }
-  if ((k === 'p' || k === 'escape') && !e.repeat) { if (game.paused) setPaused(false); else if (!open) setPaused(true); }
+  if ((k === 'p' || k === 'escape') && !e.repeat && !(e.target && e.target.tagName === 'INPUT')) { if (game.paused) setPaused(false); else if (!open) setPaused(true); }
 });
 const stage = document.getElementById('stage');
 const screenEl = document.getElementById('screen');
@@ -1446,5 +1552,6 @@ const fontReady = document.fonts && document.fonts.load ? document.fonts.load('8
 Promise.race([fontReady, new Promise(r => setTimeout(r, 1500))]).then(() => {
   setWeather('rain'); toMenu();
   updCamera(0, true); fit(); requestAnimationFrame(frame);
+  NET.booted = true; tryAutoJoin();
 });
 })();

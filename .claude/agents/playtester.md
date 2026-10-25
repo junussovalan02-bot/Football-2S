@@ -13,7 +13,8 @@ You test **Azzurri Arcade** like a player on an iPhone in landscape, and like a 
    - Super shot screenshot: the effect (fire trail / wave / eruption) is visible.
 2. Online (if `src/net/` or the NET section changed): start `python3 -m http.server 8080`, then with
    Playwright open `http://localhost:8080/?net=local` in two pages of one browser context:
-   page A: ИГРАТЬ → С ДРУГОМ → ВМЕСТЕ ПРОТИВ РОМЫ; page B: ИГРАТЬ → С ДРУГОМ → ВОЙТИ.
+   page A: ИГРАТЬ → С ДРУГОМ → ВМЕСТЕ ПРОТИВ РОМЫ; page B: ИГРАТЬ → С ДРУГОМ → ВОЙТИ ПО КОДУ (the code shown on A) or the ▶ ВОЙТИ list item.
+   For the real transport use `?peer=127.0.0.1:9000` with a local PeerServer (docs/ONLINE.md) in two browser contexts.
    Verify the match starts on both, B's player has the 2P tag, B's input moves it, the score matches.
    Close B → A shows "2P ВЫШЕЛ"; close A → B returns to the lobby with a message.
 3. Gameplay sanity against `docs/DESIGN.md`: FURIA fills from the listed events, a super only fires

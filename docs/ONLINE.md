@@ -30,31 +30,43 @@ room.onPeers(fn, onError) -> unsubscribe
 ```
 Any transport that provides this works. `src/net/local.js` is a 60-line example over BroadcastChannel.
 
-## Plan: join by code (task #1)
-Two good options. Pick A unless the owner wants a server.
+## Join by code (done, v0.9)
+WebRTC peer-to-peer through **PeerJS** (`src/net/peer.js`, library vendored in `src/vendor/peerjs.min.js`,
+so there is no CDN dependency and `build-single.py` inlines it too).
 
-### A. WebRTC peer-to-peer with PeerJS (no own server)
-- Load `https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js`.
-- Host creates `new Peer('azz-' + CODE)` where CODE is 5 chars from `ABCDEFGHJKMNPQRSTUVWXYZ23456789`.
-  Guest creates an anonymous `Peer()` and `peer.connect('azz-' + CODE)`.
-- Wrap the `DataConnection` into the room interface: each side keeps `mine` presence; on change send
-  `{t:'p', presence}`; on receive store the other side as a Peer and call onPeers handlers.
-  Use `{ reliable: false }` channel for snapshots if latency matters, reliable for the rest.
-- Uses the public PeerJS broker for signalling (free) and Google STUN. Some mobile networks need TURN;
-  if friends on 4G can't connect, add a TURN server (e.g. Metered free tier or Cloudflare Calls).
+- Host: `room.host(CODE)` registers the PeerJS id `azzurri-arcade-CODE` on the free public broker
+  (`0.peerjs.com`). Id already taken → new code (up to 4 tries). CODE = 5 chars from
+  `ABCDEFGHJKMNPQRSTUVWXYZ23456789`.
+- Guest: `room.join(CODE)` opens an anonymous Peer and connects (`reliable`, JSON). Resolves when the host's
+  presence arrives; rejects `notfound` (no such code), `timeout` (15 s), `network`.
+- Wire: `{t:'p', patch, full}` — presence patches (null deletes); the full presence is sent on connect.
+  `{t:'h'}` heartbeat every 1 s; silence for 6 s = the other phone is gone.
+- One friend per host. A new connection replaces the old one, so a friend whose phone slept can re-enter
+  the code; the host re-attaches them to the running match instead of restarting it.
+- Host loses the broker (phone backgrounded): the data channel keeps working, the code is re-registered.
+- NAT: PeerJS's default config has Google STUN and the PeerJS TURN relays (`eu-0/us-0.turn.peerjs.com`),
+  which usually covers Wi-Fi ↔ 4G. If some network still can't connect, add a TURN of our own
+  (Metered / Cloudflare) to `options()` in `peer.js`.
 
-### B. Tiny WebSocket relay (own server)
-- Node + `ws`, rooms keyed by CODE, forwards `{t:'p'}` messages between the two sockets.
-  Deploy free on Render / Fly.io / Railway. More reliable through mobile NAT, needs a server.
+Lobby (`renderLobby`): idle → ВМЕСТЕ / ПРОТИВ / ВОЙТИ ПО КОДУ; host → big code + ПОДЕЛИТЬСЯ; enter →
+code field. `?join=CODE` on load goes straight to joining and is removed from the address bar.
 
-### Lobby changes in `index.html` / `renderLobby()`
-- Online menu: **СОЗДАТЬ ИГРУ** → choose ВМЕСТЕ / ПРОТИВ → big code on screen + "ПОДЕЛИТЬСЯ"
-  (Web Share API / copy link `?join=CODE`).
-- **ВОЙТИ ПО КОДУ** → 5 letter input (pixel style, big, uppercase, auto-submit at 5).
-- Opening `?join=CODE` goes straight to joining.
-- Keep the current host/guest flow: once the guest's presence `role:'guest', code` appears, the host
-  starts the match (`onNetPeers`).
+### Testing without the internet
+```
+npm i peer express && node -e "const e=require('express'),{ExpressPeerServer}=require('peer');const a=e();const s=a.listen(9000,'127.0.0.1');a.use('/',ExpressPeerServer(s,{path:'/'}))"
+open http://localhost:8080/?peer=127.0.0.1:9000     # in two browsers / profiles
+```
+In headless Chromium start it with `--disable-features=WebRtcHideLocalIpsWithMdns`, otherwise two
+contexts can't find each other without STUN.
 
-### Must-test
-Two real phones on different networks (Wi-Fi + 4G), landscape, 2-minute match, goal events,
-lightning, reconnect when the guest locks the screen, host leaving mid-match.
+`?net=local` (BroadcastChannel) still works and also supports codes; `?net=claude` forces the Claude
+artifact room.
+
+### Still to test on real devices
+Two phones on different networks (Wi-Fi + 4G), landscape, 2-minute match, goal events, lightning,
+guest locking the screen and coming back, host leaving mid-match.
+
+### Fallback: tiny WebSocket relay (own server)
+If WebRTC proves unreliable on some mobile networks: Node + `ws`, rooms keyed by CODE, forwards `{t:'p'}`
+messages between the two sockets; deploy free on Render / Fly.io. Expose it as `window.AzzNetCustom`
+with the same `host/join/leave` methods.
