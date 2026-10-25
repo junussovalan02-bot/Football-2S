@@ -56,6 +56,9 @@ All graphics are drawn by code (sprites built pixel by pixel in `getSprite`, fie
 - **Game state** — `players[]`, `ball`, `game`. Player state machine `ST`: IDLE, RUN, KICK, TACKLE, FALL, STUN.
   `updPlayer`, `updBall`, `possession`, `separate`, `doKick`, `doPass`, `knockDown`, `electrocute`.
 - **FURIA** — `fury(team, n)`, `furyReady`, `superFor`, `aerial`. See docs/DESIGN.md.
+- **CAOS** — random events `game.chaos` (`startChaos`, `updChaos`), Vespa `game.vespa`, pickups `items`
+  (`spawnItem`, `pickUp`, buffs `p.buff`), flying players (`p.z`, `lift` in `knockDown`), cosmetic `chaosFx`.
+  Toggle `chaosOn`. Rules and numbers: docs/DESIGN.md «КАОС».
 - **AI** — `ai(p, dt)` writes into `p.inp` exactly like a human (`rival` = Roma, deliberately weaker).
 - **Input** — keyboard + floating touch joystick (`zoneL`) + hold buttons; `humanInput`, auto player switch `updControl`.
 - **Field / weather** — `buildField` bakes pitch, stands, ad boards and goal nets into canvases;

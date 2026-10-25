@@ -75,7 +75,7 @@ body.portrait.touch .rot{display:block}
 .mi.join{color:#7fe0ff;font-size:11px}
 .rules{list-style:none;margin:0;padding:0 4px;display:grid;gap:12px;max-width:min(520px,100%);text-align:left;font-size:8px;line-height:2;color:#e8ecf6}
 .rules b{font-weight:400;color:var(--gold);margin-right:6px}
-.rules b.f{color:#ff8a3a} .rules b.v{color:#ff5a3a} .rules b.g{color:#7fe0ff}
+.rules b.f{color:#ff8a3a} .rules b.v{color:#ff5a3a} .rules b.g{color:#7fe0ff} .rules b.c{color:#ff6a5a}
 #gameList:empty{display:none}
 .code{margin:0;font-size:clamp(28px,9vw,44px);letter-spacing:.18em;padding-left:.18em;color:var(--gold);text-shadow:0 4px 0 #000}
 .codein{font-family:var(--f-pixel);font-size:24px;letter-spacing:.3em;text-transform:uppercase;text-align:center;width:min(260px,80vw);

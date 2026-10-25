@@ -177,6 +177,32 @@ const EMO = {
   zzz: makeIcon(r => { const B = '#4aa8f0'; r(5,0,6,1,B); r(9,1,1,1,B); r(8,2,1,1,B); r(7,3,1,1,B); r(6,4,1,1,B); r(5,5,6,1,B);
     r(0,7,4,1,B); r(2,8,1,1,B); r(1,9,1,1,B); r(0,10,4,1,B); })
 };
+// pickups (12x12 + outline)
+const ITEMSPR = {
+  pizza: makeIcon(r => { r(0,0,12,3,'#c87a2a'); r(0,0,12,1,'#e8a050'); for (let y = 3; y < 12; y++) { const w = Math.max(1, 12 - (y-2)*1.3|0), x0 = (12-w) >> 1; r(x0, y, w, 1, '#ffd23a'); }
+    r(3,4,2,2,'#d8344a'); r(7,5,2,2,'#d8344a'); r(5,8,2,2,'#d8344a'); r(4,3,1,1,'#3a9a3a'); r(8,7,1,1,'#3a9a3a'); }),
+  pepper: makeIcon(r => { r(7,0,2,2,'#2a8a2a'); r(6,2,4,2,'#3aaa3a'); r(4,3,6,3,'#e8241a'); r(3,5,6,3,'#e8241a'); r(2,7,5,2,'#e8241a'); r(1,9,4,1,'#c8140a'); r(0,10,2,1,'#c8140a');
+    r(5,4,2,1,'#ff8a6a'); r(4,6,1,1,'#ff8a6a'); }),
+  horn: makeIcon(r => { r(1,0,4,3,'#f2c230'); r(1,0,4,1,'#fff3a0'); r(2,3,4,3,'#d8241a'); r(3,6,4,2,'#d8241a'); r(5,8,3,2,'#d8241a'); r(7,9,3,1,'#b8140a'); r(9,8,2,1,'#b8140a'); r(10,7,1,1,'#b8140a');
+    r(3,3,1,2,'#ff7a6a'); r(4,6,1,1,'#ff7a6a'); }),
+};
+// pizza delivery boy on a Vespa, facing right (36x28)
+const VESPA = (() => {
+  const c = document.createElement('canvas'); c.width = 36; c.height = 28; const g = c.getContext('2d');
+  const r = (x,y,w,h,col) => { g.fillStyle = col; g.fillRect(x+1, y, w, h); };
+  const VB = '#8fd8e8', VS = '#4aa0b8', TIRE = '#202030';
+  r(24,4,9,7,'#d8344a'); r(24,4,9,1,'#ff6a7a'); r(24,7,9,1,'#ffffff'); r(26,5,5,1,'#ffffff');           // pizza boxes on the rack
+  r(23,11,10,2,'#5a5a68');
+  r(14,8,7,6,'#d8344a'); r(14,13,7,1,'#a01c2c');                                                       // rider: red jacket
+  r(13,0,9,8,'#ffffff'); r(13,0,9,1,'#d8dce8'); r(19,2,4,4,'#3a4a7a'); r(20,2,2,1,'#8fb8ff');          // helmet + visor
+  r(12,9,3,2,'#d8344a'); r(8,9,4,2,PAL.skin);                                                          // arm on the handlebar
+  r(15,14,5,4,'#2a3a6a'); r(12,17,4,2,'#2a3a6a'); r(11,19,3,1,'#202030');                              // legs
+  r(19,13,13,8,VB); r(19,19,13,2,VS); r(27,14,4,2,'#ffffff');                                          // rear cowl
+  r(9,19,11,3,VB); r(9,21,11,1,VS);                                                                    // floorboard
+  r(5,6,4,15,VB); r(5,6,1,15,'#c8f0f8'); r(8,6,1,15,VS); r(4,4,7,2,'#5a5a68'); r(3,7,2,3,'#ffe14a');    // leg shield, bars, light
+  r(3,21,7,7,TIRE); r(5,23,3,3,'#a4acc4'); r(25,21,7,7,TIRE); r(27,23,3,3,'#a4acc4');                   // wheels
+  outline(g, PAL.ink, 36, 28); return c;
+})();
 const TAUNTS = ['tongue', 'finger', 'laugh', 'zzz', 'finger'];
 function emote(p, type, force) {
   if (!p || p.team !== 1) return;
@@ -268,6 +294,11 @@ function sfxLocal(k) {
     case 'zap': noise(0.4,0.4,7000); tone('square',900,60,0.35,0.08); break;
     case 'goal': [523,659,784,1046,784,1046].forEach((f,i) => tone('square',f,f*1.001,0.12,0.1,i*0.11)); break;
     case 'whistle': tone('sine',2600,2500,0.22,0.13); tone('sine',2600,2550,0.4,0.13,0.28); break;
+    case 'chaos': [392,523,659,523,784].forEach((f,i) => tone('square',f,f,0.08,0.08,i*0.07)); break;
+    case 'vespa': tone('sawtooth',90,140,0.7,0.07); tone('square',660,660,0.12,0.07); tone('square',520,520,0.14,0.07,0.16); break;
+    case 'pickup': tone('square',988,1976,0.12,0.08); tone('square',1318,2637,0.1,0.06,0.08); break;
+    case 'boing': tone('square',240,1100,0.32,0.06); break;
+    case 'ding': tone('triangle',1568,1568,0.15,0.1); break;
   } } catch (e) {}
 }
 
@@ -294,7 +325,7 @@ function schedMusic() {
         n.buffer = noiseBuf; f.type = 'highpass'; f.frequency.value = 6000; g.gain.setValueAtTime(beat ? 0.04 : 0.07, nextT);
         g.gain.exponentialRampToValueAtTime(0.0001, nextT + 0.05); n.connect(f).connect(g).connect(AC.destination); n.start(nextT); n.stop(nextT + 0.06); }
     } catch (e) {}
-    nextT += EIGHTH; mstep++;
+    nextT += EIGHTH*(chaosIs('espresso') ? 0.7 : 1); mstep++;   // espresso speeds the tarantella up
   }
 }
 function startMusic() { if (!AC || musicOn) return; musicOn = true; nextT = AC.currentTime + 0.15; mstep = 0; musicTimer = setInterval(schedMusic, 40); }
@@ -309,7 +340,7 @@ class Player {
   constructor(team, role) {
     Object.assign(this, { team, role, x:0, y:0, vx:0, vy:0, state:ST.IDLE, st:0, fx:team?-1:1, fy:0,
       charge:0, kickSuper:false, superType:'fire', kickDone:false, hit:new Set(), tBall:false,
-      sm:1, tr:1, human:false, aiCd:0, anim:0, fallExpr:'cry', mood:null,
+      sm:1, tr:1, human:false, aiCd:0, anim:0, fallExpr:'cry', mood:null, z:0, vz:0, buff:null, buffT:0, dingCd:0,
       inp:{ mx:0, my:0, kickHeld:false, kickReleased:false, tacklePressed:false } });
   }
 }
@@ -328,7 +359,7 @@ const ball = { x:LEN/2, y:WID/2, z:0, vx:0, vy:0, vz:0, owner:null, superType:nu
   } };
 const game = { mode:'title', t:0, time:MATCH, score:[0,0], goalT:0, weather:'rain', wind:{x:0,y:0}, windT:0, lightT:6,
   shake:0, flash:0, bolt:null, banner:null, announce:null, ctrlCd:0, kickoffTeam:0, hitstop:0, fury:[0,0], furyFlash:[0,0], switchFlash:0, wantSwitch:false, paused:false, emoCd:0, tauntT:8, wxChanged:false };
-let patches = [], parts = [], rain = [];
+let patches = [], parts = [], rain = [], pops = [];
 
 function hitstop(t) { game.hitstop = Math.max(game.hitstop, t); }
 function setState(p, s) { if (p.state === s) return;
@@ -345,18 +376,122 @@ function surfaceAt(x, y) { let s = null;
   for (const pt of patches) for (const e of pt.blobs) if (((x-e.x)/e.rx)**2 + ((y-e.y)/e.ry)**2 < 1) { if (pt.type === 'puddle') return 'puddle'; s = 'mud'; }
   return s; }
 
-function knockDown(p, dx, dy, force, expr) {
+// lift > 0 throws the player into the air (cartwheel until they land)
+function knockDown(p, dx, dy, force, expr, lift) {
   if (p.state === ST.FALL || p.state === ST.STUN) return;
+  if (p.buff === 'horn') { shield(p); return; }
   if (ball.owner === p) { ball.owner = null; ball.lock = p; ball.lockT = 0.5; ball.vx = dx*80; ball.vy = dy*80; ball.vz = 70; ball.z = 0.01; }
   const n = norm(dx, dy); p.vx = n.x*force; p.vy = n.y*force; p.charge = 0; p.fallExpr = expr || 'cry';
   setState(p, ST.FALL); fury(p.team, 12);
+  if (lift) { p.vx *= 0.6; p.vy *= 0.6; p.vz = lift; p.z = Math.max(p.z, 0.01); if (lift >= 150) sfx('boing'); }
   if (p.team === 0) emote(nearestRival(p), Math.random() < 0.5 ? 'laugh' : 'finger'); else p.grudge = true;
 }
+function shield(p) {
+  if (p.dingCd > 0) return; p.dingCd = 0.4;
+  const s = P(p.x, p.y, 20); burst('ding', s.x, s.y); sfx('ding');
+}
 function electrocute(p) {
+  if (p.buff === 'horn') { shield(p); return; }
   if (ball.owner === p) { ball.owner = null; const a = Math.random()*Math.PI*2; ball.kick(Math.cos(a), Math.sin(a), 90, 160, p, null); }
   p.vx = p.vy = 0; p.charge = 0; setState(p, ST.STUN); fury(p.team, 15);
   if (p.team === 0) emote(nearestRival(p), 'laugh'); else p.grudge = true;
 }
+// ================== CAOS: random events, pickups, flying players ==================
+const CHAOS = {
+  giant:    { name: 'МЯЧ-ГИГАНТ!',     label: 'ГИГАНТ', dur: 9,  col: '#ffd23a' },
+  vespa:    { name: 'ПИЦЦА-ЭКСПРЕСС!', label: 'ВЕСПА',  dur: 7,  col: '#ff6a5a' },
+  moon:     { name: 'ЛУНА!',           label: 'ЛУНА',   dur: 10, col: '#c8b8ff' },
+  espresso: { name: 'ЭСПРЕССО!',       label: 'ТУРБО',  dur: 8,  col: '#e8b070' },
+  quake:    { name: 'ВЕСУВИЙ!',        label: 'ТРЯСКА', dur: 6,  col: '#ff5a3a' },
+  ice:      { name: 'ГОЛОЛЁД!',        label: 'ЛЁД',    dur: 9,  col: '#9fe8ff' },
+};
+const CHAOS_KEYS = Object.keys(CHAOS), ITEMS = ['pizza', 'pepper', 'horn'];
+const ITEMNAME = { pizza: '+FURIA', pepper: 'ПЕРЧИК!', horn: 'КОРНЕТТО!' };
+const VSPD = 290, BIGK = 2.5, X2T = 20;   // vespa speed, giant ball scale, last seconds when a goal counts double
+let chaosOn = true, items = [];
+const chaosIs = t => !!game.chaos && game.chaos.type === t;
+const gravK = () => chaosIs('moon') ? 0.32 : 1;
+const giant = () => chaosIs('giant');
+
+function startChaos(type) {
+  game.chaos = { type, t: CHAOS[type].dur }; game.lastChaos = type;
+  game.announce = { text: CHAOS[type].name, col: CHAOS[type].col, t: 1.6 }; sfx('chaos');
+  if (type === 'vespa') spawnVespa();
+  if (type === 'quake') game.quakeT = 0.7;
+}
+function spawnVespa() {
+  const dir = Math.random() < 0.5 ? 1 : -1;
+  game.vespa = { x: dir > 0 ? -40 : LEN + 40, y: rnd(30, WID - 30), dir, t: 0, drop: false, hitBall: false };
+  sfx('vespa');
+}
+function spawnItem(type, x, y) {
+  for (let k = 0; k < 20 && x === undefined; k++) {
+    const tx = clamp(ball.x + rnd(-150, 150), 60, LEN - 60), ty = rnd(25, WID - 25);
+    if (players.every(q => hyp(q.x - tx, q.y - ty) > 45)) { x = tx; y = ty; }
+  }
+  if (x !== undefined) items.push({ type: type || ITEMS[Math.floor(Math.random()*ITEMS.length)], x, y, t: 10 });
+}
+function pickUp(p, it) {
+  const s = P(it.x, it.y, 12); burst('pick', s.x, s.y, ITEMS.indexOf(it.type)); sfx('pickup');
+  if (it.type === 'pizza') fury(p.team, 35);
+  else { p.buff = it.type; p.buffT = it.type === 'pepper' ? 6 : 7; }
+}
+// Vesuvius wakes up: a shock under a random spot near the ball throws players up and pops the ball
+function quakeHit() {
+  const cx = clamp(ball.x + rnd(-60, 60), 20, LEN - 20), cy = rnd(30, WID - 30);
+  for (const p of players) if (hyp(p.x - cx, p.y - cy) < 70 && Math.random() < 0.7) knockDown(p, (p.x - cx) || 1, p.y - cy, 120, 'bulge', 170);
+  if (!ball.owner && ball.z < 5) { ball.vz = 230; ball.z = 0.01; ball.vx += rnd(-60, 60); ball.vy += rnd(-40, 40); }
+  const s = P(cx, cy); burst('quake', s.x, s.y); sfx('boom'); game.shake = Math.max(game.shake, 0.45); hitstop(0.05);
+}
+function updVespa(dt) {
+  const v = game.vespa; v.t += dt; v.x += v.dir*VSPD*dt; v.y = clamp(v.y + Math.sin(v.t*5)*30*dt, 12, WID - 12);
+  for (const p of players) if (p.state !== ST.FALL && p.state !== ST.STUN && hyp(p.x - v.x, (p.y - v.y)*1.3) < 18) {
+    knockDown(p, v.dir, ((p.y - v.y) || rnd(-1, 1))/12, 230, 'bulge', 280);
+    if (p.state === ST.FALL) { sfx('hit'); game.shake = Math.max(game.shake, 0.25); hitstop(0.05); }
+  }
+  if (!v.hitBall && !ball.owner && ball.z < 22 && hyp(ball.x - v.x, ball.y - v.y) < 16) {
+    v.hitBall = true; ball.kick(v.dir, rnd(-0.4, 0.4), 360, 140, null, null); sfx('kick');
+  }
+  if (!v.drop && (v.x - LEN/2)*v.dir > 0) { v.drop = true; spawnItem('pizza', v.x, v.y); }   // the delivery boy drops a pizza
+  if (v.dir > 0 ? v.x > LEN + 50 : v.x < -50) game.vespa = null;
+}
+function updChaos(dt) {
+  if (!chaosOn) return;
+  if (game.mode === 'play') {
+    if (!game.x2 && game.time <= X2T) { game.x2 = true; game.announce = { text: 'ГОЛ = 2 ОЧКА!', col: '#ffd23a', t: 2 }; sfx('chaos'); }
+    if (game.chaos) {
+      const c = game.chaos; c.t -= dt;
+      if (c.type === 'vespa' && !game.vespa && !c.second && c.t < CHAOS.vespa.dur - 3) { c.second = true; spawnVespa(); }
+      if (c.type === 'quake') { game.shake = Math.max(game.shake, 0.12); game.quakeT -= dt; if (game.quakeT <= 0) { game.quakeT = rnd(0.9, 1.4); quakeHit(); } }
+      if (c.t <= 0 && !game.vespa) { game.chaos = null; game.chaosT = rnd(12, 18); }
+    } else if ((game.chaosT -= dt) <= 0) {
+      const pool = CHAOS_KEYS.filter(k => k !== game.lastChaos);
+      startChaos(pool[Math.floor(Math.random()*pool.length)]);
+    }
+    if ((game.itemT -= dt) <= 0) { game.itemT = rnd(7, 11); if (items.length < 2) spawnItem(); }
+  }
+  for (let i = items.length - 1; i >= 0; i--) {
+    const it = items[i]; it.t -= dt;
+    if (it.t <= 0) { items.splice(i, 1); continue; }
+    const p = game.mode === 'play' && players.find(q => q.state <= ST.KICK && q.z < 8 && dist(q, it) < 11);
+    if (p) { items.splice(i, 1); pickUp(p, it); }
+  }
+  if (game.vespa) updVespa(dt);
+  for (const p of players) { p.dingCd -= dt; if (p.buff && (p.buffT -= dt) <= 0) p.buff = null; }
+}
+// cosmetic only (runs on the guest too): exhaust, falling rocks, chili flames, espresso steam
+function chaosFx(dt) {
+  const v = game.vespa;
+  if (v && Math.random() < 0.7) { const q = P(v.x - v.dir*14, v.y, 4); spawn(q.x, q.y, -v.dir*rnd(20, 50), rnd(-20, -5), 0.4, Math.random() < 0.5 ? '#c8c8d0' : '#8a8a98', 2, -30); }
+  if (chaosIs('quake') && Math.random() < dt*30) spawn(cam.x + rnd(0, W), cam.y - 4, rnd(-10, 10), rnd(60, 120), rnd(0.8, 1.4), Math.random() < 0.5 ? '#5a4a4a' : '#ff7a2a', Math.random() < 0.3 ? 3 : 2, 200);
+  if (chaosIs('ice') && Math.random() < dt*25) spawn(cam.x + rnd(0, W), cam.y + rnd(40, H), 0, -6, 0.4, '#ffffff', 1, 0);   // ice glints
+  for (const p of players) {
+    if (p.buff === 'pepper' && hyp(p.vx, p.vy) > 40 && Math.random() < 0.8) { const q = P(p.x - p.fx*6, p.y, rnd(0, 6) + (p.z || 0));
+      spawn(q.x + rnd(-2, 2), q.y, -p.fx*20, rnd(-30, -10), 0.3, ['#fff3a0', '#ffd23a', '#ff6a1a'][Math.floor(Math.random()*3)], 2, -40); }
+    if (chaosIs('espresso') && Math.random() < dt*6) { const q = P(p.x, p.y, 42 + (p.z || 0)); spawn(q.x + rnd(-3, 3), q.y, rnd(-5, 5), -25, 0.6, '#e8e8f0', 2, -10); }
+  }
+}
+
 const SUPERNAME = { fire:['FUOCO!','LUPA!'], vesuvio:['VESUVIO!','VESUVIO!'], golfo:['GOLFO!','GOLFO!'] };
 // FURIA: each team fills one meter by playing; a full meter unlocks one super shot.
 function fury(team, n) {
@@ -379,7 +514,7 @@ function superFor(p) {
 const aerial = p => !ball.owner && ball.z >= 9 && ball.z <= 46 && dist(p, ball) <= KREACH + 2;
 
 function doKick(p) {
-  if (!(ball.owner === p || (dist(p, ball) <= KREACH + (p.bike ? 4 : 0) && ball.z < (p.bike ? 50 : 30)))) return;
+  if (!(ball.owner === p || (dist(p, ball) <= KREACH + (p.bike ? 4 : 0) + (giant() ? 12 : 0) && ball.z < (p.bike ? 50 : 30)))) return;
   let dx = p.fx, dy = p.fy;
   const gx = goalX(p.team), t = norm(gx-p.x, WID/2-p.y), tl = hyp(gx-p.x, WID/2-p.y);
   if (dx*t.x + dy*t.y > 0.3 && tl < 280) {
@@ -416,12 +551,17 @@ function updPlayer(p, dt) {
   const surf = surfaceAt(p.x, p.y);
   p.sm = surf === 'mud' ? 0.58 : surf === 'puddle' ? 0.85 : 1;
   p.tr = surf === 'puddle' ? 0.16 : surf === 'mud' ? 0.8 : 1;
+  if (chaosIs('ice')) p.tr = Math.min(p.tr, 0.13);
+  const turbo = (chaosIs('espresso') ? 1.5 : 1)*(p.buff === 'pepper' ? 1.4 : 1);
   const i = p.inp;
   if (game.mode === 'goal') { i.mx = i.my = 0; i.kickReleased = i.tacklePressed = false; i.kickHeld = false; }
   switch (p.state) {
     case ST.IDLE: case ST.RUN: {
-      const sp = MAXSP * p.sm * (p.human ? 1 : p.team ? 0.82 : 0.93) * (ball.owner === p ? 0.9 : 1);
-      approach(p, i.mx*sp, i.my*sp, ACC*p.tr*dt);
+      const sp = MAXSP * p.sm * turbo * (p.human ? 1 : p.team ? 0.82 : 0.93) * (ball.owner === p ? 0.9 : 1);
+      approach(p, i.mx*sp, i.my*sp, ACC*p.tr*turbo*dt);
+      if (p.buff === 'pepper' && hyp(p.vx, p.vy) > 70) for (const q of players)   // chili: run people over
+        if (q.team !== p.team && q.state <= ST.KICK && dist(p, q) < 14) { knockDown(q, p.vx, p.vy, 200, 'bulge', 120);
+          if (q.state === ST.FALL) { sfx('hit'); hitstop(0.05); game.shake = Math.max(game.shake, 0.15); fury(p.team, 8); } }
       if (i.mx || i.my) { p.fx = i.mx; p.fy = i.my; }
       setState(p, hyp(p.vx, p.vy) > 4 ? ST.RUN : ST.IDLE);
       if (i.kickHeld) p.charge += dt;
@@ -435,7 +575,7 @@ function updPlayer(p, dt) {
       else if (i.tacklePressed) {
         p.charge = 0;
         if (ball.owner === p) doPass(p);
-        else { p.vx = p.fx*TSPD; p.vy = p.fy*TSPD; setState(p, ST.TACKLE); sfx('tackle'); }
+        else { const ts = TSPD*(chaosIs('espresso') ? 1.25 : 1); p.vx = p.fx*ts; p.vy = p.fy*ts; setState(p, ST.TACKLE); sfx('tackle'); }
       }
       break; }
     case ST.KICK:
@@ -454,10 +594,14 @@ function updPlayer(p, dt) {
       if (!p.tBall && !ball.owner && ball.z < 10 && dist(p, ball) < 16) { p.tBall = true; ball.kick(p.fx, p.fy, hyp(p.vx,p.vy)*1.2+60, 0, p, null); sfx('kick'); }
       if (p.st >= TTIME) setState(p, ST.IDLE);
       break;
-    case ST.FALL: approach(p, 0, 0, 280*p.tr*dt); if (p.st >= FALLT) setState(p, ST.IDLE); break;
+    case ST.FALL: if (p.z <= 0) approach(p, 0, 0, 280*p.tr*dt); if (p.st >= FALLT && p.z <= 0) setState(p, ST.IDLE); break;
     case ST.STUN: p.vx = p.vy = 0; if (p.st >= STUNT) setState(p, ST.IDLE); break;
   }
   p.x = clamp(p.x + p.vx*dt, 4, LEN-4); p.y = clamp(p.y + p.vy*dt, 4, WID-4);
+  if (p.z > 0 || p.vz > 0) {   // flying after a big hit
+    p.vz -= GRAV*gravK()*dt; p.z += p.vz*dt;
+    if (p.z <= 0) { p.z = 0; if (p.vz < -160) { p.vz = -p.vz*0.3; const s = P(p.x, p.y); burst('dust', s.x, s.y); sfx('bounce'); } else p.vz = 0; }
+  }
   const spd = hyp(p.vx, p.vy), prevStep = Math.floor(p.anim/20);
   p.anim += spd*dt;
   if ((p.state === ST.RUN && spd > 50 && Math.floor(p.anim/20) !== prevStep) || (p.state === ST.TACKLE && Math.random() < 0.6)) {
@@ -476,12 +620,12 @@ function updBall(dt) {
     const o = b.owner;
     if (o.state > ST.KICK) b.owner = null;
     else { const k = Math.min(1, dt*20);
-      b.x += (o.x + o.fx*9 - b.x)*k; b.y += (o.y + o.fy*5 + 1 - b.y)*k; b.vx = o.vx; b.vy = o.vy; b.z = 0; b.vz = 0;
+      b.x += (o.x + o.fx*(giant() ? 20 : 9) - b.x)*k; b.y += (o.y + o.fy*5 + 1 - b.y)*k; b.vx = o.vx; b.vy = o.vy; b.z = 0; b.vz = 0;
       b.rot += hyp(o.vx, o.vy)*dt; return; }
   }
-  const surf = surfaceAt(b.x, b.y); b.drag = surf === 'puddle' ? 5 : surf === 'mud' ? 2.5 : 1;
+  const surf = surfaceAt(b.x, b.y); b.drag = (surf === 'puddle' ? 5 : surf === 'mud' ? 2.5 : 1)*(chaosIs('ice') ? 0.35 : 1);
   if (b.z > 0 || b.vz > 0) {
-    b.vz -= GRAV*b.gs*dt; b.z += b.vz*dt;
+    b.vz -= GRAV*b.gs*gravK()*dt; b.z += b.vz*dt;
     if (b.superType !== 'fire' && b.superType !== 'golfo') { b.vx += game.wind.x*dt; b.vy += game.wind.y*dt; }
     if (b.z <= 0) land();
   } else {
@@ -512,8 +656,12 @@ function updBall(dt) {
     else spawn(s.x+rnd(-3,3), s.y+rnd(-3,3), rnd(-8,8), rnd(-8,8), rnd(0.4,0.8), Math.random()<0.5?'#5a4a4a':'#ff5a1a', 3, -20);
     if (b.superType === 'fire' || b.superType === 'golfo') for (const p of players) {
       if (p === b.last || p.state === ST.FALL || p.state === ST.STUN) continue;
-      if (dist(p, b) < 14 && b.z < 36) { knockDown(p, b.vx, b.vy, 190, 'bulge'); b.vx *= 0.88; b.vy *= 0.88; sfx('hit'); game.shake = Math.max(game.shake, 0.3); hitstop(0.12); }
+      if (dist(p, b) < 14 && b.z < 36) { knockDown(p, b.vx, b.vy, 190, 'bulge', 120); b.vx *= 0.88; b.vy *= 0.88; sfx('hit'); game.shake = Math.max(game.shake, 0.3); hitstop(0.12); }
     }
+  }
+  if (giant() && !b.owner && hyp(b.vx, b.vy) > 150 && b.z < 34) for (const p of players) {   // the giant ball bowls people over
+    if ((p === b.last && b.lockT > 0) || p.state === ST.FALL || p.state === ST.STUN) continue;
+    if (dist(p, b) < 20) { knockDown(p, b.vx, b.vy, 200, 'bulge', 140); if (p.state === ST.FALL) { b.vx *= 0.8; b.vy *= 0.8; sfx('hit'); game.shake = Math.max(game.shake, 0.25); hitstop(0.06); } }
   }
 }
 function land() {
@@ -523,7 +671,7 @@ function land() {
 }
 function erupt() {
   const b = ball;
-  for (const p of players) if (dist(p, b) < 48 && p !== b.last) knockDown(p, (p.x-b.x) || 1, p.y-b.y, 220, 'bulge');
+  for (const p of players) if (dist(p, b) < 48 && p !== b.last) knockDown(p, (p.x-b.x) || 1, p.y-b.y, 220, 'bulge', 200);
   const s = P(b.x, b.y);
   burst('erupt', s.x, s.y);
   game.shake = 0.6; game.flash = Math.max(game.flash, 0.25); sfx('boom'); hitstop(0.15);
@@ -532,15 +680,15 @@ function erupt() {
 function possession(dt) {
   const b = ball;
   if (b.owner) fury(b.owner.team, dt*4);
-  if (!b.owner && !b.superType && b.z < 10) {
-    let best = null, bd = REACH;
+  if (!b.owner && !b.superType && b.z < (giant() ? 22 : 10)) {
+    let best = null, bd = REACH*(giant() ? 1.9 : 1);
     for (const p of players) { if (p.state > ST.RUN || (b.lock === p && b.lockT > 0)) continue;
       const d = dist(p, b); if (d < bd) { bd = d; best = p; } }
     if (best) { if (b.last && b.last !== best && b.last.team === best.team && best.team === b.last.team) fury(best.team, 10); // pass received
       b.owner = best; }
   } else if (b.owner) {
     for (const p of players) {
-      if (p.team === b.owner.team || p.state > ST.RUN) continue;
+      if (p.team === b.owner.team || p.state > ST.RUN || b.owner.buff === 'horn') continue;
       if (dist(p, b) < 9 && Math.random() < dt*(p.team === 1 ? 0.6 : 1.6)) { const prev = b.owner; b.owner = p; b.lock = prev; b.lockT = 0.5; fury(p.team, 12); if (p.team === 1 && Math.random() < 0.7) emote(p, 'tongue'); break; }
     }
   }
@@ -548,6 +696,7 @@ function possession(dt) {
 function separate() {
   for (let i = 0; i < players.length; i++) for (let j = i+1; j < players.length; j++) {
     const a = players[i], c = players[j], d = dist(a, c);
+    if (a.z > 4 || c.z > 4) continue;
     if (d > 0 && d < 12) { const k = (12-d)/2, nx = (c.x-a.x)/d, ny = (c.y-a.y)/d; a.x -= nx*k; a.y -= ny*k; c.x += nx*k; c.y += ny*k; }
   }
 }
@@ -588,6 +737,10 @@ function ai(p, dt) {
     } else {
       tx = ox + (b.x-ox)*0.2 + (ox === 0 ? 18 : -18); ty = clamp(gy + (b.y-gy)*0.6, Y0-10, Y1+10);
     }
+  }
+  if (b.owner !== p && items.length) {   // grab a pickup on the way when the ball is not right here
+    const it = items.reduce((a, q) => dist(p, q) < dist(p, a) ? q : a);
+    if (dist(p, it) < (rival ? 45 : 65) && dist(p, b) > 30) { tx = it.x; ty = it.y; }
   }
   const dx = tx-p.x, dy = ty-p.y, l = hyp(dx, dy);
   let wx = 0, wy = 0; if (l >= 5) { wx = dx/l; wy = dy/l; }
@@ -884,13 +1037,16 @@ function buildSnap() {
   return { mid: NET.mid, md: NET.mode, gm: game.mode, t: r1(game.time), sc: game.score, fu: [Math.round(game.fury[0]), Math.round(game.fury[1])], gp: NET.guestPeer,
     P: players.map(p => [r1(p.x), r1(p.y), r1(p.vx), r1(p.vy), p.state, r2(p.st), r2(p.fx), r2(p.fy), r2(p.charge),
       p.mood === 'cheer' ? 1 : p.mood === 'sad' ? 2 : 0, EXPR.indexOf(p.fallExpr), p.tag || 0,
-      p.emote ? EMOS.indexOf(p.emote.type) : -1, p.emote ? r1(p.emote.t) : 0, p.emote ? r2(p.emote.age) : 0, p.kickSuper ? 1 : 0, p.bike ? 1 : 0]),
+      p.emote ? EMOS.indexOf(p.emote.type) : -1, p.emote ? r1(p.emote.t) : 0, p.emote ? r2(p.emote.age) : 0, p.kickSuper ? 1 : 0, p.bike ? 1 : 0, r1(p.z), ITEMS.indexOf(p.buff)]),
     B: [r1(ball.x), r1(ball.y), r1(ball.z), r1(ball.vx), r1(ball.vy), SUPS.indexOf(ball.superType)],
     sh: r2(game.shake), fl: r2(game.flash), bo: game.bolt ? [r1(game.bolt.x), r1(game.bolt.y), r2(game.bolt.t), Math.round(game.bolt.seed)] : 0,
     an: game.announce ? [game.announce.text, game.announce.col, r2(game.announce.t)] : 0,
     bn: game.banner ? [game.banner.text, game.banner.col, r2(game.banner.t)] : 0,
     wx: game.weather, wd: [r1(game.wind.x), r1(game.wind.y)], pv: game.pv,
     pt: patches.map(p => [p.type === 'puddle' ? 1 : 0, p.blobs.map(b => [r1(b.x), r1(b.y), r1(b.rx), r1(b.ry)])]),
+    ch: game.chaos ? [CHAOS_KEYS.indexOf(game.chaos.type), r1(game.chaos.t)] : 0,
+    ve: game.vespa ? [r1(game.vespa.x), r1(game.vespa.y), game.vespa.dir] : 0,
+    it: items.map(i => [ITEMS.indexOf(i.type), r1(i.x), r1(i.y), r1(i.t)]),
     ev: NET.ev };
 }
 function hostBroadcast() {
@@ -1050,11 +1206,15 @@ function applySnap(s) {
   game.bolt = s.bo ? { x: s.bo[0], y: s.bo[1], t: s.bo[2], seed: s.bo[3] } : null;
   game.announce = s.an ? { text: s.an[0], col: s.an[1], t: s.an[2] } : null;
   game.banner = s.bn ? { text: s.bn[0], col: s.bn[1], t: s.bn[2] } : null;
+  game.chaos = s.ch ? { type: CHAOS_KEYS[s.ch[0]], t: s.ch[1] } : null;
+  if (s.ve) { if (!game.vespa) game.vespa = { x: s.ve[0], y: s.ve[1], dir: s.ve[2], t: 0 };
+    Object.assign(game.vespa, { tx: s.ve[0], ty: s.ve[1], dir: s.ve[2] }); } else game.vespa = null;
+  items = (s.it || []).map(([k, x, y, t]) => ({ type: ITEMS[k], x, y, t }));
   s.P.forEach((a, i) => { const p = players[i]; if (!p) return;
     p.tx = a[0]; p.ty = a[1]; p.vx = a[2]; p.vy = a[3];
     p.state = a[4]; p.st = a[5]; p.fx = a[6]; p.fy = a[7]; p.charge = a[8];
     p.mood = a[9] === 1 ? 'cheer' : a[9] === 2 ? 'sad' : null; p.fallExpr = EXPR[a[10]] || 'cry'; p.tag = a[11];
-    p.human = a[11] > 0; p.local = a[11] === 2; p.kickSuper = !!a[15]; p.bike = !!a[16];
+    p.human = a[11] > 0; p.local = a[11] === 2; p.kickSuper = !!a[15]; p.bike = !!a[16]; p.tz = a[17] || 0; p.buff = ITEMS[a[18]] || null;
     p.emote = a[12] >= 0 ? { type: EMOS[a[12]], t: a[13], age: a[14] } : null;
     if (Math.abs(p.tx - p.x) > 60 || Math.abs(p.ty - p.y) > 60) { p.x = p.tx; p.y = p.ty; } });
   ball.tx = s.B[0]; ball.ty = s.B[1]; ball.tz = s.B[2]; ball.vx = s.B[3]; ball.vy = s.B[4]; ball.superType = SUPS[s.B[5]] || null;
@@ -1070,16 +1230,18 @@ function guestUpdate(dt) {
   if (!NET.room) return;
   const h = NET.room.peers().find(p => p.peer === NET.hostPeer), s = h && h.presence && h.presence.s;
   if (s && s !== NET.lastS && s.gp === NET.myPeer && Array.isArray(s.P)) { NET.lastS = s; applySnap(s); }
-  updRain(dt); updParts(dt);
+  updRain(dt); updParts(dt); chaosFx(dt);
   if (NET.mid < 0) return;
   guestSendInput();
   // glide toward the host's positions (a little ahead, by velocity) so 20 updates a second look smooth
   const k = Math.min(1, dt*14);
   for (const p of players) { if (p.tx === undefined) continue;
-    p.x += (p.tx + p.vx*0.04 - p.x)*k; p.y += (p.ty + p.vy*0.04 - p.y)*k; p.st += dt;
+    p.x += (p.tx + p.vx*0.04 - p.x)*k; p.y += (p.ty + p.vy*0.04 - p.y)*k; p.z += ((p.tz || 0) - p.z)*k; p.st += dt;
     const spd = hyp(p.vx, p.vy), prev = Math.floor(p.anim/20); p.anim += spd*dt;
     if (p.state === ST.RUN && spd > 50 && Math.floor(p.anim/20) !== prev) { const q = P(p.x - p.fx*6, p.y); spawn(q.x-2, q.y-2, -p.fx*12, -8, 0.3, '#e8f4e0', 2, 0); }
     if (p.emote) { p.emote.t -= dt; p.emote.age += dt; if (p.emote.t <= 0) p.emote = null; } }
+  const v = game.vespa; if (v && v.tx !== undefined) { v.t += dt; v.x += v.dir*VSPD*dt; v.x += (v.tx - v.x)*k*0.5; v.y += (v.ty - v.y)*k; }
+  for (const it of items) it.t -= dt;
   if (ball.tx !== undefined) { ball.x += (ball.tx + ball.vx*0.04 - ball.x)*k; ball.y += (ball.ty + ball.vy*0.04 - ball.y)*k; ball.z += (ball.tz - ball.z)*k; ball.rot += hyp(ball.vx, ball.vy)*dt; }
   if (ball.superType === 'fire') { const q = P(ball.x, ball.y, ball.z + 5); for (let i = 0; i < 3; i++) spawn(q.x+rnd(-3,3), q.y+rnd(-3,3), -ball.vx*0.18+rnd(-15,15), rnd(-25,5), rnd(0.2,0.45), ['#fff3a0','#ffd23a','#ff9a1a'][i], 2, 0); }
   if (game.bolt) { game.bolt.t -= dt; if (game.bolt.t <= 0) game.bolt = null; }
@@ -1132,7 +1294,7 @@ async function shareGame() {
 function kickoff(team) {
   const c = WID/2, na = players.find(p => p.team === 0 && p.role === 'att'), nd = players.find(p => p.team === 0 && p.role === 'def'),
         ra = players.find(p => p.team === 1 && p.role === 'att'), rd = players.find(p => p.team === 1 && p.role === 'def');
-  const place = (p, x, y) => { Object.assign(p, { x, y, vx:0, vy:0, charge:0, mood:null, fx:p.team?-1:1, fy:0 }); p.state = -1; setState(p, ST.IDLE); };
+  const place = (p, x, y) => { Object.assign(p, { x, y, vx:0, vy:0, z:0, vz:0, buff:null, charge:0, mood:null, fx:p.team?-1:1, fy:0 }); p.state = -1; setState(p, ST.IDLE); };
   place(na, team === 0 ? LEN/2-10 : LEN/2-60, team === 0 ? c : c-30);
   if (nd) place(nd, LEN*0.12, c);
   place(ra, team === 1 ? LEN/2+10 : LEN/2+60, team === 1 ? c : c+30);
@@ -1142,12 +1304,13 @@ function kickoff(team) {
   assignControl(na, nd, ra); game.switchFlash = 0; game.mode = 'play'; game.announce = { text:'KICK OFF!', col:'#ffffff', t:1.1 }; sfx('whistle'); startMusic();
 }
 function scored(team) {
-  fury(1-team, 30); game.score[team]++; game.mode = 'goal'; buzz(team === 0 ? [40, 40, 80] : 60); game.goalT = 2.2; game.kickoffTeam = 1-team;
+  const pts = chaosOn && game.time <= X2T ? 2 : 1;
+  fury(1-team, 30); game.score[team] += pts; game.mode = 'goal'; buzz(team === 0 ? [40, 40, 80] : 60); game.goalT = 2.2; game.kickoffTeam = 1-team;
   ball.owner = null; ball.superType = null; ball.gs = 1;
   for (const p of players) { p.mood = p.team === team ? 'cheer' : 'sad'; p.charge = 0; }
   const rivals = players.filter(p => p.team === 1);
   rivals.forEach((p, k) => emote(p, team === 1 ? (k === 0 ? 'finger' : 'laugh') : (k === 0 ? 'cry' : 'angry'), true));
-  game.banner = { text: team === 0 ? 'GOOOL!' : 'GOL ROMA', col: TEAMS[team].color, t: 0 };
+  game.banner = { text: (team === 0 ? 'GOOOL!' : 'GOL ROMA') + (pts > 1 ? ' x2' : ''), col: TEAMS[team].color, t: 0 };
   game.flash = Math.max(game.flash, 0.35); game.shake = 0.4; sfx('goal');
   const s = P(ball.x, ball.y, ball.z);
   burst('goal', s.x, s.y, team);
@@ -1165,6 +1328,7 @@ function startMatch(mode) {
   MODE = mode; buildTeams(mode); NET.mid = (NET.mid + 1) % 100000; NET.rK = NET.rT = -1;
   game.score = [0,0]; game.fury = [0, 0]; game.furyFlash = [0, 0]; game.time = MATCH; parts = []; game.banner = null; game.bolt = null; game.paused = false;
   game.wxChanged = false; game.tauntT = rnd(5, 9); game.emoCd = 0;
+  game.chaos = null; game.vespa = null; game.lastChaos = null; game.chaosT = rnd(12, 16); game.itemT = rnd(5, 8); game.x2 = false; items = []; pops = [];
   setWeather(weatherOn ? randomWeather(null) : 'off'); kickoff(0); showOv(null);
 }
 function attract() {
@@ -1172,7 +1336,7 @@ function attract() {
   const c = WID/2;
   [[LEN/2-40, c-20], [LEN/2-90, c+30], [LEN/2+40, c+20], [LEN/2+90, c-30]].forEach(([x, y], i) => Object.assign(players[i], { x, y, fx: i < 2 ? 1 : -1 }));
   Object.assign(ball, { x: LEN/2, y: c, z: 0, vx: 0, vy: 0, vz: 0, owner: null, superType: null });
-  game.banner = null; game.announce = null; game.tauntT = 2;
+  game.banner = null; game.announce = null; game.tauntT = 2; game.chaos = null; game.vespa = null; items = []; pops = [];
 }
 function toMenu() { netLeave(); attract(); $('mMain').hidden = false; $('mPlay').hidden = true; showOv('ovMenu'); }
 function setPaused(v) {
@@ -1197,10 +1361,17 @@ function burst(kind, x, y, team, relayed) {
   if (!relayed) netEv('b', kind, Math.round(x), Math.round(y), team || 0);
   if (kind === 'super') for (let i = 0; i < 20; i++) spawn(x, y, rnd(-90,90), rnd(-110,20), rnd(0.3,0.6), i%2?'#ffd23a':'#ff6a1a', 2, 200);
   if (kind === 'erupt') for (let i = 0; i < 50; i++) spawn(x, y, rnd(-120,120), rnd(-200,-30), rnd(0.5,1.1), ['#ff3a10','#ff9a1a','#ffe14a','#3a2a2a'][i%4], i%3?2:3, 400);
+  if (kind === 'pick') { for (let i = 0; i < 16; i++) spawn(x, y, rnd(-70, 70), rnd(-90, -10), rnd(0.3, 0.6), ['#ffffff', '#ffd23a', '#ff6a5a'][i%3], 2, 160);
+    const it = ITEMS[team || 0]; pops.push({ text: ITEMNAME[it], col: it === 'pizza' ? '#ffd23a' : it === 'pepper' ? '#ff6a3a' : '#ff9a9a', x, y: y - 8, t: 1 }); }
+  if (kind === 'ding') for (let i = 0; i < 10; i++) spawn(x, y, rnd(-60, 60), rnd(-60, 20), rnd(0.2, 0.4), i%2 ? '#ffd23a' : '#ffffff', 2, 0);
+  if (kind === 'dust') for (let i = 0; i < 10; i++) spawn(x + rnd(-6, 6), y - 1, rnd(-50, 50), rnd(-40, -10), rnd(0.3, 0.5), i%2 ? '#e8f4e0' : '#9ab890', 2, 150);
+  if (kind === 'quake') for (let i = 0; i < 36; i++) { const a = i/36*Math.PI*2; spawn(x, y, Math.cos(a)*120, Math.sin(a)*40 - 40, rnd(0.4, 0.7), ['#5c4a26', '#3e3418', '#ff7a2a'][i%3], i%4 ? 2 : 3, 200); }
   if (kind === 'goal') for (let i = 0; i < 44; i++) spawn(x, y, rnd(-130,130), rnd(-170,-20), rnd(0.6,1.2), ['#ffffff', TEAMS[team||0].color, '#f2c230'][i%3], 2, 260);
 }
 function spawn(x, y, vx, vy, life, col, s, g) { if (parts.length > 600) return; parts.push({ x, y, vx, vy, life, max: life, col, s, g }); }
-function updParts(dt) { for (let i = parts.length-1; i >= 0; i--) { const p = parts[i]; p.life -= dt;
+function updParts(dt) {
+  for (let i = pops.length-1; i >= 0; i--) if ((pops[i].t -= dt) <= 0) pops.splice(i, 1);
+  for (let i = parts.length-1; i >= 0; i--) { const p = parts[i]; p.life -= dt;
   if (p.life <= 0) { parts.splice(i, 1); continue; } p.vy += p.g*dt; p.x += p.vx*dt; p.y += p.vy*dt; } }
 
 // ================== update ==================
@@ -1232,7 +1403,7 @@ function update(dt) {
   game.switchFlash = Math.max(0, game.switchFlash - dt);
   game.furyFlash[0] = Math.max(0, game.furyFlash[0] - dt); game.furyFlash[1] = Math.max(0, game.furyFlash[1] - dt);
   updEmotes(dt);
-  updWeather(dt); updParts(dt);
+  updWeather(dt); updParts(dt); chaosFx(dt);
   if (game.hitstop > 0) { game.hitstop -= dt; return; }
   if (game.mode === 'play') {
     game.time -= dt;
@@ -1246,6 +1417,7 @@ function update(dt) {
     for (const p of players) updPlayer(p, dt);
     separate(); updBall(dt);
     if (game.mode === 'play') possession(dt);
+    updChaos(dt);
   }
   updCamera(dt, false);
   if (NET.role === 'host') hostBroadcast();
@@ -1291,7 +1463,14 @@ function spriteFor(p) {
   return { spr: getSprite(p.team, pose, expr, frame, view), flip };
 }
 function drawPlayer(p) {
-  const s = S(p.x, p.y), x = Math.round(s.x), y = Math.round(s.y), { spr, flip } = spriteFor(p);
+  const s = S(p.x, p.y), x = Math.round(s.x), z = Math.round(p.z || 0), y = Math.round(s.y) - z, { spr, flip } = spriteFor(p);
+  if (p.buff === 'horn') pellipseRing(x, y + z, 12, 4, Math.floor(game.t*10) % 2 ? '#ffd23a' : '#fff3a0');
+  if (p.buff === 'pepper') pellipse(x, y + z, 11, 3, Math.floor(game.t*12) % 2 ? 'rgba(255,90,30,.55)' : 'rgba(255,200,40,.45)');
+  if (z > 2 && p.state === ST.FALL) {   // cartwheel through the air in 90-degree steps, NES style
+    const up = getSprite(p.team, 'idle', 'bulge', 0, 'side');
+    ctx.save(); ctx.translate(x, y - 20); ctx.rotate((Math.floor(p.st*14) % 4)*Math.PI/2); if (flip) ctx.scale(-1, 1);
+    ctx.drawImage(up, -20, -20); ctx.restore(); return;
+  }
   if (p.charge >= CHARGE && p.state <= ST.RUN && furyReady(p)) {
     pellipse(x, y, 14, 4, Math.floor(game.t*16) % 2 ? 'rgba(255,190,40,.6)' : 'rgba(255,90,30,.5)');
     if (Math.random() < 0.6) { const q = P(p.x, p.y); spawn(q.x+rnd(-10,10), q.y-rnd(0,34), 0, rnd(-60,-25), 0.35, '#ffd23a', 2, 0); }
@@ -1342,7 +1521,24 @@ function drawBall() {
   const b = ball, s = S(b.x, b.y, b.z), x = Math.round(s.x), y = Math.round(s.y);
   if (b.superType === 'fire') { pellipse(x, y-6, 9, 7, 'rgba(255,110,30,.55)'); pellipse(x, y-6, 7, 6, 'rgba(255,230,90,.75)'); }
   if (b.superType === 'vesuvio') pellipse(x, y-6, 9, 7, 'rgba(220,40,20,.5)');
+  if (giant()) { const d = Math.round(12*BIGK); ctx.drawImage(BALLSPR[Math.floor(b.rot/16) % 2], x - (d >> 1), y - d, d, d); return; }
   ctx.drawImage(BALLSPR[Math.floor(b.rot/8) % 2], x-6, y-12);
+}
+function drawItem(it) {
+  if (it.t < 2 && Math.floor(game.t*10) % 2) return;   // blinks before it disappears
+  const s = S(it.x, it.y), x = Math.round(s.x), y = Math.round(s.y), bob = Math.round(Math.sin(game.t*4 + it.x)*2);
+  ctx.drawImage(ITEMSPR[it.type], x - 7, y - 20 + bob);
+}
+function drawVespa() {
+  const v = game.vespa, s = S(v.x, v.y), x = Math.round(s.x), y = Math.round(s.y) + (Math.floor(game.t*14) % 2);
+  if (v.dir > 0) ctx.drawImage(VESPA, x - 18, y - 27);
+  else { ctx.save(); ctx.translate(x, 0); ctx.scale(-1, 1); ctx.drawImage(VESPA, -18, y - 27); ctx.restore(); }
+}
+function drawChaosBar() {
+  const c = game.chaos; if (!c || game.mode === 'title') return;
+  const d = CHAOS[c.type], k = clamp(c.t/d.dur, 0, 1), w = 60, x = Math.round(W/2 - w/2), y = H - 9;
+  ptext(ctx, d.label, W/2, y - 11, 8, d.col, 'center', '#100810');
+  ctx.fillStyle = '#100810'; ctx.fillRect(x - 1, y, w + 2, 5); ctx.fillStyle = d.col; ctx.fillRect(x, y + 1, Math.round(w*k), 3);
 }
 function drawWeatherIcon(x, y) {
   const w = game.weather, R = (a,b,c,d,col) => { ctx.fillStyle = col; ctx.fillRect(x+a, y+b, c, d); };
@@ -1420,30 +1616,37 @@ function render() {
   const cx = cam.x, cy = cam.y; cam.x = Math.round(cx) + shx; cam.y = Math.round(cy) + shy;
   ctx.fillStyle = '#100e1a'; ctx.fillRect(0, 0, W, H);
   ctx.drawImage(FCV, -cam.x, -cam.y);
-  for (const p of players) { const s = S(p.x, p.y); pellipse(s.x, s.y, 9, 2, 'rgba(0,30,0,.35)'); }
-  { const s = S(ball.x, ball.y), k = clamp(1 - ball.z/180, 0.4, 1); pellipse(s.x, s.y, Math.max(2, Math.round(6*k)), 2, 'rgba(0,30,0,.4)'); }
+  if (chaosIs('ice')) { ctx.fillStyle = 'rgba(220,248,255,.34)'; ctx.fillRect(0, 0, W, H); }
+  for (const p of players) { const s = S(p.x, p.y), k = clamp(1 - (p.z || 0)/120, 0.4, 1); pellipse(s.x, s.y, Math.round(9*k), 2, 'rgba(0,30,0,.35)'); }
+  for (const it of items) { const s = S(it.x, it.y); pellipse(s.x, s.y, 5, 1, 'rgba(0,30,0,.35)'); }
+  { const s = S(ball.x, ball.y), k = clamp(1 - ball.z/180, 0.4, 1)*(giant() ? BIGK : 1); pellipse(s.x, s.y, Math.max(2, Math.round(6*k)), giant() ? 4 : 2, 'rgba(0,30,0,.4)'); }
   const ents = players.map(p => ({ y: p.y, f: () => drawPlayer(p) }));
   ents.push({ y: ball.y + 0.5, f: drawBall });
+  for (const it of items) ents.push({ y: it.y, f: () => drawItem(it) });
+  if (game.vespa) ents.push({ y: game.vespa.y, f: drawVespa });
   ents.push({ y: Y1 + 0.1, f: () => ctx.drawImage(FRONT, -cam.x, -cam.y) });
   ents.push({ y: WID + 0.1, f: () => { for (const x of [0, LEN]) { const p = P(x, WID); drawFlag(ctx, { x: p.x - cam.x, y: p.y - cam.y }); } } });
   ents.sort((a, b) => a.y - b.y).forEach(e => e.f());
   for (const p of parts) { const a = p.life/p.max; ctx.globalAlpha = Math.min(1, a*1.5); ctx.fillStyle = p.col;
     const s = Math.max(1, Math.round(p.s*(0.5 + a*0.5))); ctx.fillRect(Math.round(p.x - cam.x), Math.round(p.y - cam.y), s, s); }
   ctx.globalAlpha = 1;
+  for (const q of pops) ptext(ctx, q.text, Math.round(q.x - cam.x), Math.round(q.y - cam.y - (1 - q.t)*18), 8, q.col, 'center', '#100810');
   for (const p of players) drawEmote(p);
   if (game.weather === 'storm') { ctx.fillStyle = 'rgba(10,12,40,.28)'; ctx.fillRect(0, 0, W, H); }
+  if (chaosIs('moon')) { ctx.fillStyle = 'rgba(40,20,90,.3)'; ctx.fillRect(0, 0, W, H); }
+  if (chaosIs('quake')) { ctx.fillStyle = 'rgba(255,60,20,.1)'; ctx.fillRect(0, 0, W, H); }
   if (rain.length) { ctx.fillStyle = 'rgba(190,225,255,.6)'; const dx = (game.wind.x*1.2 - 40)/250;
     for (const d of rain) for (let k = 0; k < 6; k++) ctx.fillRect(Math.round(d.x + dx*k), Math.round(d.y + k), 1, 1); }
   drawBolt();
   drawOffscreen();
   cam.x = cx; cam.y = cy;
   if (game.flash > 0) { ctx.fillStyle = `rgba(255,255,255,${Math.min(REDUCED ? 0.3 : 0.85, game.flash)})`; ctx.fillRect(0, 0, W, H); }
-  if (game.mode !== 'title') drawHUD();
+  if (game.mode !== 'title') { drawHUD(); drawChaosBar(); }
   if (game.banner) { const t = game.banner.t, sc = t < 0.25 ? 8 + 16*(t/0.25) : 24, y = 78 + Math.sin(t*6)*3;
     const cyc = ['#ffffff', game.banner.col, '#f2c230', game.banner.col][Math.floor(t*12) % 4];
     ptext(ctx, game.banner.text, W/2, y, Math.round(sc), cyc, 'center', '#100810'); }
-  if (game.announce) { const a = game.announce, k = Math.min(1, (1.3 - a.t)*6);
-    ptext(ctx, a.text, W/2, 32, Math.round(8 + 8*k), a.col, 'center', '#100810'); }
+  if (game.announce) { const a = game.announce, k = clamp((1.3 - a.t)*6, 0, 1), fits = a.text.length*16 <= W - 12;
+    ptext(ctx, a.text, W/2, 42, fits ? Math.round(8 + 8*k) : 8, a.col, 'center', '#100810'); }
 }
 
 // ================== canvas taps (weather / sound) ==================
@@ -1458,6 +1661,7 @@ click('miPlay', () => { $('mMain').hidden = true; $('mPlay').hidden = false; $('
 click('miBack', () => { $('mPlay').hidden = true; $('mMain').hidden = false; $('miPlay').focus({ preventScroll: true }); });
 click('mi11', () => startMatch(1));
 click('mi22', () => startMatch(2));
+click('miChaos', () => { chaosOn = !chaosOn; $('miChaos').innerHTML = 'КАОС <b>' + (chaosOn ? 'ВКЛ' : 'ВЫКЛ') + '</b>'; $('miChaos').classList.toggle('off', !chaosOn); $('miChaos').setAttribute('aria-pressed', String(chaosOn)); });
 click('miWx', () => { weatherOn = !weatherOn; $('miWx').innerHTML = 'ПОГОДА <b>' + (weatherOn ? 'ВКЛ' : 'ВЫКЛ') + '</b>'; $('miWx').classList.toggle('off', !weatherOn); $('miWx').setAttribute('aria-pressed', String(weatherOn)); });
 click('miExit', () => { stopMusic(); showOv('ovBye'); });
 click('miBackFromBye', toMenu);
