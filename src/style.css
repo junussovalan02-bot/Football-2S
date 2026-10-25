@@ -1,0 +1,87 @@
+/* Layout: one-screen arcade cabinet — pitch canvas on top, touch pad below (or overlaid in landscape). */
+:root{
+  --night:#0b1020; --panel:#121a31; --line:#2a3a66;
+  --azzurro:#3d9be9; --azzurro-deep:#1d4f8f; --wine:#8c1c2c; --gold:#f2c230;
+  --chalk:#f4f1e6; --muted:#9fb0d0; --ink:#060912;
+  --f-pixel:"Press Start 2P", ui-monospace, "Courier New", monospace;
+  --f-body:"Rubik", system-ui, -apple-system, "Segoe UI", sans-serif;
+  color-scheme:dark;
+}
+html{height:100%;box-sizing:border-box}
+body{height:100%}
+[hidden]{display:none!important}
+body{background:var(--night);color:var(--chalk);font-family:var(--f-body);overflow:hidden;
+  -webkit-user-select:none;user-select:none;-webkit-touch-callout:none;touch-action:none}
+#app{height:100%;display:flex;flex-direction:column;
+  padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px))}
+#stage{position:relative;flex:1;min-height:0;display:grid;place-items:center}
+body.portrait.touch #stage{flex:0 0 auto;place-items:start center;padding-top:max(10px, env(safe-area-inset-top, 0px))}
+body.portrait.touch .ov{position:fixed}
+#screen{position:relative;max-width:100%;border-radius:10px;overflow:hidden;
+  box-shadow:0 0 0 3px #000,0 0 0 6px #2a2a36,0 0 0 8px #000,0 14px 40px rgba(0,0,0,.7),0 0 60px rgba(74,168,240,.18)}
+#cv{display:block;width:100%;height:100%;image-rendering:pixelated;image-rendering:crisp-edges}
+/* CRT: fine scanlines, soft vignette, faint RGB mask */
+#screen::after{content:"";position:absolute;inset:0;pointer-events:none;
+  background:
+    radial-gradient(ellipse at center,rgba(0,0,0,0) 62%,rgba(0,0,0,.42) 100%),
+    repeating-linear-gradient(to bottom,rgba(0,0,0,.20) 0 1px,rgba(0,0,0,0) 1px 3px),
+    repeating-linear-gradient(to right,rgba(255,0,0,.03) 0 1px,rgba(0,255,0,.03) 1px 2px,rgba(0,0,255,.03) 2px 3px)}
+#screen::before{content:"";position:absolute;inset:0;pointer-events:none;z-index:1;
+  background:linear-gradient(170deg,rgba(255,255,255,.06),rgba(255,255,255,0) 40%)}
+
+/* ---------- touch controls: floating joystick (left half), thumb-arc buttons (right) ---------- */
+html,body{overscroll-behavior:none;-webkit-tap-highlight-color:transparent}
+#pad{position:fixed;inset:0;pointer-events:none;z-index:3}
+body.no-touch #pad{display:none}
+#zoneL{position:absolute;left:0;bottom:0;width:52%;height:60%;pointer-events:auto;touch-action:none}
+#stick{position:absolute;width:118px;height:118px;margin:-59px 0 0 -59px;border-radius:50%;pointer-events:none;
+  border:3px solid rgba(244,241,230,.35);background:radial-gradient(circle,rgba(74,168,240,.16),rgba(74,168,240,.04) 70%);
+  opacity:.45;transition:opacity .15s}
+#stick.live{opacity:.95;transition:none}
+#knob{position:absolute;left:50%;top:50%;width:52px;height:52px;margin:-26px 0 0 -26px;border-radius:50%;
+  background:var(--azzurro);box-shadow:inset -4px -5px 0 var(--azzurro-deep),0 0 0 3px var(--ink)}
+#btns{position:absolute;right:max(16px, env(safe-area-inset-right, 0px));bottom:calc(16px + env(safe-area-inset-bottom, 0px));
+  width:200px;height:170px;pointer-events:none}
+.pb{position:absolute;pointer-events:auto;font-family:var(--f-pixel);color:var(--ink);border:0;border-radius:50%;display:grid;place-items:center;
+  text-align:center;line-height:1.5;touch-action:none;cursor:pointer;box-shadow:0 0 0 3px var(--ink),inset -5px -6px 0 rgba(0,0,0,.28);
+  -webkit-user-select:none;user-select:none}
+.pb small{display:block;font-size:7px;opacity:.8}
+#bA{right:0;bottom:24px;width:96px;height:96px;font-size:10px;background:var(--gold)}
+#bB{right:104px;bottom:0;width:78px;height:78px;font-size:8px;background:#e06a7a}
+#bS{right:112px;bottom:90px;width:64px;height:34px;border-radius:17px;font-size:7px;background:#c8cde0}
+.pb.on{transform:scale(.93);filter:brightness(1.25);box-shadow:0 0 0 3px var(--ink),0 0 18px rgba(255,255,255,.35)}
+.pb:focus-visible{outline:3px solid var(--chalk);outline-offset:3px}
+body.landscape #pad .pb{opacity:.82}
+body.landscape #screen{border-radius:6px;box-shadow:0 0 0 2px #000,0 0 0 4px #2a2a36}
+.rot{display:none;color:var(--gold)}
+body.portrait.touch .rot{display:block}
+/* ---------- menus: minimal, centered, pixel type, blinking cursor ---------- */
+.ov{position:absolute;inset:0;display:grid;place-items:center;overflow:auto;padding-block:12px;z-index:5;
+  background:radial-gradient(ellipse at center,rgba(4,6,16,.55),rgba(4,6,16,.88) 75%)}
+.menu{display:flex;flex-direction:column;align-items:center;gap:22px;text-align:center;font-family:var(--f-pixel)}
+.logo{font-family:var(--f-pixel);font-size:clamp(20px,6vw,34px);line-height:1.2;color:var(--azzurro);margin:0;
+  text-shadow:0 3px 0 #0b3d7a,0 6px 0 #000;letter-spacing:.02em}
+.logo span{display:block;color:#fff;font-size:.55em;letter-spacing:.42em;margin-top:10px;text-shadow:0 3px 0 #000}
+.tag{margin:-8px 0 0;font-size:8px;color:var(--gold);letter-spacing:.12em}
+.items{display:flex;flex-direction:column;gap:4px;align-items:stretch;min-width:220px}
+.mi{font-family:var(--f-pixel);font-size:14px;line-height:1;padding:12px 28px;background:none;border:0;color:#7f89a6;
+  cursor:pointer;position:relative;letter-spacing:.04em}
+.mi::before{content:"\25B6";position:absolute;left:4px;top:12px;font-size:12px;color:var(--gold);opacity:0}
+.mi:hover,.mi:focus-visible{color:#fff;outline:none}
+.mi:hover::before,.mi:focus-visible::before{opacity:1;animation:blink .9s steps(1) infinite}
+.mi b{font-weight:400;color:var(--gold)}
+.mi.off b{color:#7f89a6}
+.mi.dim{font-size:10px;margin-top:6px}
+.mi.join{color:#7fe0ff;font-size:11px}
+.rules{list-style:none;margin:0;padding:0 4px;display:grid;gap:12px;max-width:min(520px,100%);text-align:left;font-size:8px;line-height:2;color:#e8ecf6}
+.rules b{font-weight:400;color:var(--gold);margin-right:6px}
+.rules b.f{color:#ff8a3a} .rules b.v{color:#ff5a3a} .rules b.g{color:#7fe0ff}
+#gameList:empty{display:none}
+.hint{margin:0;max-width:300px;font-size:7px;line-height:2;color:#7f89a6}
+.final{font-size:clamp(18px,5vw,26px);margin:0;line-height:1.4;color:#fff}
+.final .sc{color:var(--gold)}
+.sub{margin:0;font-size:9px;line-height:1.9;color:#c8cde0;max-width:300px}
+.keys{display:none} body.no-touch .keys{display:inline} body.no-touch .tch{display:none}
+@keyframes blink{50%{opacity:0}}
+body.in-menu #pad{visibility:hidden}
+@media (prefers-reduced-motion:reduce){.pb.on{transform:none}.mi::before{animation:none!important}}

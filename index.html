@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="theme-color" content="#0b1020">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Azzurri Arcade</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Rubik:wght@400;600&display=swap">
+<style>
+/* base reset (the Claude artifact viewer used to provide this) */
+*,*::before,*::after{box-sizing:border-box}
+:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body{margin:0;font:14px/1.4 system-ui,-apple-system,"Segoe UI",sans-serif}
+img{max-width:100%}
+[hidden]{display:none!important}
+</style>
+<link rel="stylesheet" href="src/style.css">
+</head>
+<body>
+<div id="app">
+  <div id="stage">
+    <div id="screen"><canvas id="cv" width="320" height="180" aria-label="Футбольное поле: Наполи против Ромы"></canvas></div>
+
+    <div class="ov" id="ovMenu">
+      <div class="menu">
+        <h1 class="logo">AZZURRI<span>ARCADE</span></h1>
+        <p class="tag">NAPOLI · ROMA · NO RULES</p>
+        <p class="hint rot">ПОВЕРНИ ТЕЛЕФОН — ТАК УДОБНЕЕ</p>
+        <div class="items" id="mMain">
+          <button class="mi" id="miPlay">ИГРАТЬ</button>
+          <button class="mi" id="miHelp">СУПЕР-УДАРЫ</button>
+          <button class="mi" id="miFull" hidden>ВО ВЕСЬ ЭКРАН</button>
+          <button class="mi" id="miExit">ВЫХОД</button>
+        </div>
+        <div class="items" id="mPlay" hidden>
+          <button class="mi" id="mi11">1 НА 1</button>
+          <button class="mi" id="mi22">2 НА 2</button>
+          <button class="mi" id="miOnline">С ДРУГОМ</button>
+          <button class="mi" id="miWx" aria-pressed="true">ПОГОДА <b>ВКЛ</b></button>
+          <button class="mi dim" id="miBack">НАЗАД</button>
+        </div>
+        <p class="hint"><span class="tch">ДЖОЙСТИК — БЕГ · УДАР: ДЕРЖИ — СИЛЬНЫЙ ИЛИ СУПЕР · ПОДКАТ С МЯЧОМ — ПАС</span><span class="keys">СТРЕЛКИ — БЕГ · J — УДАР (ДЕРЖИ — СУПЕР) · K — ПОДКАТ/ПАС · L — СМЕНА · P — ПАУЗА</span></p>
+      </div>
+    </div>
+
+    <div class="ov" id="ovOnline" hidden>
+      <div class="menu">
+        <h2 class="logo" style="font-size:20px">С ДРУГОМ<span>ONLINE</span></h2>
+        <p class="tag" id="netStatus" style="margin:0" aria-live="polite">ПОДКЛЮЧЕНИЕ…</p>
+        <div class="items">
+          <button class="mi" id="miHostCoop">ВМЕСТЕ ПРОТИВ РОМЫ</button>
+          <button class="mi" id="miHostVs">ДРУГ ПРОТИВ ДРУГА</button>
+          <div class="items" id="gameList"></div>
+          <button class="mi dim" id="miNetBack">НАЗАД</button>
+        </div>
+        <p class="hint" id="netHint"></p>
+      </div>
+    </div>
+
+    <div class="ov" id="ovHelp" hidden>
+      <div class="menu">
+        <h2 class="logo" style="font-size:20px">FURIA<span>СУПЕР-УДАРЫ</span></h2>
+        <ul class="rules">
+          <li><b>ШКАЛА FURIA</b> под счётом. Растёт, когда ведёшь мяч, отбираешь, сбиваешь подкатом, получаешь пас, когда тебя сбили или дразнят и когда пропустил гол. Полная — хватит на один супер-удар.</li>
+          <li><b class="f">FUOCO</b> FURIA + держи УДАР на бегу. Огненный мяч сносит всех на пути.</li>
+          <li><b class="v">VESUVIO</b> FURIA + держи УДАР стоя, далеко от чужих ворот. Свеча, при падении — извержение.</li>
+          <li><b class="g">GOLFO</b> FURIA + мяч летит на уровне головы: просто нажми УДАР — удар через себя. Мяч идёт волной и смывает защитников. Высокий мяч — это длинный пас или парашют.</li>
+          <li><b>БЕЗ FURIA</b> держишь УДАР — TIRO FORTE, сильный удар. Высокий мяч + УДАР — удар с лёта.</li>
+        </ul>
+        <div class="items"><button class="mi" id="miHelpBack">ПОНЯТНО</button></div>
+      </div>
+    </div>
+
+    <div class="ov" id="ovPause" hidden>
+      <div class="menu">
+        <h2 class="logo" style="font-size:22px">ПАУЗА</h2>
+        <div class="items">
+          <button class="mi" id="miResume">ПРОДОЛЖИТЬ</button>
+          <button class="mi" id="miSound">ЗВУК <b>ВКЛ</b></button>
+          <button class="mi" id="miQuit">ВЫЙТИ В МЕНЮ</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="ov" id="ovEnd" hidden>
+      <div class="menu">
+        <p class="tag" style="margin:0">ФИНАЛЬНЫЙ СВИСТОК</p>
+        <p class="final" id="finalScore">NAP <span class="sc">0 : 0</span> ROM</p>
+        <p class="sub" id="finalLine"></p>
+        <div class="items">
+          <button class="mi" id="miAgain">ЕЩЁ РАЗ</button>
+          <button class="mi" id="miToMenu">В МЕНЮ</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="ov" id="ovBye" hidden>
+      <div class="menu">
+        <h2 class="logo" style="font-size:20px">ДО ВСТРЕЧИ<span>FORZA NAPOLI</span></h2>
+        <p class="sub">Игра остановлена. Вкладку можно просто закрыть.</p>
+        <div class="items"><button class="mi" id="miBackFromBye">В МЕНЮ</button></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="pad">
+    <div id="zoneL"><div id="stick"><div id="knob"></div></div></div>
+    <div id="btns">
+      <button class="pb" id="bS" aria-label="Сменить игрока">СМЕНА</button>
+      <button class="pb" id="bB" aria-label="Подкат или пас">ПОДКАТ<small>/ПАС</small></button>
+      <button class="pb" id="bA" aria-label="Удар, удерживать для супер-удара">УДАР</button>
+    </div>
+  </div>
+</div>
+<script src="src/net/local.js"></script>
+<script src="src/net/index.js"></script>
+<script src="src/game.js"></script>
+</body>
+</html>
