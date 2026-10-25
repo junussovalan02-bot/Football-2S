@@ -34,6 +34,7 @@ img{max-width:100%}
         </div>
         <div class="col">
           <div class="items" id="mMain">
+            <button class="mi big go" id="miCareer">КАРЬЕРА <small>МИРОВОЕ ТУРНЕ</small></button>
             <button class="mi big" id="miReal">РЕАЛЬНОСТЬ <small>11x11</small></button>
             <button class="mi big" id="miPlay">АРКАДА <small>1x1 · 2x2</small></button>
             <button class="mi" id="miOnline">С ДРУГОМ <small>ОНЛАЙН</small></button>
@@ -127,6 +128,47 @@ img{max-width:100%}
       </div>
     </div>
 
+    <div class="ov" id="ovCareer" hidden>
+      <div class="menu">
+        <h2 class="logo sm">КАРЬЕРА<span>МИРОВОЕ ТУРНЕ</span></h2>
+        <p class="tag" id="carInfo"></p>
+        <div class="items" id="carHub">
+          <button class="mi big go" id="miCarGo">МАРШРУТ</button>
+          <button class="mi" id="miCarNew">НОВАЯ КАРЬЕРА</button>
+          <button class="mi dim" id="miCarBack">НАЗАД</button>
+        </div>
+        <div class="items" id="carNew" hidden>
+          <button class="mi big" id="miNewTeam">СВОЯ КОМАНДА <small>СОЗДАЙ КЛУБ</small></button>
+          <button class="mi big" id="miNewPlayer">СВОЙ ИГРОК <small>ВСТУПИ В КОМАНДУ</small></button>
+          <button class="mi dim" id="miCarNewBack">НАЗАД</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="ov" id="ovCreate" hidden>
+      <div class="menu create">
+        <h2 class="logo sm" id="crTitle">СВОЯ КОМАНДА<span>ФОРМА</span></h2>
+        <div class="crow">
+          <div class="card"><canvas class="kit big" id="crKit" width="40" height="40"></canvas><p class="club" id="crName2"></p></div>
+          <div class="items" id="crFields"></div>
+        </div>
+        <div class="items row"><button class="mi big go" id="miCrOk">ГОТОВО!</button><button class="mi dim" id="miCrBack">НАЗАД</button></div>
+      </div>
+    </div>
+
+    <div class="ov" id="ovTour" hidden>
+      <div class="menu">
+        <h2 class="logo sm">МИРОВОЕ ТУРНЕ<span id="tourWho"></span></h2>
+        <ol class="tour" id="tourList"></ol>
+        <p class="tag" id="tourStats"></p>
+        <div class="items row"><button class="mi big go" id="miFly">ЛЕТИМ!</button><button class="mi dim" id="miTourBack">В МЕНЮ</button></div>
+      </div>
+    </div>
+
+    <div class="ov" id="ovFlight" hidden>
+      <div class="menu"><canvas id="flightCv" width="240" height="120" aria-hidden="true"></canvas><p class="tag" id="flightTxt" aria-live="polite"></p></div>
+    </div>
+
     <div class="ov" id="ovPause" hidden>
       <div class="menu">
         <h2 class="logo" style="font-size:22px">ПАУЗА</h2>
@@ -145,6 +187,7 @@ img{max-width:100%}
         <p class="sub" id="finalLine"></p>
         <div class="items">
           <button class="mi" id="miAgain">ЕЩЁ РАЗ</button>
+          <button class="mi big go" id="miToTour" hidden>К МАРШРУТУ</button>
           <button class="mi" id="miToMenu">В МЕНЮ</button>
         </div>
       </div>

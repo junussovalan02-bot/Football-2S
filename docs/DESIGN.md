@@ -16,21 +16,61 @@ Main menu: **РЕАЛЬНОСТЬ 11x11 · АРКАДА · С ДРУГОМ · Н
 - **НАСТРОЙКИ** — СЛОЖНОСТЬ (also on the arcade and team screens), ПОГОДА, КАОС, ЗВУК. Saved in localStorage.
 - Match: 2 minutes (arcade) / 3 minutes (11 on 11). After a goal the team that conceded kicks off.
 
-## Clubs
-All player names are invented. Squad order = GK, 4 DEF, 4 MID, 2 FWD; numbers 1,2,4,5,3,7,8,6,11,10,9.
-Each club has 2–4 "looks" (skin tone + hair colour/style: spiky, pomp, crop) mixed across the squad and its
-own keeper kit.
-| Club | Kit | Names |
-|---|---|---|
-| НАПОЛИ (NAP) | sky blue / white | ЭСПОЗИТО (GK), РУССО, КАПУАНО, ЙОРИО, АМАТО, ДЕ ЛУКА, ФЕРРАРА, ПАГАНО, КОППОЛА, ЧИРО, САВАСТАНО |
-| РОМА (ROM) | white, maroon sleeves | ДЖЕНТИЛЕ (GK), РИЧЧИ, МАРКЕТТИ, КОНТИ, ГАЛЛИ, ФОНТАНА, РИНАЛЬДИ, БАССИ, ТЕСТА, СЕРРА, МАНКУЗО |
-| РОДЕЗИЯ (RHO) | green / white, mixed squad | ХАРТЛИ (GK), ПРАЙС, ШУМБА, ДОЙЛ, ВЕНТЕР, МАРОНГА, ЛАНД, ГИББ, ОРМОНД, БЭНКС, МАКАЛИСТЕР |
-| ЗИМБАБВЕ (ZIM) | yellow / green | МОЙО (GK), НКУБЕ, ДУБЕ, ЧИКОРЕ, МУТАСА, СИБАНДА, МХЛАНГА, ЧИРВА, ГУМБО, МАРУФУ, ЧАРИ |
-| КНДР (PRK) | red / white | РИ ЧХОЛ (GK), КИМ ХЁН, ПАК УН, ЧХВЕ МЁН, ХАН СОН, ЧО КВАН, РЮ ЧХОН, СО ИЛЬ, КАН ХЁК, РИМ ТЭ, ЮН ОК |
+## Clubs (v0.15, data in `src/data.js`)
+16 countries/clubs, all names invented: НАПОЛИ, РОМА, РОДЕЗИЯ, ЗИМБАБВЕ, КНДР, КАЗАХСТАН, ФРАНЦИЯ, ГЕРМАНИЯ, АНГЛИЯ,
+ИСПАНИЯ, ПОРТУГАЛИЯ, НИДЕРЛАНДЫ, АНТАРКТИДА, СИЛЕНД, ВАТИКАН, АТЛАНТИДА. Each has: kit (+ pattern: stripes, hoops, sash,
+penguin front), keeper kit, flag (`dir`: v / h / cross / diag / kaz), 2–4 looks (skin, hair colour and style: spiky,
+pomp, crop, long), 11 surnames (one joke name each), taunt emojis `emo`, home pitch `home`.
+- **Faces** (`featFor`, deterministic per club + slot): beard, moustache, glasses, bald, headband, long hair; Antarctica
+  and Sealand are extra bearded (white polar beards). **Sealand's №10 МАЛЫШ is a short bearded player** (`short`
+  squeezes the body, same head). **North Korea is `uniform`**: one look, no features — discipline.
+- **Emojis** (31 pixel icons, `ICONS`): pizza, volcano, wolf, ghost, money, rocket, horse, beshbarmak, eagle, baguette,
+  croissant, beret, pretzel, sausage, tea, umbrella, bull, paella, sardine, rooster, tulip, cheese, clog, penguin,
+  snowflake, anchor, crab, key, candle, trident, fish. The rival side taunts with its own emojis half of the time;
+  after your goal your two nearest players show your country's emoji.
+- Jokes: derby lines (RHO–ZIM «одной страны», NAP–ROM «солнца», ENG–GER, ESP–POR, FRA–GER) and end-screen lines
+  per winner/loser (`derbyLine`, `endLine`).
 
-Jokes: RHO vs ZIM is «ДЕРБИ ОДНОЙ СТРАНЫ» (it's the same country); NAP vs ROM «ДЕРБИ СОЛНЦА»; any PRK match
-is «ЭФИР ЦТ КНДР» and the end screen quotes state news; a ZIM win pays 100 trillion Zimbabwe dollars; a RHO
-win is void «такой страны нет с 1980 года» (`derbyLine`, `endLine`).
+## Pitches (themes, `THEMES` in data.js)
+11 on 11 plays at the opponent's home pitch (or pick ПОЛЕ on the team screen); arcade and online stay in the stadium.
+| Theme | Home of | Physics | Weather / extras | Critter |
+|---|---|---|---|---|
+| СТАДИОН | NAP, FRA, ESP | — | random | — |
+| САВАННА | RHO, ZIM | bounce ×1.4, friction ×0.8 | sun, dust | elephant (slow, throws players) |
+| БАМБУК | PRK | friction ×1.1 | falling leaves | panda (slow, you bump off) |
+| СНЕГ | GER | friction ×2.2, bounce ×0.45, traction ×0.55, speed ×0.9 | snowfall, red lines | snowman (stands 12 s, melts) |
+| ЛЁД | ANT | friction ×0.3, traction ×0.14 | penguins in the stands | penguin sliding on its belly |
+| СТЕПЬ | KAZ | friction ×0.9 | constant wind 55 | Kazakh horseman (fast, throws players far) |
+| ПЛЯЖ | POR | friction ×2.6, bounce ×0.35, speed ×0.85 | sea, palms | crab crossing the width |
+| ДОЖДЬ | ENG | — | rain, brick stands | — |
+| ТЮЛЬПАНЫ | NED | — | wind 35, windmills | cow |
+| ПЛАТФОРМА | SEA | bounce ×1.6, friction ×0.7 | storm, rusty rails | seagull: flies off with the ball for 1.4 s |
+| ПЬЯЦЦА | ROM, VAT | bounce ×1.5, friction ×0.75 | colonnade and dome | pigeons |
+| ДНО ОКЕАНА | ATL | gravity ×0.45, water drag 0.5/s, speed ×0.9 | blue tint, bubbles | shark fin |
+Critters (`CRIT`, `spawnCritter`, `updCritter`) come every 8–22 s with a name pop-up; fast ones knock players flying,
+big calm ones shove players aside; the ball bounces off them. Scenery behind the pitch (`drawBack`) and props along the
+near touchline (`drawFore`) are per theme; the scenery strip is taller on the big pitch (`OY` 92).
+
+## Physics additions (v0.15)
+- **Posts and crossbar**: a ball crossing the goal line within 3.5 of a post (below the bar) or at bar height rebounds
+  (×0.55) with a «ДЗЫНЬ!» and a ring.
+- **Curve**: holding the stick sideways to the shot at the release bends it (`ball.curve` up to 170 u/s² across the
+  flight, fading ×(1−1.4/s)); AI shots get a little random swerve. Supers don't curve except the tiger shot.
+
+## Career (v0.15, `// ==== career` in game.js)
+Main menu КАРЬЕРА. Saved in localStorage (`azz-career`).
+- **СВОЯ КОМАНДА**: name (12 chars, code = first 3 letters), shirt and shorts colour (12 colours), emoji, home pitch;
+  the squad gets random funny surnames and mixed looks.
+- **СВОЙ ИГРОК**: name, skin, hair, face (beard, moustache, glasses, bald…), height (normal / short), position
+  (НАП → slot 10, ПЗ → 6, ЗАЩ → 2), club to join. In matches you control only him (no switching; teammates pass to
+  him); his goals are counted («ТВОЙ ГОЛ!»).
+- **Мировое турне**: 8 away matches against random countries on their home pitches, 3 min, 11 on 11. Before each a
+  2.4 s flight animation (your flag → theirs). Win 3 / draw 1. At the end: ≥19 pts ЧЕМПИОН, ≥13 ПРИЗЁР, ≥7 СЕРЕДНЯК,
+  else ТУРИСТ; 8+ own goals in player mode = ЗОЛОТАЯ БУТСА. Then НОВЫЙ СЕЗОН with a new route.
+
+## Rules screen
+Cards with looping 80×48 mini-animations drawn with the game sprites (`HELP`, `helpLoop`): super-saiyan, tiger, beam,
+spinning sphere, ORA, pass, curve/post, sprint, keeper, chaos, pickups, pitches.
 
 ## Controls
 | Action | Touch | Keyboard |

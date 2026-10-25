@@ -26,6 +26,7 @@ can be inlined into one HTML file for a Claude artifact.
 |---|---|
 | `index.html` | Page shell: canvas, menus (overlays `ov*`: main with pages mMain/mPlay/mOpts, ovTeams, …), touch pad. Loads `src/net/*.js` then `src/game.js`. |
 | `src/style.css` | Menus, CRT screen effect, touch controls, portrait/landscape layout. |
+| `src/data.js` | Plain data: `clubs` (kits, flags, looks, names, emojis, home pitch), `icons` (12×12 emoji char maps), `themes` (pitches). Loaded before game.js. |
 | `src/game.js` | Everything else, one IIFE, sections marked `// ====`. See code map below. |
 | `src/net/index.js` | Picks the online transport → `window.AzzNet.connect()` returns `{room, user}`. |
 | `src/net/local.js` | Dev transport over BroadcastChannel (two tabs). |
@@ -52,7 +53,8 @@ All graphics are drawn by code (sprites built pixel by pixel in `getSprite`, fie
 - **World & projection** — field units: `x` 0..LEN along the pitch, `y` 0..WID depth (0 = far touchline),
   `z` height. `P(x,y,z)` → field-canvas pixels, `S()` → screen pixels (minus camera). Logical screen is
   `W×180` (W adapts 240–400 to the phone's aspect), scaled up with `image-rendering: pixelated`.
-- **Clubs** — `CLUBS` (kit, keeper kit `gk`, `looks` = skin/hair variants, 11 `names`), `TEAMS` = the two
+- **Clubs** — `CLUBS` from data.js (kit, keeper kit `gk`, `looks`, 11 `names`, `emo`, `home`, `flag`), faces `featFor`,
+  flags `drawFlagIcon`, `TEAMS` = the two
   clubs of the current match (`setTeams`), `CLUB_KEYS`, team screen `pick`/`renderTeams`/`cycleTeam`.
 - **Sprites** — `getSprite(team|club, pose, expr, frame, view, {look, gk, ssj, num})`, 40×40 cells, cached by
   club code. Poses: idle, run(0–2), kick, charge, cheer, tackle, fall, dive, shock (skeleton). Expressions:
@@ -71,6 +73,11 @@ All graphics are drawn by code (sprites built pixel by pixel in `getSprite`, fie
 - **AI** — `ai(p, dt)` writes into `p.inp` exactly like a human: `aiKeeper`, `aiReal` (11v11, `computeChasers`,
   formation), `aiArcade`; shared `steer`, `shootAt`, `bestPassTarget`, `skillOf`.
 - **Input** — keyboard + floating touch joystick (`zoneL`) + hold buttons; `humanInput`, auto player switch `updControl`.
+- **Pitch themes** — `TH`/`setTheme`, physics multipliers `ph()`, scenery `drawBack`/`drawFore`, ad boards `ADS`,
+  critters `CRIT`/`CRITSPR`/`spawnCritter`/`updCritter`. Posts/crossbar and `ball.curve` in `updBall`.
+- **Career** — `career` (localStorage), `makeClub`, `registerCareer` (custom club = `CLUBS.my`), `newTour`, `placeMe`
+  (your player, `p.me`, `meLocked`), `careerResult`, screens `openCareer`/`openCreate`/`openTour`/`fly`.
+- **Rules screen** — `HELP` scene painters + `helpLoop`.
 - **Field / weather** — `buildField` bakes pitch, stands, ad boards and goal nets into canvases;
   `setWeather` (clear/rain/storm/off), puddles & mud `patches`, wind, lightning.
 - **Online** — `NET`, host/guest, `hostGame`/`joinByCode`/`joinGame`, `buildSnap`/`applySnap`, `guestUpdate`,
@@ -109,5 +116,6 @@ See also the prioritized backlog in `docs/research/azzurri-audit.md` (goalkeeper
    test on Wi-Fi + 4G; add our own TURN if some networks can't connect.
 2. ~~Static hosting~~ — GitHub Pages workflow; https://junussovalan02-bot.github.io/Football-2S/
 3. ~~Goalkeepers, more clubs, difficulty, 11 on 11~~ — v0.11.
-4. Ideas not done yet: 11v11 online, tournament/cup, replay of goals, PWA install (manifest + icon), tornado /
+4. ~~Career, 16 countries, themed pitches, rules cards~~ — v0.15.
+5. Ideas not done yet: 11v11 online, career difficulty curve, replay of goals, PWA install (manifest + icon), tornado /
    goats / bomb ball events, crowd sounds, aftertouch, headers.

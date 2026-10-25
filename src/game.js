@@ -25,7 +25,7 @@ function norm(x, y) { const l = hyp(x, y) || 1; return { x: x/l, y: y/l }; }
 // ================== palette ==================
 const PAL = { skin:'#ffb88a', skinS:'#e0845a', white:'#ffffff', ink:'#100810', mouth:'#b4243a', tongue:'#ff7a8a', tear:'#8fe0ff', blush:'#ff8f8f', bone:'#f3f0dc', ghost:'#1b2a6e' };
 // Clubs, emoji icons and pitch themes are plain data in src/data.js
-const { clubs: CLUBS, icons: ICONS, themes: THEMES } = window.AZZ_DATA;
+const { clubs: CLUBS, icons: ICONS, themes: THEMES, LOOK } = window.AZZ_DATA;
 const CLUB_KEYS = Object.keys(CLUBS);
 const SSJ = { hair:'#ffe14a', hairHi:'#fff6b0', style:'spiky' };   // full FURIA: super saiyan hair
 let TEAMS = [CLUBS.nap, CLUBS.rom];                                  // side 0 (you) and side 1 in the current match
@@ -818,7 +818,7 @@ function doPass(p) {
   p.fx = n.x; p.fy = n.y; p.bike = p.strong = false;
   ball.kick(n.x, n.y, pl.v0, pl.vz, p, null); ball.passTo = m; ball.passAt = { x: pl.tx, y: pl.ty };
   p.kickSuper = false; setState(p, ST.KICK); p.kickDone = true; sfx('pass');
-  if (p.local && NET.role === 'solo') { setHuman(m); game.ctrlCd = 0.6; }
+  if (p.local && NET.role === 'solo' && !meLocked()) { setHuman(m); game.ctrlCd = 0.6; }
 }
 
 function updPlayer(p, dt) {
@@ -1213,6 +1213,7 @@ function reachTime(p) {
 }
 function updControl(dt) {
   game.ctrlCd -= dt;
+  if (meLocked()) { const me = players.find(q => q.me); if (me && !me.human) setHuman(me); game.wantSwitch = false; return; }
   const team = players.filter(p => p.team === 0 && p.role !== 'gk'), cur = team.find(p => p.human) || team[0];
   let other = null, to = 99;
   for (const q of team) if (q !== cur) { const t = reachTime(q); if (t < to) { to = t; other = q; } }
@@ -1276,7 +1277,7 @@ function updPad() {
   const holder = NET.role === 'guest' ? players.find(q => dist(q, ball) < 14 && ball.z < 6) : ball.owner;
   const has = holder === p, fr = furyReady(p) && p.role !== 'gk';
   const b = has ? 'pass' : fr && holder && holder.team !== p.team && dist(p, holder) < 70 ? 'ora' : 'tackle';
-  const sw = !has && NET.role === 'solo' && players.filter(q => q.team === p.team && q.role !== 'gk').length > 1;
+  const sw = !has && NET.role === 'solo' && !meLocked() && players.filter(q => q.team === p.team && q.role !== 'gk').length > 1;
   const ch = Math.round(Math.min(1, p.charge/CHARGE)*20);
   const st = Math.round(p.stam*20);
   const key = b + (fr ? 1 : 0) + (sw ? 1 : 0) + ch + p.team + TEAMS[p.team].code + '|' + st + (p.tired ? 't' : '');
@@ -1896,7 +1897,7 @@ function kickoff11(team) {
   const o = players.find(q => q.team === team && q.role === 'att'), dir = team === 0 ? 1 : -1;
   place(o, LEN/2 - dir*10, WID/2);
   Object.assign(ball, { x: o.x + o.fx*9, y: o.y + 1, z:0, vx:0, vy:0, vz:0, superType:null, gs:1, owner:o, lock:null, lockT:0, beam:null });
-  setHuman(team === 0 ? o : players.find(q => q.team === 0 && q.role === 'att'));
+  setHuman(meLocked() ? players.find(q => q.me) : team === 0 ? o : players.find(q => q.team === 0 && q.role === 'att'));
   game.switchFlash = 0; game.mode = 'play'; game.announce = { text:'KICK OFF!', col:'#ffffff', t:1.1 }; sfx('whistle'); startMusic();
 }
 function kickoff(team) {
@@ -1915,6 +1916,7 @@ function kickoff(team) {
 }
 function scored(team) {
   const pts = chaosOn && game.time <= X2T ? 2 : 1;
+  if (game.career && team === 0 && ball.last && ball.last.me) { game.myGoals += pts; pops.push({ text: 'ТВОЙ ГОЛ!', col: '#ffe14a', x: P(ball.x, ball.y).x, y: P(ball.x, ball.y).y - 30, t: 1.6 }); }
   fury(1-team, 30); game.score[team] += pts; game.mode = 'goal'; buzz(team === 0 ? [40, 40, 80] : 60); game.goalT = 2.2; game.kickoffTeam = 1-team;
   ball.owner = null; ball.superType = null; ball.gs = 1;
   for (const p of players) { p.mood = p.team === team ? 'cheer' : 'sad'; p.charge = 0; }
@@ -1927,7 +1929,7 @@ function scored(team) {
   burst('goal', s.x, s.y, team);
 }
 const $ = id => document.getElementById(id);
-const OVS = ['ovMenu', 'ovPause', 'ovEnd', 'ovBye', 'ovOnline', 'ovHelp', 'ovTeams'];
+const OVS = ['ovMenu', 'ovPause', 'ovEnd', 'ovBye', 'ovOnline', 'ovHelp', 'ovTeams', 'ovCareer', 'ovCreate', 'ovTour', 'ovFlight'];
 function showOv(id) {
   for (const o of OVS) $(o).hidden = o !== id;
   if (id === 'ovOnline') renderLobby();
@@ -1935,12 +1937,14 @@ function showOv(id) {
   if (id) { const first = $(id).querySelector('.items:not([hidden]) .mi'); if (first) setTimeout(() => first.focus({ preventScroll: true }), 30); }
 }
 // mode: 1 / 2 = arcade (Napoli vs Roma), 11 = reality with the clubs picked on the team screen
-function startMatch(mode) {
+// opt (career): { a, b: club keys, theme, career: true }
+function startMatch(mode, opt) {
   if (NET.role === 'guest') return;
-  if (mode === 11) setTeams(CLUB_KEYS[pick[0]], CLUB_KEYS[pick[1]]); else setTeams('nap', 'rom');
-  setTheme(mode === 11 ? (fieldPick || TEAMS[1].home) : 'stadium');
+  game.career = !!(opt && opt.career); game.lastOpt = opt || null; game.myGoals = 0;
+  if (opt) setTeams(opt.a, opt.b); else if (mode === 11) setTeams(CLUB_KEYS[pick[0]], CLUB_KEYS[pick[1]]); else setTeams('nap', 'rom');
+  setTheme(opt ? opt.theme : mode === 11 ? (fieldPick || TEAMS[1].home) : 'stadium');
   game.critter = null; game.critterT = rnd(8, 14);
-  MODE = mode; setPitch(mode); buildTeams(mode); NET.mid = (NET.mid + 1) % 100000; NET.rK = NET.rT = -1;
+  MODE = mode; setPitch(mode); buildTeams(mode); if (game.career) placeMe(); NET.mid = (NET.mid + 1) % 100000; NET.rK = NET.rT = -1;
   game.len = mode === 11 ? MATCH11 : MATCH;
   game.score = [0,0]; game.fury = [0, 0]; game.furyFlash = [0, 0]; game.time = game.len; parts = []; game.banner = null; game.bolt = null; game.paused = false;
   game.wxChanged = false; game.tauntT = rnd(5, 9); game.emoCd = 0;
@@ -1962,7 +1966,7 @@ function derbyLine() {
   return '';
 }
 function attract() {
-  game.mode = 'title'; game.paused = false; stopMusic(); MODE = 2; setTeams('nap', 'rom'); game.critter = null;
+  game.mode = 'title'; game.paused = false; stopMusic(); MODE = 2; setTeams('nap', 'rom'); game.critter = null; game.career = false;
   const th = themeKey !== 'stadium'; setTheme('stadium'); if (setPitch(2) || th) setWeather(game.weather === 'snow' ? 'rain' : game.weather || 'rain'); buildTeams(2);
   const c = WID/2;
   [[LEN/2-40, c-20], [LEN/2-90, c+30], [LEN/2+40, c+20], [LEN/2+90, c-30], [20, c], [LEN-20, c]].forEach(([x, y], i) => Object.assign(players[i], { x, y, fx: i % 4 < 2 && i !== 5 ? 1 : -1 }));
@@ -2035,7 +2039,8 @@ function endMatch() {
   const [a, b] = game.score, [A, B] = TEAMS;
   document.getElementById('finalScore').innerHTML = `${A.code} <span class="sc">${a} : ${b}</span> ${B.code}`;
   document.getElementById('finalLine').textContent = endLine(a, b);
-  $('miAgain').hidden = NET.role === 'guest';
+  $('miAgain').hidden = NET.role === 'guest' || game.career; $('miToTour').hidden = !game.career;
+  if (game.career) $('finalLine').textContent += ' ' + careerResult(a, b);
   if (NET.role === 'guest') $('finalLine').textContent += ' Реванш запускает тот, кто создал игру.';
   showOv('ovEnd');
 }
@@ -2376,6 +2381,156 @@ function render() {
     ptext(ctx, a.text, W/2, 42, fits ? Math.round(8 + 8*k) : 8, a.col, 'center', '#100810'); }
 }
 
+// ================== career: your club or your player on a world tour ==================
+// Saved in this browser. A season = TOUR_LEN away matches, each in the opponent's country on its home pitch;
+// between them a short flight. Team career: a club you design. Player career: you make one player, join a
+// club and control only him (teammates pass to you); your goals are counted.
+const TOUR_LEN = 8;
+const KITCOL = ['#d8243a', '#2a4ad8', '#2a9a3a', '#ffd23a', '#ff8a1a', '#9a3ad8', '#ffffff', '#202030', '#2fb8e8', '#ff6a9a', '#8a4a2a', '#7ae070'];
+const KITNAME = ['КРАСНЫЙ', 'СИНИЙ', 'ЗЕЛЁНЫЙ', 'ЖЁЛТЫЙ', 'ОРАНЖЕВЫЙ', 'ФИОЛЕТ', 'БЕЛЫЙ', 'ЧЁРНЫЙ', 'ГОЛУБОЙ', 'РОЗОВЫЙ', 'КОРИЧНЕВЫЙ', 'САЛАТОВЫЙ'];
+const EMO_RU = { pizza:'ПИЦЦА', volcano:'ВУЛКАН', wolf:'ВОЛК', ghost:'ПРИЗРАК', money:'ДЕНЬГИ', rocket:'РАКЕТА', horse:'КОНЬ', bowl:'БЕШБАРМАК', eagle:'ОРЁЛ',
+  baguette:'БАГЕТ', croissant:'КРУАССАН', beret:'БЕРЕТ', pretzel:'КРЕНДЕЛЬ', sausage:'СОСИСКА', tea:'ЧАЙ', umbrella:'ЗОНТ', bull:'БЫК', paella:'ПАЭЛЬЯ',
+  sardine:'САРДИНА', rooster:'ПЕТУХ', tulip:'ТЮЛЬПАН', cheese:'СЫР', clog:'САБО', penguin:'ПИНГВИН', snowflake:'СНЕЖИНКА', anchor:'ЯКОРЬ', crab:'КРАБ',
+  key:'КЛЮЧ', candle:'СВЕЧА', trident:'ТРЕЗУБЕЦ', fish:'РЫБА' };
+const SKINS = [['light', 'СВЕТЛАЯ'], ['tan', 'СМУГЛАЯ'], ['dark', 'ТЁМНАЯ'], ['east', 'АЗИАТСКАЯ'], ['pale', 'БЛЕДНАЯ']];
+const HAIRS = [['spiky', '#1a1420', '#463c5e', 'ЁЖИК'], ['pomp', '#141010', '#3a3030', 'ЧЁЛКА'], ['crop', '#3a2414', '#6a4428', 'КОРОТКАЯ'],
+  ['spiky', '#d8b040', '#fff0a0', 'БЛОНД'], ['pomp', '#a8381c', '#d8622e', 'РЫЖАЯ'], ['long', '#141010', '#3a3030', 'ДЛИННАЯ'], ['long', '#d8b040', '#fff0a0', 'ЛОКОНЫ']];
+const FACES = [['', 'ОБЫЧНОЕ'], ['beard', 'БОРОДА'], ['mus', 'УСЫ'], ['glasses', 'ОЧКИ'], ['beard glasses', 'БОРОДА+ОЧКИ'], ['bald', 'ЛЫСЫЙ'], ['bald beard', 'ЛЫСЫЙ+БОРОДА'], ['band', 'ПОВЯЗКА']];
+const ROLES = [['att', 'НАПАДАЮЩИЙ', 10], ['mid', 'ПОЛУЗАЩИТНИК', 6], ['def', 'ЗАЩИТНИК', 2]];
+const NAMEPOOL = ['МЯЧИКОВ', 'ШТАНГИН', 'ФИНТОВ', 'УДАЛОВ', 'ПАСОВ', 'ВОРОТОВ', 'СВИСТКОВ', 'ПОДКАТОВ', 'НАВЕСОВ', 'БУТСИН', 'ГАЗОНОВ',
+  'ЛЕВША', 'ДРИБЛИН', 'ПЕНАЛЬТИ', 'СЕЙВОВ', 'ТАЙМОВ', 'КРОССОВ', 'ГОЛОВИН'];
+const shade = (hex, k) => '#' + [1, 3, 5].map(i => Math.round(parseInt(hex.slice(i, i + 2), 16)*k)).map(v => Math.min(255, v).toString(16).padStart(2, '0')).join('');
+let career = store.get('career', null);
+if (career && (!Array.isArray(career.tour) || !career.kind)) career = null;
+let draft = null;
+const meLocked = () => game.career && career && career.kind === 'player';
+const myKey = () => career.kind === 'team' ? 'my' : career.clubKey;
+// a club built from the team form
+function makeClub(t) {
+  const j = KITCOL[t.shirt], sh = KITCOL[t.shorts], dark = shade(j, 0.72), light = t.shirt === 6 || t.shirt === 3 || t.shirt === 11;
+  return { code: t.name.replace(/[^A-ZА-ЯЁ]/gi, '').slice(0, 3).toUpperCase() || 'МОЯ', name: t.name.toUpperCase(),
+    jersey: j, jerseyS: dark, sleeve: j, sleeveS: dark, trim: light ? '#202030' : '#ffffff', shorts: sh, shortsS: shade(sh, 0.75), socks: j, socksS: dark, boots: '#202030',
+    color: j === '#202030' ? '#c8c8d4' : j, hudBg: dark, home: t.home, emo: [t.emo, 'laugh'], flag: [j, sh, j], dir: 'v',
+    gk: { jersey: '#3ac85a', jerseyS: '#249a40', sleeve: '#3ac85a', sleeveS: '#249a40', shorts: '#202030', shortsS: '#101018', socks: '#3ac85a', socksS: '#249a40', trim: '#ffffff' },
+    looks: [{ ...LOOK.light, hair: '#1a1420', hairHi: '#463c5e', style: 'spiky' }, { ...LOOK.dark, hair: '#141010', hairHi: '#3a3030', style: 'crop' },
+      { ...LOOK.tan, hair: '#3a2414', hairHi: '#6a4428', style: 'pomp' }, { ...LOOK.light, hair: '#d8b040', hairHi: '#fff0a0', style: 'crop' }],
+    names: t.names };
+}
+function registerCareer() { delete CLUBS.my; if (career && career.kind === 'team') CLUBS.my = makeClub(career.team); SPR.clear(); }
+function newTour() {
+  const mine = career.kind === 'team' ? [] : [career.clubKey], pool = CLUB_KEYS.filter(k => !mine.includes(k));
+  for (let i = pool.length - 1; i > 0; i--) { const j = Math.floor(Math.random()*(i + 1)); [pool[i], pool[j]] = [pool[j], pool[i]]; }
+  career.tour = pool.slice(0, TOUR_LEN).map(key => ({ key, r: null })); career.round = 0;
+  career.season = (career.season || 0) + 1; career.stats = { w: 0, d: 0, l: 0, gf: 0, ga: 0, goals: 0 };
+}
+// your player takes his slot in the club you joined
+function placeMe() {
+  if (!career || career.kind !== 'player') return;
+  const pl = career.player, slot = ROLES[pl.role][2], p = players.find(q => q.team === 0 && q.slot === slot); if (!p) return;
+  const H = HAIRS[pl.hair], sk = LOOK[SKINS[pl.skin][0]];
+  Object.assign(p, { me: true, name: pl.name, num: 7, feat: [FACES[pl.face][0], pl.short ? 'short' : ''].join(' ').trim(),
+    lookObj: { ...sk, hair: H[1], hairHi: H[2], style: H[0] } });
+}
+function careerResult(a, b) {
+  const st = career.stats, stop = career.tour[career.round]; if (!stop) return '';
+  stop.r = [a, b]; st.gf += a; st.ga += b; st.goals += game.myGoals || 0;
+  if (a > b) st.w++; else if (a === b) st.d++; else st.l++;
+  career.round++; store.set('career', career);
+  const pts = st.w*3 + st.d, mine = career.kind === 'player' ? ` Твоих голов: ${game.myGoals || 0}.` : '';
+  return `Турне: ${career.round}/${TOUR_LEN}, очков: ${pts}.${mine}`;
+}
+// ---- screens
+function openCareer() {
+  const has = !!career; $('carHub').hidden = !has; $('carNew').hidden = has;
+  $('carInfo').textContent = has ? (career.kind === 'team' ? 'КЛУБ ' + career.team.name.toUpperCase() : career.player.name + ' · ' + CLUBS[career.clubKey].name) + ' · СЕЗОН ' + career.season : 'СОЗДАЙ КЛУБ ИЛИ ИГРОКА';
+  showOv('ovCareer');
+}
+const FORM = {
+  team: [['name'], ['shirt', 'ФУТБОЛКА', () => KITCOL.length, v => KITNAME[v]], ['shorts', 'ШОРТЫ', () => KITCOL.length, v => KITNAME[v]],
+    ['emo', 'ЭМОДЗИ', () => Object.keys(EMO_RU).length, v => EMO_RU[Object.keys(EMO_RU)[v]]], ['home', 'ДОМ. ПОЛЕ', () => THEME_KEYS.length, v => THEMES[THEME_KEYS[v]].name]],
+  player: [['name'], ['skin', 'КОЖА', () => SKINS.length, v => SKINS[v][1]], ['hair', 'ПРИЧЁСКА', () => HAIRS.length, v => HAIRS[v][3]],
+    ['face', 'ЛИЦО', () => FACES.length, v => FACES[v][1]], ['short', 'РОСТ', () => 2, v => v ? 'КОРОТЫШКА' : 'ОБЫЧНЫЙ'],
+    ['role', 'ПОЗИЦИЯ', () => ROLES.length, v => ROLES[v][1]], ['club', 'КОМАНДА', () => CLUB_KEYS.length, v => CLUBS[CLUB_KEYS[v]].name]],
+};
+function openCreate(kind) {
+  draft = kind === 'team' ? { kind, name: 'ДРУЖБА', shirt: 0, shorts: 6, emo: 0, home: 0 } : { kind, name: 'ИГРОК', skin: 0, hair: 0, face: 0, short: 0, role: 0, club: 0 };
+  $('crTitle').innerHTML = kind === 'team' ? 'СВОЯ КОМАНДА<span>ФОРМА И ХАРАКТЕР</span>' : 'СВОЙ ИГРОК<span>ВНЕШНОСТЬ И КЛУБ</span>';
+  const box = $('crFields'); box.textContent = '';
+  const inp = document.createElement('input'); inp.className = 'codein namein'; inp.id = 'crName'; inp.maxLength = 12; inp.value = draft.name;
+  inp.setAttribute('aria-label', kind === 'team' ? 'Название клуба' : 'Имя игрока'); inp.autocomplete = 'off'; inp.spellcheck = false;
+  inp.addEventListener('input', () => { draft.name = inp.value.toUpperCase().slice(0, 12); renderCreate(); }); box.appendChild(inp);
+  for (const [key, label, n] of FORM[kind]) { if (!label) continue;
+    const b = document.createElement('button'); b.className = 'mi'; b.dataset.k = key;
+    b.addEventListener('click', () => { audioInit(); draft[key] = (draft[key] + 1) % n(); renderCreate(); }); box.appendChild(b); }
+  renderCreate(); showOv('ovCreate');
+}
+function draftClub() {
+  if (draft.kind === 'team') return makeClub({ name: draft.name || 'КЛУБ', shirt: draft.shirt, shorts: draft.shorts, emo: Object.keys(EMO_RU)[draft.emo], home: THEME_KEYS[draft.home], names: NAMEPOOL.slice(0, 11) });
+  return CLUBS[CLUB_KEYS[draft.club]];
+}
+function renderCreate() {
+  for (const [key, label, , fmt] of FORM[draft.kind]) { if (!label) continue; const b = $('crFields').querySelector(`[data-k="${key}"]`); b.innerHTML = label + ' <b>' + fmt(draft[key]) + '</b>'; }
+  const c = draftClub(), g = $('crKit').getContext('2d'); g.imageSmoothingEnabled = false; g.clearRect(0, 0, 40, 40); SPR.clear();
+  const v = draft.kind === 'team' ? { look: 0, num: 10 } : { num: 7, feat: [FACES[draft.face][0], draft.short ? 'short' : ''].join(' ').trim(),
+    lookObj: { ...LOOK[SKINS[draft.skin][0]], hair: HAIRS[draft.hair][1], hairHi: HAIRS[draft.hair][2], style: HAIRS[draft.hair][0] } };
+  g.drawImage(getSprite(c, 'cheer', 'shout', 0, 'side', v), 0, 0);
+  g.fillStyle = '#100810'; g.fillRect(0, 0, 14, 10); drawFlagIcon(g, c, 1, 1, 12, 8);
+  if (draft.kind === 'team') g.drawImage(EMO[Object.keys(EMO_RU)[draft.emo]], 26, 0);
+  $('crName2').textContent = draft.kind === 'team' ? (draft.name || 'КЛУБ') : (draft.name || 'ИГРОК') + ' · ' + c.name;
+}
+function finishCreate() {
+  const nm = (draft.name || '').trim() || (draft.kind === 'team' ? 'КЛУБ' : 'ИГРОК');
+  if (draft.kind === 'team') {
+    const names = NAMEPOOL.slice(); for (let i = names.length - 1; i > 0; i--) { const j = Math.floor(Math.random()*(i + 1)); [names[i], names[j]] = [names[j], names[i]]; }
+    career = { v: 1, kind: 'team', team: { name: nm, shirt: draft.shirt, shorts: draft.shorts, emo: Object.keys(EMO_RU)[draft.emo], home: THEME_KEYS[draft.home], names: names.slice(0, 11) } };
+  } else career = { v: 1, kind: 'player', clubKey: CLUB_KEYS[draft.club], player: { name: nm, skin: draft.skin, hair: draft.hair, face: draft.face, short: draft.short, role: draft.role } };
+  newTour(); registerCareer(); store.set('career', career); openTour();
+}
+function openTour() {
+  registerCareer();
+  const me = CLUBS[myKey()], st = career.stats, done = career.round >= TOUR_LEN, list = $('tourList'); list.textContent = '';
+  $('tourWho').textContent = (career.kind === 'team' ? me.name : career.player.name + ' · ' + me.name) + ' · СЕЗОН ' + career.season;
+  career.tour.forEach((stop, i) => {
+    const c = CLUBS[stop.key], li = document.createElement('li'), fl = document.createElement('canvas'); fl.width = 14; fl.height = 10;
+    const fg = fl.getContext('2d'); fg.fillStyle = '#100810'; fg.fillRect(0, 0, 14, 10); drawFlagIcon(fg, c, 1, 1, 12, 8);
+    li.appendChild(fl); const tx = document.createElement('span');
+    const r = stop.r, res = r ? (r[0] > r[1] ? ' ПОБЕДА ' : r[0] === r[1] ? ' НИЧЬЯ ' : ' ПОРАЖЕНИЕ ') + r[0] + ':' + r[1] : i === career.round ? ' < СЛЕДУЮЩИЙ' : '';
+    tx.textContent = c.name + ' · ' + THEMES[c.home].name + res; li.appendChild(tx);
+    li.className = r ? (r[0] > r[1] ? 'w' : r[0] === r[1] ? 'd' : 'l') : i === career.round ? 'next' : ''; list.appendChild(li);
+  });
+  const pts = st.w*3 + st.d, mine = career.kind === 'player' ? ' · ТВОИ ГОЛЫ ' + st.goals : '';
+  let title = '';
+  if (done) title = pts >= 19 ? 'ЧЕМПИОН МИРОВОГО ТУРНЕ! ' : pts >= 13 ? 'ПРИЗЁР ТУРНЕ! ' : pts >= 7 ? 'КРЕПКИЙ СЕРЕДНЯК. ' : 'ТУРИСТ. ПОЛЕТЕЛИ ЕЩЁ? ';
+  if (done && career.kind === 'player' && st.goals >= 8) title += 'ЗОЛОТАЯ БУТСА! ';
+  $('tourStats').textContent = title + 'ОЧКИ ' + pts + ' · В ' + st.w + ' Н ' + st.d + ' П ' + st.l + ' · МЯЧИ ' + st.gf + ':' + st.ga + mine;
+  $('miFly').textContent = done ? 'НОВЫЙ СЕЗОН' : 'ЛЕТИМ!';
+  showOv('ovTour');
+}
+// the flight to the next stop, then the match
+let flightRaf = 0;
+function fly() {
+  if (career.round >= TOUR_LEN) { newTour(); store.set('career', career); openTour(); return; }
+  const stop = career.tour[career.round], dest = CLUBS[stop.key], from = CLUBS[myKey()];
+  $('flightTxt').textContent = 'ЛЕТИМ: ' + dest.name + ' · ' + THEMES[dest.home].name;
+  showOv('ovFlight'); sfx('whistle');
+  const cv2 = $('flightCv'), g = cv2.getContext('2d'), t0 = performance.now();
+  cancelAnimationFrame(flightRaf);
+  const tick = now => {
+    const t = (now - t0)/1000; g.imageSmoothingEnabled = false;
+    ['#4ab0ec', '#6abcf0', '#8acaf4', '#aad8f8'].forEach((c, i) => { g.fillStyle = c; g.fillRect(0, i*30, 240, 30); });
+    g.fillStyle = '#ffffff'; for (let k = 0; k < 7; k++) { const x = ((k*53 - t*60) % 280 + 280) % 280 - 30, y = 12 + (k*29) % 90; g.fillRect(x, y, 26, 5); g.fillRect(x + 5, y - 3, 14, 3); }
+    g.fillStyle = '#100810'; g.fillRect(6, 96, 26, 18); drawFlagIcon(g, from, 7, 97, 24, 16); g.fillRect(208, 96, 26, 18); drawFlagIcon(g, dest, 209, 97, 24, 16);
+    const k = Math.min(1, t/2), px = 20 + k*190, py = 70 - Math.sin(k*Math.PI)*40 + Math.sin(t*8);
+    for (let d = 1; d < 12; d++) { g.fillStyle = 'rgba(255,255,255,.6)'; g.fillRect(px - d*6, py + 3 + Math.sin(k*Math.PI)*d*0.8, 3, 1); }
+    const R = (x, y, w, h, c) => { g.fillStyle = c; g.fillRect(Math.round(px + x), Math.round(py + y), w, h); };
+    R(-12, -2, 24, 6, '#100810'); R(-11, -1, 22, 4, '#f4f4f4'); R(-11, 1, 22, 1, from.jersey); R(9, -1, 4, 3, '#4ab8ff');
+    R(-2, -7, 5, 6, '#100810'); R(-1, -6, 3, 5, '#d8dce8'); R(-3, 3, 7, 4, '#100810'); R(-2, 3, 5, 3, '#d8dce8'); R(-12, -6, 4, 5, '#100810'); R(-11, -5, 2, 4, from.jersey);
+    if (t < 2.4 && !$('ovFlight').hidden) flightRaf = requestAnimationFrame(tick);
+    else if (!$('ovFlight').hidden) startMatch(11, { a: myKey(), b: stop.key, theme: dest.home, career: true });
+  };
+  flightRaf = requestAnimationFrame(tick);
+}
+
 // ================== rules screen: looping mini-animations ==================
 // Each card replays its move in an 80x48 scene drawn with the game's own sprites (Napoli vs Roma).
 const HELP = (() => {
@@ -2458,6 +2613,18 @@ click('miOptsBack', () => menuPage('mMain'));
 click('miReal', () => { renderTeams(); showOv('ovTeams'); });
 click('miTeamsBack', () => { showOv('ovMenu'); menuPage('mMain'); });
 click('miKick', () => startMatch(11));
+click('miCareer', openCareer);
+click('miCarGo', openTour);
+click('miCarNew', () => { $('carHub').hidden = true; $('carNew').hidden = false; $('carInfo').textContent = 'НАЧНЁМ С НУЛЯ?'; });
+click('miCarBack', () => { showOv('ovMenu'); menuPage('mMain'); });
+click('miCarNewBack', () => { if (career) openCareer(); else { showOv('ovMenu'); menuPage('mMain'); } });
+click('miNewTeam', () => openCreate('team'));
+click('miNewPlayer', () => openCreate('player'));
+click('miCrOk', finishCreate);
+click('miCrBack', openCareer);
+click('miFly', fly);
+click('miTourBack', () => { showOv('ovMenu'); menuPage('mMain'); });
+click('miToTour', () => { attract(); openTour(); });
 click('miField', cycleField);
 for (const side of [0, 1]) { click('tPrev' + side, () => cycleTeam(side, -1)); click('tNext' + side, () => cycleTeam(side, 1)); }
 click('mi11', () => startMatch(1));
@@ -2471,7 +2638,7 @@ click('miBackFromBye', toMenu);
 click('miResume', () => setPaused(false));
 click('miSound', () => { muted = !muted; syncSound(); });
 click('miQuit', toMenu);
-click('miAgain', () => startMatch(MODE));
+click('miAgain', () => startMatch(MODE, game.lastOpt || undefined));
 click('miOnline', () => { NET.ui = 'idle'; NET.msg = ''; showOv('ovOnline'); });
 click('miHelp', () => { showOv('ovHelp'); helpLoop(); });
 click('miHelpBack', () => { showOv('ovMenu'); menuPage('mMain'); });
