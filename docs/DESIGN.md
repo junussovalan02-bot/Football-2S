@@ -49,7 +49,7 @@ Mascot МАМОНТ ГЕНА («МЫ СНИЗУ!»), emojis crystal and inner su
 «ВХОД ЧЕРЕЗ ПОЛЮС!».
 
 ## Clubs (v0.15, data in `src/data.js`)
-17 countries (v0.19: Napoli and Roma out, АГАРТА in), all names invented: МОНГОЛИЯ (uniform, like North Korea), РОДЕЗИЯ, ЗИМБАБВЕ, КНДР, КАЗАХСТАН, ФРАНЦИЯ, ГЕРМАНИЯ, АНГЛИЯ,
+16 countries (v0.19: Napoli and Roma out, АГАРТА in), all names invented: МОНГОЛИЯ (uniform, like North Korea), РОДЕЗИЯ, ЗИМБАБВЕ, КНДР, КАЗАХСТАН, ФРАНЦИЯ, ГЕРМАНИЯ, АНГЛИЯ,
 ИСПАНИЯ, ПОРТУГАЛИЯ, НИДЕРЛАНДЫ, АНТАРКТИДА, СИЛЕНД, ВАТИКАН, АТЛАНТИДА. Each has: kit (+ pattern: stripes, hoops, sash,
 penguin front), keeper kit, flag (`dir`: v / h / cross / diag / kaz), 2–4 looks (skin, hair colour and style: spiky,
 pomp, crop, long), 11 surnames (one joke name each), taunt emojis `emo`, home pitch `home`.

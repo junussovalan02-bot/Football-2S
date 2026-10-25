@@ -1,6 +1,6 @@
 # Azzurri Arcade — notes for Claude Code
 
-Retro arcade football in the spirit of Goal 3 / Kunio-kun (NES): 17 countries (real, joke and mythical: Rhodesia/Zimbabwe, North Korea, Atlantis, Agartha…),
+Retro arcade football in the spirit of Goal 3 / Kunio-kun (NES): 16 countries (real, joke and mythical: Rhodesia/Zimbabwe, North Korea, Atlantis, Agartha…),
 11-on-11 «РЕАЛЬНОСТЬ» and 1v1/2v2 «АРКАДА», keepers, anime-parody supers, chibi pixel players,
 oblique side view, no rules (tackles, knock-downs), weather, super shots, taunt emotes.
 The owner plays it on a **phone** (iPhone, landscape) and wants to play **online with a friend**.
