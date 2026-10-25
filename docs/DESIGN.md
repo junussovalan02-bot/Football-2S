@@ -146,6 +146,12 @@ drawn with the player sprite in their own outfits: МАМА, АГЕНТ ЖОРА
 Cards with looping 80×48 mini-animations drawn with the game sprites (`HELP`, `helpLoop`): super-saiyan, tiger, beam,
 spinning sphere, ORA, pass, curve/post, sprint, keeper, chaos, pickups, pitches.
 
+## Camera and your player (v0.17.2, `updCamera`)
+- The camera follows the ball but leans 35 % toward your player and never lets him leave the screen: the target is
+  clamped so he stays 44 px from the sides, below the HUD, and a hard limit catches up if the spring lags.
+- Your player: a pulsing ring under the feet (yellow, 2P cyan), a fat bouncing arrow with «ТЫ» (solo) / 1P / 2P.
+- Off-screen arrows at the screen edge for your player and for the ball, kept clear of the joystick and the buttons.
+
 ## Controls
 | Action | Touch | Keyboard |
 |---|---|---|

@@ -2566,8 +2566,11 @@ function updCamera(dt, snap) {
   look.x += (clamp(ball.vx*0.2, -48, 48) - look.x)*Math.min(1, dt*2.2);
   let fx = b.x + look.x, fy = b.y;
   if (game.mode === 'title') { const q = P(LEN/2 + Math.sin(game.t*0.12)*250, WID/2); fx = q.x; fy = q.y; }
-  if (h && game.mode === 'play') { const hp = P(h.x, h.y); fx = fx*0.75 + hp.x*0.25; fy = fy*0.7 + (hp.y - 16)*0.3; }
+  let hp = null;
+  if (h && (game.mode === 'play' || game.mode === 'goal')) { hp = P(h.x, h.y); fx = fx*0.65 + hp.x*0.35; fy = fy*0.65 + (hp.y - 16)*0.35; }
   let tx = fx - W/2, ty = fy - H*0.6;
+  // your player always stays in the picture: away from the edges, below the HUD, his head on screen
+  if (hp) { tx = clamp(tx, hp.x - W + 44, hp.x - 44); ty = clamp(ty, hp.y + 10 - H, hp.y - 74); }
   if (snap) { cam.x = clamp(tx, 0, FCV.width - W); cam.y = clamp(ty, 0, FCV.height - H); camV.x = camV.y = 0; return; }
   const ex = tx - cam.x, ey = ty - cam.y;
   tx = Math.abs(ex) < 14 ? cam.x : tx - Math.sign(ex)*14;
@@ -2575,6 +2578,9 @@ function updCamera(dt, snap) {
   tx = clamp(tx, 0, FCV.width - W); ty = clamp(ty, 0, FCV.height - H);
   camV.x += ((tx - cam.x)*30 - camV.x*11)*dt; camV.y += ((ty - cam.y)*18 - camV.y*8.5)*dt;
   cam.x = clamp(cam.x + camV.x*dt, 0, FCV.width - W); cam.y = clamp(cam.y + camV.y*dt, 0, FCV.height - H);
+  if (hp) {   // hard limit: if the spring lags (a long switch, a fast run), catch up so he never leaves the screen
+    cam.x = clamp(cam.x, Math.min(hp.x - W + 16, FCV.width - W), Math.max(0, hp.x - 16));
+    cam.y = clamp(cam.y, Math.min(hp.y + 4 - H, FCV.height - H), Math.max(0, hp.y - 60)); }
 }
 function update(dt) {
   game.t += dt;
@@ -2710,12 +2716,12 @@ function drawPlayer(p) {
     pellipse(hx, hy, r + 2, r + 2, 'rgba(120,220,255,.45)'); pellipse(hx, hy, r, r, Math.floor(game.t*20) % 2 ? '#ffffff' : '#8fe0ff');
   }
   if (p.state === ST.STUN && Math.random() < 0.6) { const q = P(p.x, p.y); spawn(q.x+rnd(-12,12), q.y-rnd(4,36), rnd(-40,40), rnd(-40,40), 0.12, Math.random()<0.5?'#ffffff':'#ffe14a', 1, 0); }
-  if (ball.owner === p && game.mode === 'play' && p.name) ptext(ctx, p.name, x + 1, y - (p.tag ? 70 : 54), 8, '#ffffff', 'center', '#100810');
+  if (ball.owner === p && game.mode === 'play' && p.name) ptext(ctx, p.name, x + 1, y - (p.tag ? 78 : 54), 8, '#ffffff', 'center', '#100810');
   if (p.tag && game.mode === 'play') {
-    const bob = Math.floor(game.t*4) % 2, ty = y - 50 - bob, col = p.tag === 2 ? '#7fe0ff' : '#f2c230';
-    ptext(ctx, p.tag === 2 ? '2P' : '1P', x+1, ty-9, 8, col, 'center', '#100810');
-    ctx.fillStyle = '#100810'; ctx.fillRect(x-4, ty, 9, 5);
-    ctx.fillStyle = col; ctx.fillRect(x-3, ty, 7, 1); ctx.fillRect(x-2, ty+1, 5, 1); ctx.fillRect(x-1, ty+2, 3, 1); ctx.fillRect(x, ty+3, 1, 1);
+    const bob = Math.round(Math.abs(Math.sin(game.t*6))*3), ty = y - 52 - bob, col = p.tag === 2 ? '#7fe0ff' : '#f2c230';
+    ptext(ctx, p.tag === 2 ? '2P' : NET.role === 'solo' ? 'ТЫ' : '1P', x+1, ty-10, 8, col, 'center', '#100810');
+    ctx.fillStyle = '#100810'; ctx.fillRect(x-6, ty-1, 13, 8);
+    ctx.fillStyle = col; for (let k = 0; k < 6; k++) ctx.fillRect(x-5+k, ty+k, 11-k*2, 1);
     if (p.local && game.switchFlash > 0) { const k = 1 - game.switchFlash/0.45, rx = Math.round(6 + k*14), ry = Math.round(2 + k*4);
       ctx.globalAlpha = 1 - k; pellipseRing(x, y, rx, ry, '#f2c230'); ctx.globalAlpha = 1; }
     if (p.local && p.charge > 0.05) {
@@ -2724,7 +2730,7 @@ function drawPlayer(p) {
       ctx.fillStyle = k >= 1 ? (sup ? (Math.floor(game.t*14)%2 ? '#ff6a1a' : '#ffe14a') : '#ffffff') : '#4aa8f0'; ctx.fillRect(x-10, y+5, Math.round(20*k), 3);
       if (k >= 1) ptext(ctx, sup ? SUPERSHORT[sup] : 'FORTE', x, y+11, 8, sup ? '#ffd23a' : '#ffffff', 'center', '#100810');
     }
-    if (p.local && furyReady(p) && aerial(p) && p.state <= ST.RUN) ptext(ctx, 'ЖМИ!', x, y-64, 8, '#7fe0ff', 'center', '#100810');
+    if (p.local && furyReady(p) && aerial(p) && p.state <= ST.RUN) ptext(ctx, 'ЖМИ!', x, y-88, 8, '#7fe0ff', 'center', '#100810');
   }
 }
 function pellipseRing(cx, cy, rx, ry, col) {
@@ -2735,11 +2741,18 @@ function pellipseRing(cx, cy, rx, ry, col) {
 // arrow at the screen edge when your player is off camera
 function drawOffscreen() {
   const h = players.find(p => p.local); if (!h || game.mode !== 'play') return;
-  const s = S(h.x, h.y, 20); if (s.x > 6 && s.x < W-6 && s.y > 28 && s.y < H-4) return;
-  const x = clamp(s.x, 10, W-10), y = clamp(s.y, 34, H-10), col = Math.floor(game.t*6) % 2 ? '#f2c230' : '#ffffff';
+  edgeArrow(S(h.x, h.y, 20), Math.floor(game.t*6) % 2 ? '#f2c230' : '#ffffff');
+  if (!ball.owner || !ball.owner.local) edgeArrow(S(ball.x, ball.y, ball.z + 6), Math.floor(game.t*6) % 2 ? '#4aa8f0' : '#2a74c4', true);
+}
+// a blinking square with an arrow at the screen edge pointing at something off camera (your player, the ball)
+function edgeArrow(s, col, isBall) {
+  if (s.x > 6 && s.x < W-6 && s.y > 28 && s.y < H-4) return;
   const dx = s.x < 6 ? -1 : s.x > W-6 ? 1 : 0, dy = s.y < 28 ? -1 : s.y > H-4 ? 1 : 0;
+  // keep clear of the touch pad: the joystick and the buttons cover the lower corners
+  const x = Math.round(dy > 0 && !dx ? clamp(s.x, W*0.3, W*0.62) : clamp(s.x, 10, W-10)), y = Math.round(dx ? clamp(s.y, 34, 104) : clamp(s.y, 34, H-10));
   ctx.fillStyle = '#100810'; ctx.fillRect(x-7, y-7, 15, 15); ctx.fillStyle = col; ctx.fillRect(x-6, y-6, 13, 13);
   ctx.fillStyle = '#100810';
+  if (isBall) { ctx.drawImage(BALLSPR[0], Math.round(x) - 6, Math.round(y) - 6); return; }
   for (let k = 0; k < 4; k++) { if (dx) ctx.fillRect(x + dx*(3-k) - (dx<0?0:0), y-k, 1, k*2+1); else ctx.fillRect(x-k, y + dy*(3-k), k*2+1, 1); }
 }
 function drawBall() {
@@ -2854,6 +2867,9 @@ function render() {
     ctx.drawImage(FCV, 0, 0, FCV.width, standH, -cam.x, -cam.y - 2, FCV.width, standH);
   if (chaosIs('ice')) { ctx.fillStyle = 'rgba(220,248,255,.34)'; ctx.fillRect(0, 0, W, H); }
   for (const p of players) { const s = S(p.x, p.y), k = clamp(1 - (p.z || 0)/120, 0.4, 1); pellipse(s.x, s.y, Math.round(9*k), 2, 'rgba(0,30,0,.35)'); }
+  if (game.mode === 'play' || game.mode === 'goal') for (const p of players) if (p.tag) {   // your player: a bright ring under the feet
+    const s = S(p.x, p.y), col = p.tag === 2 ? '#7fe0ff' : '#f2c230', r = 11 + (Math.floor(game.t*4) % 2);
+    pellipseRing(s.x, s.y + 1, r, 4, '#100810'); pellipseRing(s.x, s.y, r, 4, col); }
   for (const it of items) { const s = S(it.x, it.y); pellipse(s.x, s.y, 5, 1, 'rgba(0,30,0,.35)'); }
   for (const q of pees) { const s = S(q.x, q.y); pellipse(s.x, s.y, 9, 3, 'rgba(240,210,40,.75)'); pellipse(s.x - 2, s.y - 1, 4, 1, 'rgba(255,245,160,.9)'); }
   for (const r of game.runners) if (r.k === 'wave') drawWave(r);
