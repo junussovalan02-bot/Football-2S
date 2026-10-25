@@ -48,7 +48,7 @@ body.no-touch #pad{display:none}
   background:var(--team);box-shadow:0 0 0 3px var(--ink),inset -4px -5px 0 rgba(0,0,0,.3),inset 3px 3px 0 rgba(255,255,255,.35)}
 /* buttons: thumb arc on the right. Big KICK with a charge ring, context button (pass / tackle / ORA), small switch */
 #btns{position:absolute;right:max(16px, env(safe-area-inset-right, 0px));bottom:calc(14px + env(safe-area-inset-bottom, 0px));
-  width:196px;height:194px;pointer-events:none}
+  width:252px;height:194px;pointer-events:none}
 .pb{--rim:var(--gold);position:absolute;pointer-events:auto;font-family:var(--f-pixel);color:#fff;border:0;border-radius:50%;
   display:grid;place-items:center;text-align:center;line-height:1.2;touch-action:none;cursor:pointer;padding:0;
   background:radial-gradient(circle at 35% 30%,rgba(255,255,255,.14),rgba(10,14,32,.62) 60%);
@@ -68,6 +68,12 @@ body.no-touch #pad{display:none}
 #bB.ora{--rim:#ffe14a}
 #bB.ora .lb{color:#ffe14a}
 #bS{--rim:#c8cde0;right:118px;bottom:92px;width:48px;height:48px}
+#bK{--rim:#b86aff;right:188px;bottom:18px;width:60px;height:60px}
+#bK .chg{position:absolute;inset:0;width:100%;height:100%;transform:rotate(-90deg);pointer-events:none}
+#bK .chg circle{fill:none;stroke:#b86aff;stroke-width:9;stroke-dasharray:100;stroke-dashoffset:100}
+#bK .lb{font-size:7px}
+#bK.ready{--rim:#ffe14a;animation:superGlow .6s steps(2) infinite}
+#bK.ready .lb{color:#ffe14a}
 #bR{--rim:#7ae070;right:4px;bottom:132px;width:58px;height:58px}
 #bR .chg{position:absolute;inset:0;width:100%;height:100%;transform:rotate(-90deg);pointer-events:none}
 #bR .chg circle{fill:none;stroke:#7ae070;stroke-width:9;stroke-dasharray:100;stroke-dashoffset:0}

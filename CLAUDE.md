@@ -77,6 +77,8 @@ All graphics are drawn by code (sprites built pixel by pixel in `getSprite`, fie
   critters `CRIT`/`CRITSPR`/`spawnCritter`/`updCritter`. Posts/crossbar and `ball.curve` in `updBall`.
 - **Career** — `career` (localStorage), `makeClub`, `registerCareer` (custom club = `CLUBS.my`), `newTour`, `placeMe`
   (your player, `p.me`, `meLocked`), `careerResult`, screens `openCareer`/`openCreate`/`openTour`/`fly`.
+- **Skills & silliness** — `SKILLS`, `useSkill`, runners `game.runners`/`updRunners`/`drawRunner`, `freeze`, `scare`, `boo`,
+  `pee`/`pees`, gags `updGags`, words `say` (TXTS). Pad button `bK`.
 - **Rules screen** — `HELP` scene painters + `helpLoop`.
 - **Field / weather** — `buildField` bakes pitch, stands, ad boards and goal nets into canvases;
   `setWeather` (clear/rain/storm/off), puddles & mud `patches`, wind, lightning.

@@ -17,7 +17,7 @@ Main menu: **РЕАЛЬНОСТЬ 11x11 · АРКАДА · С ДРУГОМ · Н
 - Match: 2 minutes (arcade) / 3 minutes (11 on 11). After a goal the team that conceded kicks off.
 
 ## Clubs (v0.15, data in `src/data.js`)
-16 countries/clubs, all names invented: НАПОЛИ, РОМА, РОДЕЗИЯ, ЗИМБАБВЕ, КНДР, КАЗАХСТАН, ФРАНЦИЯ, ГЕРМАНИЯ, АНГЛИЯ,
+17 countries/clubs, all names invented: МОНГОЛИЯ (uniform, like North Korea), НАПОЛИ, РОМА, РОДЕЗИЯ, ЗИМБАБВЕ, КНДР, КАЗАХСТАН, ФРАНЦИЯ, ГЕРМАНИЯ, АНГЛИЯ,
 ИСПАНИЯ, ПОРТУГАЛИЯ, НИДЕРЛАНДЫ, АНТАРКТИДА, СИЛЕНД, ВАТИКАН, АТЛАНТИДА. Each has: kit (+ pattern: stripes, hoops, sash,
 penguin front), keeper kit, flag (`dir`: v / h / cross / diag / kaz), 2–4 looks (skin, hair colour and style: spiky,
 pomp, crop, long), 11 surnames (one joke name each), taunt emojis `emo`, home pitch `home`.
@@ -30,6 +30,40 @@ pomp, crop, long), 11 surnames (one joke name each), taunt emojis `emo`, home pi
   after your goal your two nearest players show your country's emoji.
 - Jokes: derby lines (RHO–ZIM «одной страны», NAP–ROM «солнца», ENG–GER, ESP–POR, FRA–GER) and end-screen lines
   per winner/loser (`derbyLine`, `endLine`).
+
+## Team skills (v0.16)
+Purple button (keyboard I). Each club has `skill` in data.js; recharge 24 s (both sides start at 12 s); the computer's
+side uses its skill at random when ready (0.12/s). Online the guest's presses are relayed (`in.sk`).
+| Club | Skill | Effect |
+|---|---|---|
+| MNG | ТАБУН | 5 horsemen gallop across from your side, trampling opponents (lift 220) |
+| KAZ | БЕРКУТ | an eagle grabs the ball wherever it is and drops it at your most advanced player's feet |
+| NAP | ВЕСУВИЙ | 6 lava bombs fall on opponents (radius 24, lift 160) |
+| ROM | ГЛАДИАТОРЫ | your team can't be knocked down for 6 s |
+| RHO | ПРИЗРАКИ | your team is a ghost for 5 s (can't be tackled or robbed); opponents near you get scared |
+| ZIM | ИНФЛЯЦИЯ | the opponent's FURIA drops to 0, yours +40, banknotes rain |
+| PRK | РАКЕТА | a rocket lands in their box: everyone within 75 flies, keeper included |
+| FRA | ЗАБАСТОВКА | opponents stop with protest signs for 3 s (keeper 2 s) and drop the ball |
+| GER | ОРДНУНГ | opponents are lined up in two neat rows in their own half, frozen 1.3 s |
+| ENG | ФУТБОЛ ЕДЕТ ДОМОЙ | the ball rolls itself to their goal for 2.6 s unless someone takes it |
+| ESP | КОРРИДА | a bull charges across at the ball's depth |
+| POR | ФИНТЫ | your ball carrier can't be knocked down or robbed for 5 s, ×1.3 speed, rainbow sparks |
+| NED | ВЕЛОСИПЕДЫ | your outfield players ride bikes for 6 s (×1.5 speed) |
+| ANT | МЕТЕЛЬ | opponents freeze in ice blocks for 2.2 s |
+| SEA | ПУШКА | a cannonball crosses the pitch through the opponent nearest the ball |
+| VAT | ЧУДО | your next shot within 9 s can't be saved: the keeper just watches |
+| ATL | ЦУНАМИ | a wave sweeps from your side to theirs, washing opponents and the ball toward their goal |
+Your own career club chooses its skill on the creation screen.
+
+## БУ!, puddles and gags (v0.16)
+- While the skill recharges the button is **БУ!** (5 s cooldown): opponents within 55 get scared — they drop the ball,
+  run away for 1.1 s with bulging eyes and 45 % of the time **wet themselves** («ОПИСАЛСЯ!»): a yellow puddle that stays
+  12 s and is slippery (traction 0.18) for anyone. Big hits (lift ≥ 150) also have a 20 % chance, trampling 30 %.
+- **Gags** (with КАОС on, every 9–15 s, a random outfield player, you only 25 % of the time): АПЧХИ! (loses the ball,
+  0.6 s), ШНУРКИ! (trips), АЛЛО, МАМА? (stands with a phone 1.7 s), ГОЛУБЬ! (bird mess on the head, 0.9 s),
+  ТАНЦУЕТ! (dances 1.5 s), ПАУК! (scared, may wet himself).
+- Online: freeze/fear/puddle/ghost/bike state, puddles, skill runners and cooldowns are in the snapshot; words relay as
+  `burst('txt')`.
 
 ## Pitches (themes, `THEMES` in data.js)
 11 on 11 plays at the opponent's home pitch (or pick ПОЛЕ on the team screen); arcade and online stay in the stadium.
@@ -46,6 +80,7 @@ pomp, crop, long), 11 surnames (one joke name each), taunt emojis `emo`, home pi
 | ТЮЛЬПАНЫ | NED | — | wind 35, windmills | cow |
 | ПЛАТФОРМА | SEA | bounce ×1.6, friction ×0.7 | storm, rusty rails | seagull: flies off with the ball for 1.4 s |
 | ПЬЯЦЦА | ROM, VAT | bounce ×1.5, friction ×0.75 | colonnade and dome | pigeons |
+| ГОБИ | MNG | friction ×1.8, bounce ×0.6, speed ×0.92 | wind 70, dust, dunes and a caravan | camel |
 | ДНО ОКЕАНА | ATL | gravity ×0.45, water drag 0.5/s, speed ×0.9 | blue tint, bubbles | shark fin |
 Critters (`CRIT`, `spawnCritter`, `updCritter`) come every 8–22 s with a name pop-up; fast ones knock players flying,
 big calm ones shove players aside; the ball bounces off them. Scenery behind the pitch (`drawBack`) and props along the

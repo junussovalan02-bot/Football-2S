@@ -1,6 +1,6 @@
 {
   "name": "azzurri-arcade",
-  "version": "0.15.0",
+  "version": "0.16.0",
   "private": true,
   "description": "Retro arcade football in the spirit of Goal 3: Napoli vs Roma",
   "scripts": {
