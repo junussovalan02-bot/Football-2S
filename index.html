@@ -24,25 +24,60 @@ img{max-width:100%}
     <div id="screen"><canvas id="cv" width="320" height="180" aria-label="Футбольное поле: Наполи против Ромы"></canvas></div>
 
     <div class="ov" id="ovMenu">
-      <div class="menu">
-        <h1 class="logo">AZZURRI<span>ARCADE</span></h1>
-        <p class="tag">NAPOLI · ROMA · NO RULES</p>
-        <p class="hint rot">ПОВЕРНИ ТЕЛЕФОН — ТАК УДОБНЕЕ</p>
-        <div class="items" id="mMain">
-          <button class="mi" id="miPlay">ИГРАТЬ</button>
-          <button class="mi" id="miHelp">ПРАВИЛА</button>
-          <button class="mi" id="miFull" hidden>ВО ВЕСЬ ЭКРАН</button>
-          <button class="mi" id="miExit">ВЫХОД</button>
+      <div class="menu main">
+        <div class="brand">
+          <h1 class="logo">AZZURRI<span>ARCADE</span></h1>
+          <p class="stamp" aria-hidden="true">CAOS!</p>
+          <p class="tag">5 КОМАНД · ВРАТАРИ · АНИМЕ-УДАРЫ</p>
+          <p class="tag diff">СЛОЖНОСТЬ: <span id="diffTag">Я НОРМ</span></p>
+          <p class="hint rot">ПОВЕРНИ ТЕЛЕФОН — ТАК УДОБНЕЕ</p>
         </div>
-        <div class="items" id="mPlay" hidden>
-          <button class="mi" id="mi11">1 НА 1</button>
-          <button class="mi" id="mi22">2 НА 2</button>
-          <button class="mi" id="miOnline">С ДРУГОМ</button>
-          <button class="mi" id="miWx" aria-pressed="true">ПОГОДА <b>ВКЛ</b></button>
-          <button class="mi" id="miChaos" aria-pressed="true">КАОС <b>ВКЛ</b></button>
-          <button class="mi dim" id="miBack">НАЗАД</button>
+        <div class="col">
+          <div class="items" id="mMain">
+            <button class="mi big" id="miReal">РЕАЛЬНОСТЬ <small>11x11</small></button>
+            <button class="mi big" id="miPlay">АРКАДА <small>1x1 · 2x2</small></button>
+            <button class="mi" id="miOnline">С ДРУГОМ <small>ОНЛАЙН</small></button>
+            <button class="mi" id="miOpts">НАСТРОЙКИ</button>
+            <button class="mi" id="miHelp">ПРАВИЛА</button>
+            <button class="mi" id="miFull" hidden>ВО ВЕСЬ ЭКРАН</button>
+            <button class="mi dim" id="miExit">ВЫХОД</button>
+          </div>
+          <div class="items" id="mPlay" hidden>
+            <button class="mi big" id="mi11">1 НА 1</button>
+            <button class="mi big" id="mi22">2 НА 2</button>
+            <button class="mi" id="miDiffA">СЛОЖНОСТЬ <b>Я НОРМ</b></button>
+            <button class="mi dim" id="miBack">НАЗАД</button>
+          </div>
+          <div class="items" id="mOpts" hidden>
+            <button class="mi" id="miDiff">СЛОЖНОСТЬ <b>Я НОРМ</b></button>
+            <button class="mi" id="miWx" aria-pressed="true">ПОГОДА <b>ВКЛ</b></button>
+            <button class="mi" id="miChaos" aria-pressed="true">КАОС <b>ВКЛ</b></button>
+            <button class="mi" id="miSnd">ЗВУК <b>ВКЛ</b></button>
+            <button class="mi dim" id="miOptsBack">НАЗАД</button>
+          </div>
+          <p class="hint"><span class="tch">ДЖОЙСТИК — БЕГ · УДАР: ДЕРЖИ — СИЛЬНЫЙ ИЛИ СУПЕР · ПОДКАТ С МЯЧОМ — ПАС</span><span class="keys">СТРЕЛКИ — БЕГ · J — УДАР (ДЕРЖИ — СУПЕР) · K — ПОДКАТ/ПАС · L — СМЕНА · P — ПАУЗА</span></p>
         </div>
-        <p class="hint"><span class="tch">ДЖОЙСТИК — БЕГ · УДАР: ДЕРЖИ — СИЛЬНЫЙ ИЛИ СУПЕР · ПОДКАТ С МЯЧОМ — ПАС</span><span class="keys">СТРЕЛКИ — БЕГ · J — УДАР (ДЕРЖИ — СУПЕР) · K — ПОДКАТ/ПАС · L — СМЕНА · P — ПАУЗА</span></p>
+      </div>
+    </div>
+
+    <div class="ov" id="ovTeams" hidden>
+      <div class="menu teams">
+        <h2 class="logo sm">РЕАЛЬНОСТЬ<span>11 НА 11</span></h2>
+        <div class="vs">
+          <div class="card"><p class="who">ТЫ</p>
+            <div class="pickrow"><button class="arr" id="tPrev0" aria-label="Предыдущая команда">&lt;</button><canvas class="kit" id="kit0" width="40" height="40"></canvas><button class="arr" id="tNext0" aria-label="Следующая команда">&gt;</button></div>
+            <p class="club" id="club0"></p><p class="star" id="star0"></p></div>
+          <p class="vsx">VS</p>
+          <div class="card"><p class="who">СОПЕРНИК</p>
+            <div class="pickrow"><button class="arr" id="tPrev1" aria-label="Предыдущая команда соперника">&lt;</button><canvas class="kit" id="kit1" width="40" height="40"></canvas><button class="arr" id="tNext1" aria-label="Следующая команда соперника">&gt;</button></div>
+            <p class="club" id="club1"></p><p class="star" id="star1"></p></div>
+        </div>
+        <p class="tag" id="derby" aria-live="polite"></p>
+        <div class="items row">
+          <button class="mi big go" id="miKick">НА ПОЛЕ!</button>
+          <button class="mi" id="miDiffT">СЛОЖНОСТЬ <b>Я НОРМ</b></button>
+          <button class="mi dim" id="miTeamsBack">НАЗАД</button>
+        </div>
       </div>
     </div>
 
@@ -72,15 +107,17 @@ img{max-width:100%}
 
     <div class="ov" id="ovHelp" hidden>
       <div class="menu">
-        <h2 class="logo" style="font-size:20px">FURIA<span>СУПЕР-УДАРЫ</span></h2>
+        <h2 class="logo sm">ПРАВИЛА<span>СУПЕР-УДАРЫ</span></h2>
         <ul class="rules">
-          <li><b>ШКАЛА FURIA</b> под счётом. Растёт, когда ведёшь мяч, отбираешь, сбиваешь подкатом, получаешь пас, когда тебя сбили или дразнят и когда пропустил гол. Полная — хватит на один супер-удар.</li>
-          <li><b class="f">FUOCO</b> FURIA + держи УДАР на бегу. Огненный мяч сносит всех на пути.</li>
-          <li><b class="v">VESUVIO</b> FURIA + держи УДАР стоя, далеко от чужих ворот. Свеча, при падении — извержение.</li>
-          <li><b class="g">GOLFO</b> FURIA + мяч летит на уровне головы: просто нажми УДАР — удар через себя. Мяч идёт волной и смывает защитников. Высокий мяч — это длинный пас или парашют.</li>
+          <li><b>ШКАЛА FURIA</b> под счётом. Растёт, когда ведёшь мяч, отбираешь, сбиваешь, получаешь пас, когда тебя сбили или дразнят и когда пропустил гол. Полная — команда становится СУПЕР-САЙЯНАМИ (золотые волосы), хватит на один супер-удар.</li>
+          <li><b class="f">ТИГРИНЫЙ УДАР</b> FURIA + держи УДАР на бегу. Мяч-тигр сносит всех на пути, вратаря тоже.</li>
+          <li><b class="g">КАМЕХАМЕХА</b> FURIA + держи УДАР стоя. Луч летит прямо в ворота и сносит всех.</li>
+          <li><b class="g">РАСЕНГАН</b> FURIA + мяч на уровне головы: просто жми УДАР. Крутящийся шар петляет по штрафной.</li>
+          <li><b class="v">ОРА-ОРА-ОРА</b> FURIA + ПОДКАТ, когда соперник с мячом рядом. Серия ударов раскидывает всех вокруг.</li>
+          <li><b>ВРАТАРИ</b> ловят и отбивают удары, ныряют в углы. Супер-удар заносит вратаря в сетку вместе с мячом. Бей в угол подальше от вратаря.</li>
+          <li><b>БЕЗ FURIA</b> держишь УДАР — сильный удар. Высокий мяч + УДАР — удар с лёта. Игрок с мячом подсвечен кольцом и подписан.</li>
           <li><b class="c">КАОС</b> Каждые 15 секунд что-то случается: МЯЧ-ГИГАНТ, ПИЦЦА-ЭКСПРЕСС на веспе, ЛУНА, ЭСПРЕССО, ВЕСУВИЙ, ГОЛОЛЁД. В последние 20 секунд гол стоит 2 очка.</li>
           <li><b class="c">ПРЕДМЕТЫ</b> Пробеги по ним. ПИЦЦА: +FURIA. ПЕРЧИК: бежишь быстрее и сносишь всех. КОРНЕТТО: тебя нельзя сбить и отобрать мяч.</li>
-          <li><b>БЕЗ FURIA</b> держишь УДАР — TIRO FORTE, сильный удар. Высокий мяч + УДАР — удар с лёта.</li>
         </ul>
         <div class="items"><button class="mi" id="miHelpBack">ПОНЯТНО</button></div>
       </div>

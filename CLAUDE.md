@@ -1,6 +1,7 @@
 # Azzurri Arcade — notes for Claude Code
 
-Retro arcade football in the spirit of Goal 3 / Kunio-kun (NES): Napoli vs Roma, chibi pixel players,
+Retro arcade football in the spirit of Goal 3 / Kunio-kun (NES): 5 clubs (Napoli, Roma, Rhodesia, Zimbabwe, North Korea),
+11-on-11 «РЕАЛЬНОСТЬ» and 1v1/2v2 «АРКАДА», keepers, anime-parody supers, chibi pixel players,
 oblique side view, no rules (tackles, knock-downs), weather, super shots, taunt emotes.
 The owner plays it on a **phone** (iPhone, landscape) and wants to play **online with a friend**.
 Talk to the owner in **Russian**; code, comments and commit messages in English.
@@ -22,7 +23,7 @@ can be inlined into one HTML file for a Claude artifact.
 
 | Path | What |
 |---|---|
-| `index.html` | Page shell: canvas, menus (overlays `ov*`), touch pad. Loads `src/net/*.js` then `src/game.js`. |
+| `index.html` | Page shell: canvas, menus (overlays `ov*`: main with pages mMain/mPlay/mOpts, ovTeams, …), touch pad. Loads `src/net/*.js` then `src/game.js`. |
 | `src/style.css` | Menus, CRT screen effect, touch controls, portrait/landscape layout. |
 | `src/game.js` | Everything else, one IIFE, sections marked `// ====`. See code map below. |
 | `src/net/index.js` | Picks the online transport → `window.AzzNet.connect()` returns `{room, user}`. |
@@ -49,23 +50,32 @@ All graphics are drawn by code (sprites built pixel by pixel in `getSprite`, fie
 - **World & projection** — field units: `x` 0..LEN along the pitch, `y` 0..WID depth (0 = far touchline),
   `z` height. `P(x,y,z)` → field-canvas pixels, `S()` → screen pixels (minus camera). Logical screen is
   `W×180` (W adapts 240–400 to the phone's aspect), scaled up with `image-rendering: pixelated`.
-- **Sprites** — `getSprite(team, pose, expr, frame, view)`, 40×40 cells, cached. Poses: idle, run(0–2),
-  kick, charge, cheer, tackle, fall, shock (skeleton). Expressions: normal, grit, shout, bulge, cry.
+- **Clubs** — `CLUBS` (kit, keeper kit `gk`, `looks` = skin/hair variants, 11 `names`), `TEAMS` = the two
+  clubs of the current match (`setTeams`), `CLUB_KEYS`, team screen `pick`/`renderTeams`/`cycleTeam`.
+- **Sprites** — `getSprite(team|club, pose, expr, frame, view, {look, gk, ssj, num})`, 40×40 cells, cached by
+  club code. Poses: idle, run(0–2), kick, charge, cheer, tackle, fall, dive, shock (skeleton). Expressions:
+  normal, grit, shout, bulge, cry. `lookOf(p)` builds the options for a player (gold hair = `SSJ`).
 - **Emotes** — Roma players show pixel icons in speech bubbles (`emote()`, `updEmotes()`).
 - **Audio** — WebAudio square/noise SFX (`sfx`) and a chiptune loop. `sfx()` also relays to the online guest.
-- **Game state** — `players[]`, `ball`, `game`. Player state machine `ST`: IDLE, RUN, KICK, TACKLE, FALL, STUN.
-  `updPlayer`, `updBall`, `possession`, `separate`, `doKick`, `doPass`, `knockDown`, `electrocute`.
-- **FURIA** — `fury(team, n)`, `furyReady`, `superFor`, `aerial`. See docs/DESIGN.md.
+- **Game state** — `players[]` (`buildTeams(MODE)`: 1/2 arcade with keepers last, 11 = `F442`), `ball`, `game`,
+  `MODE`, `setPitch`. Player state machine `ST`: IDLE, RUN, KICK, TACKLE, FALL, STUN, DIVE.
+  `updPlayer`, `updBall`, `possession`, `separate`, `doKick`, `doPass` (`facingMate`), `knockDown`, `electrocute`,
+  keepers `keeperSave`, `dive`. Difficulty `DIFFS`/`diff`/`D()`, `cpuSide`, `keeperSkill`.
+- **FURIA / supers** — `fury(team, n)`, `furyReady`, `superFor` (tiger / kame / rasen), ORA in the TACKLE
+  branch, `superFx`, `drawBeam`. See docs/DESIGN.md.
 - **CAOS** — random events `game.chaos` (`startChaos`, `updChaos`), Vespa `game.vespa`, pickups `items`
   (`spawnItem`, `pickUp`, buffs `p.buff`), flying players (`p.z`, `lift` in `knockDown`), cosmetic `chaosFx`.
   Toggle `chaosOn`. Rules and numbers: docs/DESIGN.md «КАОС».
-- **AI** — `ai(p, dt)` writes into `p.inp` exactly like a human (`rival` = Roma, deliberately weaker).
+- **AI** — `ai(p, dt)` writes into `p.inp` exactly like a human: `aiKeeper`, `aiReal` (11v11, `computeChasers`,
+  formation), `aiArcade`; shared `steer`, `shootAt`, `bestPassTarget`, `skillOf`.
 - **Input** — keyboard + floating touch joystick (`zoneL`) + hold buttons; `humanInput`, auto player switch `updControl`.
 - **Field / weather** — `buildField` bakes pitch, stands, ad boards and goal nets into canvases;
   `setWeather` (clear/rain/storm/off), puddles & mud `patches`, wind, lightning.
 - **Online** — `NET`, host/guest, `hostGame`/`joinByCode`/`joinGame`, `buildSnap`/`applySnap`, `guestUpdate`,
   lobby `renderLobby`, share link `shareGame`, `?join=` in `tryAutoJoin`. See docs/ONLINE.md.
-- **Match flow / menus** — `kickoff`, `scored`, `startMatch(mode)`, `toMenu`, `setPaused`, `endMatch`, `showOv`.
+- **Match flow / menus** — `kickoff`/`kickoff11`, `scored`, `startMatch(1|2|11)`, `derbyLine`, `endLine`, `toMenu`,
+  `menuPage`, `setPaused`, `endMatch`, `showOv`; settings `store`/`syncOpts`/`nextDiff`. The title screen
+  runs a live background (Vespa rides through).
 - **Render** — `render()`, depth-sorted by `y`; HUD drawn on canvas (`drawHUD`) incl. FURIA bars.
 - **Layout** — `fit()` resizes canvas for portrait/landscape; the joystick zone follows the canvas.
 
@@ -96,4 +106,6 @@ See also the prioritized backlog in `docs/research/azzurri-audit.md` (goalkeeper
 1. ~~Online with a friend by code~~ — done in v0.9 (PeerJS, `docs/ONLINE.md`). Needs a real two-phone
    test on Wi-Fi + 4G; add our own TURN if some networks can't connect.
 2. ~~Static hosting~~ — GitHub Pages workflow; https://junussovalan02-bot.github.io/Football-2S/
-3. Ideas not done yet: goalkeepers, 3v3, more clubs, a GIF-ish replay of goals, PWA install (manifest + icon).
+3. ~~Goalkeepers, more clubs, difficulty, 11 on 11~~ — v0.11.
+4. Ideas not done yet: 11v11 online, tournament/cup, replay of goals, PWA install (manifest + icon), tornado /
+   goats / bomb ball events, crowd sounds, aftertouch, headers.
