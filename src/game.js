@@ -402,7 +402,8 @@ class Player {
       charge:0, kickSuper:false, superType:'tiger', kickDone:false, hit:new Set(), tBall:false,
       sm:1, tr:1, human:false, aiCd:0, anim:0, fallExpr:'cry', mood:null, z:0, vz:0, buff:null, buffT:0, dingCd:0,
       name:'', num:10, look:0, slot:9, home:null, react:0, holdT:0, saved:false, ora:false, passTo:null,
-      inp:{ mx:0, my:0, kickHeld:false, kickReleased:false, tacklePressed:false } });
+      stam:1, tired:false, sprinting:false,
+      inp:{ mx:0, my:0, kickHeld:false, kickReleased:false, tacklePressed:false, sprint:false } });
   }
 }
 let players = [];
@@ -427,9 +428,10 @@ function setPitch(mode) {
   FCV.width = FRONT.width = Math.ceil(OX + LEN + WID*SK + 44); FCV.height = FRONT.height = Math.ceil(OY + WID*SY + 30);
   return true;
 }
-const ball = { x:LEN/2, y:WID/2, z:0, vx:0, vy:0, vz:0, owner:null, superType:null, gs:1, lock:null, lockT:0, last:null, rot:0, drag:1,
+const ball = { shotT:0, passTo:null, passAt:null, x:LEN/2, y:WID/2, z:0, vx:0, vy:0, vz:0, owner:null, superType:null, gs:1, lock:null, lockT:0, last:null, rot:0, drag:1,
   kick(dx, dy, pow, lift, by, type) {
-    this.owner = null; this.vx = dx*pow; this.vy = dy*pow; this.vz = lift; this.superType = type || null; this.gs = 1; this.shot = false;
+    this.owner = null; this.vx = dx*pow; this.vy = dy*pow; this.vz = lift; this.superType = type || null; this.gs = 1;
+    this.shot = false; this.shotT = 0; this.passTo = null; this.passAt = null;
     this.lock = by; this.lockT = 0.3; this.last = by;
     this.beam = null;
     if (type === 'tiger') { this.vz = 18; this.gs = 0.12; }
@@ -645,13 +647,42 @@ function shotKick(p, dx, dy) {
   } else { ball.kick(dx, dy, KPOW, KLIFT*rnd(0.5,1.2), p, null); sfx('kick'); }
   ball.shot = true;   // a shot, not a pass: the shooter's teammates won't trap it (see possession)
 }
-// pass target: the teammate the player faces (humans) or p.passTo chosen by the AI
+// an opponent standing in the lane between two points (a ground pass would be cut out)
+function laneBlocked(p, tx, ty) {
+  const dx = tx - p.x, dy = ty - p.y, l2 = dx*dx + dy*dy || 1;
+  return players.some(q => { if (q.team === p.team || q.state > ST.RUN) return false;
+    const u = ((q.x - p.x)*dx + (q.y - p.y)*dy)/l2; if (u < 0.12 || u > 0.92) return false;
+    return hyp(p.x + dx*u - q.x, p.y + dy*u - q.y) < 15; });
+}
+const marked = m => players.some(q => q.team !== m.team && q.role !== 'gk' && dist(q, m) < 28);
+// pass target for a human: the teammate closest to where the stick points (or where you face), open ones
+// and clear lanes preferred; with nobody in that direction, the nearest teammate
 function facingMate(p) {
-  let best = null, bs = -9;
+  const ax = p.inp.mx || p.fx, ay = p.inp.my || p.fy, al = hyp(ax, ay) || 1;
+  let best = null, bs = -99, near = null, nd = 1e9;
   for (const m of players) { if (m.team !== p.team || m === p || m.role === 'gk') continue;
-    const dx = m.x - p.x, dy = m.y - p.y, d = hyp(dx, dy); if (d < 20 || d > 380) continue;
-    const sc = (dx*p.fx + dy*p.fy)/d*1.2 - d/500; if (sc > bs) { bs = sc; best = m; } }
-  return best;
+    const dx = m.x - p.x, dy = m.y - p.y, d = hyp(dx, dy); if (d < 20 || d > 430) continue;
+    if (d < nd) { nd = d; near = m; }
+    const c = (dx*ax + dy*ay)/(d*al); if (c < 0.35) continue;   // a cone of about 70 degrees each side
+    const sc = c*2 - d/350 - (marked(m) ? 0.6 : 0) - (laneBlocked(p, m.x, m.y) ? 0.5 : 0);
+    if (sc > bs) { bs = sc; best = m; } }
+  return best || near;
+}
+// Pass physics: aim where the receiver will be when the ball arrives. A ground pass is hit just hard
+// enough to reach him at ~90 u/s against the grass friction; a long one, or one with an opponent in the
+// lane, is lofted to drop at his feet. The receiver runs to the spot (AI) and the spot is marked.
+const FRIC = 125;
+function passPlan(p, m) {
+  const o = { x: ball.x, y: ball.y, team: p.team };   // measured from the ball, it's a step in front of the passer
+  let tx = m.x, ty = m.y, v0 = 150, vz = 12, T = 0.5, lob = false;
+  for (let k = 0; k < 3; k++) {
+    const d = Math.max(1, hyp(tx - o.x, ty - o.y));
+    lob = d > 230 || laneBlocked(o, tx, ty);
+    if (lob) { v0 = clamp(d*1.1, 160, 300); T = d/v0; vz = GRAV*gravK()*T/2; }
+    else { v0 = Math.min(330, Math.sqrt(90*90 + 2*FRIC*d)); T = (v0 - Math.sqrt(Math.max(0, v0*v0 - 2*FRIC*d)))/FRIC; vz = 12; }
+    tx = clamp(m.x + m.vx*T*0.8, 6, LEN - 6); ty = clamp(m.y + m.vy*T*0.8, 6, WID - 6);
+  }
+  return { tx, ty, v0, vz, lob };
 }
 function doPass(p) {
   const target = p.passTo || (MODE === 11 ? facingMate(p) : mateOf(p)); p.passTo = null;
@@ -659,9 +690,9 @@ function doPass(p) {
     const n = norm(goalX(p.team) - p.x, WID/2 - p.y); p.fx = n.x; p.fy = n.y; p.bike = p.strong = false;
     ball.kick(n.x, n.y, 200, 210, p, null); p.kickSuper = false; setState(p, ST.KICK); p.kickDone = true; sfx('pass'); return;
   }
-  const m = target, tx = m.x + m.vx*0.35, ty = m.y + m.vy*0.35, d = hyp(tx-p.x, ty-p.y), n = norm(tx-p.x, ty-p.y);
+  const m = target, pl = passPlan(p, m), n = norm(pl.tx - ball.x, pl.ty - ball.y);
   p.fx = n.x; p.fy = n.y; p.bike = p.strong = false;
-  ball.kick(n.x, n.y, clamp(d*1.45+70, 120, 300), d > 110 ? 175 : 12, p, null);
+  ball.kick(n.x, n.y, pl.v0, pl.vz, p, null); ball.passTo = m; ball.passAt = { x: pl.tx, y: pl.ty };
   p.kickSuper = false; setState(p, ST.KICK); p.kickDone = true; sfx('pass');
   if (p.local && NET.role === 'solo') { setHuman(m); game.ctrlCd = 0.6; }
 }
@@ -678,8 +709,14 @@ function updPlayer(p, dt) {
   switch (p.state) {
     case ST.IDLE: case ST.RUN: {
       const aiSp = p.role === 'gk' ? 1 : p.team ? (cpuSide(1) ? D().speed : DIFFS[1].speed) : 0.93;
-      const sp = MAXSP * p.sm * turbo * (p.human ? 1 : aiSp) * (ball.owner === p ? 0.9 : 1);
-      approach(p, i.mx*sp, i.my*sp, (p.human ? ACCH : ACC)*p.tr*turbo*dt);
+      // sprint: ×1.35 (×1.22 with the ball) for about 2.5 s of stamina; run dry and you must catch your breath
+      const want = i.sprint && (i.mx || i.my) && !p.tired && p.stam > 0;
+      if (want) { p.stam = Math.max(0, p.stam - dt*0.4); if (p.stam <= 0) p.tired = true; }
+      else { p.stam = Math.min(1, p.stam + dt*(p.tired ? 0.18 : 0.25)); if (p.tired && p.stam > 0.35) p.tired = false; }
+      p.sprinting = want;
+      const spr = want ? (ball.owner === p ? 1.22 : 1.35) : 1;
+      const sp = MAXSP * p.sm * turbo * spr * (p.human ? 1 : aiSp) * (ball.owner === p ? 0.9 : 1);
+      approach(p, i.mx*sp, i.my*sp, (p.human ? ACCH : ACC)*p.tr*turbo*(want ? 1.2 : 1)*dt);
       if (p.buff === 'pepper' && hyp(p.vx, p.vy) > 70) for (const q of players)   // chili: run people over
         if (q.team !== p.team && q.state <= ST.KICK && dist(p, q) < 14) { knockDown(q, p.vx, p.vy, 200, 'bulge', 120);
           if (q.state === ST.FALL) { sfx('hit'); hitstop(0.05); game.shake = Math.max(game.shake, 0.15); fury(p.team, 8); } }
@@ -744,18 +781,19 @@ function updPlayer(p, dt) {
     if (surf === 'puddle') for (let k = 0; k < 3; k++) spawn(q.x+rnd(-4,4), q.y-1, rnd(-30,30), rnd(-70,-30), 0.35, k ? '#a6e4e6' : '#ffffff', 2, 300);
     else if (surf === 'mud') spawn(q.x+rnd(-3,3), q.y-1, rnd(-20,20), rnd(-40,-15), 0.35, '#5c4a26', 2, 200);
     else if (p.state === ST.TACKLE) spawn(q.x+rnd(-3,3), q.y-1, rnd(-25,25), rnd(-50,-20), 0.35, Math.random()<0.5 ? '#2a8a2a' : '#7ae070', 2, 260);
-    else { spawn(q.x-2, q.y-2, -p.fx*12, -8, 0.3, '#e8f4e0', 2, 0); spawn(q.x+1, q.y-3, -p.fx*8, -12, 0.25, '#c8dcc0', 1, 0); }
+    else { spawn(q.x-2, q.y-2, -p.fx*12, -8, 0.3, '#e8f4e0', 2, 0); spawn(q.x+1, q.y-3, -p.fx*8, -12, 0.25, '#c8dcc0', 1, 0);
+      if (p.sprinting) for (let k = 0; k < 3; k++) spawn(q.x + rnd(-3, 3), q.y - 2, -p.fx*rnd(20, 45), rnd(-20, -6), 0.35, '#ffffff', 2, 40); }
   }
   i.kickReleased = false; i.tacklePressed = false;
 }
 
 function updBall(dt) {
-  const b = ball; b.lockT -= dt;
+  const b = ball; b.lockT -= dt; b.shotT += dt;
   if (b.owner) {
     const o = b.owner;
     if (o.state > ST.KICK && o.state !== ST.DIVE) b.owner = null;
     else { const k = Math.min(1, dt*20);
-      b.x += (o.x + o.fx*(giant() ? 20 : 9) - b.x)*k; b.y += (o.y + o.fy*5 + 1 - b.y)*k; b.vx = o.vx; b.vy = o.vy; b.z = 0; b.vz = 0;
+      b.x += (o.x + o.fx*(giant() ? 20 : o.sprinting ? 13 : 9) - b.x)*k;   // sprinting pushes the ball further ahead b.y += (o.y + o.fy*5 + 1 - b.y)*k; b.vx = o.vx; b.vy = o.vy; b.z = 0; b.vz = 0;
       b.rot += hyp(o.vx, o.vy)*dt; return; }
   }
   const surf = surfaceAt(b.x, b.y); b.drag = (surf === 'puddle' ? 5 : surf === 'mud' ? 2.5 : 1)*(chaosIs('ice') ? 0.35 : 1);
@@ -816,19 +854,21 @@ function possession(dt) {
   if (b.owner) fury(b.owner.team, dt*4);
   if (!b.owner && !b.superType && b.z < 34) {
     let best = null, bd = 99;
-    const shot = b.shot && b.last && hyp(b.vx, b.vy) > 160;
+    // your own shot flies past your teammates: for a second after the kick, and after that while it's still quick
+    const shot = b.shot && b.last && (b.shotT < 1 || hyp(b.vx, b.vy) > 100);
     for (const p of players) { if (p.state > ST.RUN || (b.lock === p && b.lockT > 0)) continue;
-      if (shot && p.team === b.last.team) continue;   // your own shot flies past your teammates
-      const gk = p.role === 'gk', reach = gk ? 15 : REACH*(giant() ? 1.9 : 1);
-      if (b.z >= (gk ? 34 : giant() ? 22 : 10)) continue;   // keepers use their hands
+      if (shot && p.team === b.last.team) continue;
+      const gk = p.role === 'gk', meant = b.passTo === p;   // the player a pass is meant for reaches a bit further and higher
+      const reach = gk ? 15 : REACH*(giant() ? 1.9 : 1)*(meant ? 1.6 : 1);
+      if (b.z >= (gk ? 34 : giant() ? 22 : meant ? 16 : 10)) continue;   // keepers use their hands
       const d = dist(p, b); if (d < reach && d < bd) { bd = d; best = p; } }
     if (best && best.role === 'gk' && hyp(b.vx, b.vy) > 230 && b.last && b.last.team !== best.team) keeperSave(best);
     else if (best) { if (b.last && b.last !== best && b.last.team === best.team) fury(best.team, 10); // pass received
-      b.owner = best; best.holdT = 0; }
+      b.owner = best; best.holdT = 0; b.passTo = null; b.passAt = null; }
   } else if (b.owner) {
     for (const p of players) {
       if (p.team === b.owner.team || p.state > ST.RUN || b.owner.buff === 'horn' || b.owner.role === 'gk') continue;
-      if (dist(p, b) < 9 && Math.random() < dt*(p.team === 1 ? (cpuSide(1) ? D().steal : 0.6) : 1.6)) { const prev = b.owner; b.owner = p; b.lock = prev; b.lockT = 0.5; fury(p.team, 12); if (p.team === 1 && Math.random() < 0.7) emote(p, 'tongue'); break; }
+      if (dist(p, b) < 9 && Math.random() < dt*(p.team === 1 ? (cpuSide(1) ? D().steal : 0.6) : 1.6)*(b.owner.sprinting ? 1.5 : 1)) { const prev = b.owner; b.owner = p; b.lock = prev; b.lockT = 0.5; fury(p.team, 12); if (p.team === 1 && Math.random() < 0.7) emote(p, 'tongue'); break; }
     }
   }
 }
@@ -869,7 +909,7 @@ function bestPassTarget(p) {
   for (const m of players) { if (m.team !== p.team || m === p || m.role === 'gk') continue;
     const d = dist(p, m); if (d < 40 || d > 340) continue;
     const press = players.some(q => q.team !== p.team && dist(q, m) < 30) ? 2 : 0;
-    const sc = dir*(m.x - p.x)/100 - press - d/400; if (sc > bs) { bs = sc; best = m; } }
+    const sc = dir*(m.x - p.x)/100 - press - d/400 + (m.human ? 0.8 : 0) - (laneBlocked(p, m.x, m.y) ? 0.6 : 0); if (sc > bs) { bs = sc; best = m; } }
   return best;
 }
 function aiKeeper(p, dt) {
@@ -922,9 +962,12 @@ function aiReal(p, dt) {
     const near = opps.reduce((x, q) => dist(q, p) < dist(x, p) ? q : x);
     const pressed = dist(near, p) < 36 && Math.sign(near.x - p.x) === dir;
     if (pressed && Math.random() < dt*3) { const m = bestPassTarget(p); if (m) { p.passTo = m; i.tacklePressed = true; return; } }
+    const hm = players.find(q => q.team === p.team && q.human && q !== p);   // play your human teammate in when he's free
+    if (hm && !marked(hm) && dir*(hm.x - p.x) > -60 && dist(p, hm) < 330 && !laneBlocked(p, hm.x, hm.y) && Math.random() < dt*1.4) { p.passTo = hm; i.tacklePressed = true; return; }
     let ty = gy; if (dist(near, p) < 44 && pressed) ty = p.y + (p.y < near.y ? -70 : 70);
     return steer(p, gx, clamp(ty, 15, WID - 15), dt);
   }
+  if (b.passTo === p && !b.owner && b.passAt) return steer(p, b.passAt.x, b.passAt.y, dt);   // meet the pass
   const rank = game.chasers[p.team].indexOf(p), theyHave = b.owner && b.owner.team !== p.team, weHave = b.owner && b.owner.team === p.team;
   if (rank === 0 || (rank === 1 && theyHave)) {
     const ow = b.owner;
@@ -944,6 +987,7 @@ function aiArcade(p, dt) {
   const i = p.inp; i.kickHeld = false; p.aiCd -= dt;
   if (p.state > ST.RUN) { i.mx = i.my = 0; return; }
   const b = ball, gx = goalX(p.team), gy = WID/2, ox = ownX(p.team), m = mateOf(p) || p, rival = p.team === 1, Dd = skillOf(p) || DIFFS[1];
+  if (b.passTo === p && !b.owner && b.passAt) return steer(p, b.passAt.x, b.passAt.y, dt);   // meet the pass
   const opps = players.filter(q => q.team !== p.team);
   let tx = p.x, ty = p.y;
   if (b.owner === p) {
@@ -955,6 +999,8 @@ function aiArcade(p, dt) {
     }
     const near = opps.reduce((x, q) => dist(q,p) < dist(x,p) ? q : x);
     if (Math.abs(m.x-gx) + 40 < Math.abs(p.x-gx) && dist(near,p) < 34 && Math.random() < dt*1.2) { i.tacklePressed = true; return; }
+    // the computer teammate gives it to you when you're free and not behind him
+    if (m.human && m !== p && !marked(m) && Math.abs(m.x-gx) < Math.abs(p.x-gx) + 60 && !laneBlocked(p, m.x, m.y) && Math.random() < dt*1.4) { i.tacklePressed = true; return; }
     tx = gx; ty = gy;
     if (dist(near, p) < 44 && Math.sign(near.x-p.x) === Math.sign(gx-p.x)) ty = p.y + (p.y < near.y ? -60 : 60);
   } else {
@@ -1001,15 +1047,18 @@ function humanInput() {
   const p = players.find(q => q.local); if (!p) return;
   const s = readStick(), i = p.inp;
   i.mx = s ? s.x : 0; i.my = s ? s.y : 0;
+  if (!s && ball.passTo === p && !ball.owner && ball.passAt) {   // a pass is coming and you're not steering: step to it
+    const dx = ball.passAt.x - p.x, dy = ball.passAt.y - p.y, l = hyp(dx, dy); if (l > 5) { i.mx = dx/l; i.my = dy/l; } }
+  i.sprint = keys.has('shift') || keys.has('u') || touchSprint;
   const k = keys.has('j') || keys.has(' ') || keys.has('z') || touchKick;
   const t = keys.has('k') || keys.has('x') || touchTackle;
   i.kickHeld = k; if (prevKick && !k) i.kickReleased = true; if (t && !prevTackle) i.tacklePressed = true;
   prevKick = k; prevTackle = t;
-  const sw = keys.has('l') || keys.has('c') || keys.has('shift') || touchSwitch;
+  const sw = keys.has('l') || keys.has('c') || touchSwitch;
   if (sw && !prevSwitch && !(ball.owner && ball.owner.team === 0)) game.wantSwitch = true;
   prevSwitch = sw;
 }
-let touchSwitch = false, prevSwitch = false;
+let touchSwitch = false, prevSwitch = false, touchSprint = false;
 function setHuman(p) {
   for (const q of players) if (q.team === 0) {
     if (q.human && q !== p) { q.charge = 0; q.inp.mx = q.inp.my = 0; }
@@ -1031,6 +1080,8 @@ function updControl(dt) {
   let other = null, to = 99;
   for (const q of team) if (q !== cur) { const t = reachTime(q); if (t < to) { to = t; other = q; } }
   if (!other) { game.wantSwitch = false; if (!cur.human) setHuman(cur); return; }
+  const pt = ball.passTo;   // a pass is on its way to one of ours: you control the receiver
+  if (pt && pt.team === 0 && pt.role !== 'gk' && !ball.owner) { game.wantSwitch = false; if (!pt.human) setHuman(pt); return; }
   if (ball.owner && ball.owner.team === 0) { game.wantSwitch = false; if (!ball.owner.human && ball.owner.role !== 'gk') setHuman(ball.owner); return; }
   if (game.wantSwitch) { game.wantSwitch = false; setHuman(other); game.ctrlCd = 0.8; return; }
   if (cur.charge > 0 || cur.state === ST.KICK || cur.state === ST.TACKLE) return;
@@ -1075,10 +1126,12 @@ function holdBtn(el, set) {
 holdBtn(document.getElementById('bA'), v => touchKick = v);
 holdBtn(document.getElementById('bB'), v => touchTackle = v);
 holdBtn(document.getElementById('bS'), v => touchSwitch = v);
+holdBtn(document.getElementById('bR'), v => touchSprint = v);
 // the pad follows the game: KICK shows the charge and turns into SUPER with full FURIA, the second button
 // says what it will do (PASS with the ball, TACKLE without, ORA! when a super tackle is possible),
 // SWITCH only shows when it can do something
 const PAD = { root: document.getElementById('pad'), A: document.getElementById('bA'), B: document.getElementById('bB'), S: document.getElementById('bS'),
+  R: document.getElementById('bR'), ringR: document.querySelector('#bR .chg circle'),
   lbA: document.getElementById('lbA'), lbB: document.getElementById('lbB'), ring: document.querySelector('#bA .chg circle'), key: '' };
 function updPad() {
   if (!TOUCH) return;
@@ -1088,7 +1141,8 @@ function updPad() {
   const b = has ? 'pass' : fr && holder && holder.team !== p.team && dist(p, holder) < 70 ? 'ora' : 'tackle';
   const sw = !has && NET.role === 'solo' && players.filter(q => q.team === p.team && q.role !== 'gk').length > 1;
   const ch = Math.round(Math.min(1, p.charge/CHARGE)*20);
-  const key = b + (fr ? 1 : 0) + (sw ? 1 : 0) + ch + p.team + TEAMS[p.team].code;
+  const st = Math.round(p.stam*20);
+  const key = b + (fr ? 1 : 0) + (sw ? 1 : 0) + ch + p.team + TEAMS[p.team].code + '|' + st + (p.tired ? 't' : '');
   if (key === PAD.key) return; PAD.key = key;
   PAD.root.style.setProperty('--team', TEAMS[p.team].color);
   for (const c of ['pass', 'ora', 'tackle']) PAD.B.classList.toggle(c, c === b);   // classList keeps the pressed state
@@ -1096,6 +1150,7 @@ function updPad() {
   PAD.A.classList.toggle('super', fr); PAD.A.classList.toggle('full', ch >= 20); PAD.lbA.textContent = fr ? 'СУПЕР' : 'УДАР';
   PAD.ring.style.strokeDashoffset = String(100 - ch*5);
   PAD.S.classList.toggle('off', !sw);
+  PAD.ringR.style.strokeDashoffset = String(100 - st*5); PAD.R.classList.toggle('tired', p.tired);
 }
 
 // ================== field (pre-rendered) ==================
@@ -1283,9 +1338,9 @@ function remoteInput() {
   if (NET.role !== 'host' || !NET.room) return;
   const rp = players.find(p => p.tag === 2); if (!rp) return;
   const g = NET.room.peers().find(p => p.peer === NET.guestPeer), i = g && g.presence && g.presence.in;
-  if (!i || typeof i !== 'object') { rp.inp.mx = rp.inp.my = 0; rp.inp.kickHeld = false; return; }
+  if (!i || typeof i !== 'object') { rp.inp.mx = rp.inp.my = 0; rp.inp.kickHeld = rp.inp.sprint = false; return; }
   const mx = +i.mx || 0, my = +i.my || 0, l = hyp(mx, my);
-  rp.inp.mx = l > 1 ? mx/l : mx; rp.inp.my = l > 1 ? my/l : my; rp.inp.kickHeld = !!i.k;
+  rp.inp.mx = l > 1 ? mx/l : mx; rp.inp.my = l > 1 ? my/l : my; rp.inp.kickHeld = !!i.k; rp.inp.sprint = !!i.sp;
   const kr = +i.kr || 0, tc = +i.tc || 0;
   if (NET.rK < 0) { NET.rK = kr; NET.rT = tc; }
   if (kr > NET.rK) { rp.inp.kickReleased = true; NET.rK = kr; }
@@ -1296,8 +1351,8 @@ function buildSnap() {
   return { mid: NET.mid, md: NET.mode, gm: game.mode, t: r1(game.time), sc: game.score, fu: [Math.round(game.fury[0]), Math.round(game.fury[1])], gp: NET.guestPeer,
     P: players.map(p => [r1(p.x), r1(p.y), r1(p.vx), r1(p.vy), p.state, r2(p.st), r2(p.fx), r2(p.fy), r2(p.charge),
       p.mood === 'cheer' ? 1 : p.mood === 'sad' ? 2 : 0, EXPR.indexOf(p.fallExpr), p.tag || 0,
-      p.emote ? EMOS.indexOf(p.emote.type) : -1, p.emote ? r1(p.emote.t) : 0, p.emote ? r2(p.emote.age) : 0, p.kickSuper ? 1 : 0, p.bike ? 1 : 0, r1(p.z), ITEMS.indexOf(p.buff)]),
-    B: [r1(ball.x), r1(ball.y), r1(ball.z), r1(ball.vx), r1(ball.vy), SUPS.indexOf(ball.superType), ball.beam ? r1(ball.beam.x) : 0, ball.beam ? r1(ball.beam.y) : 0, ball.beam ? r2(ball.beam.t) : 0],
+      p.emote ? EMOS.indexOf(p.emote.type) : -1, p.emote ? r1(p.emote.t) : 0, p.emote ? r2(p.emote.age) : 0, p.kickSuper ? 1 : 0, p.bike ? 1 : 0, r1(p.z), ITEMS.indexOf(p.buff), Math.round(p.stam*20), p.tired ? 1 : 0, p.sprinting ? 1 : 0]),
+    B: [r1(ball.x), r1(ball.y), r1(ball.z), r1(ball.vx), r1(ball.vy), SUPS.indexOf(ball.superType), ball.beam ? r1(ball.beam.x) : 0, ball.beam ? r1(ball.beam.y) : 0, ball.beam ? r2(ball.beam.t) : 0, ball.passAt ? Math.round(ball.passAt.x) : 0, ball.passAt ? Math.round(ball.passAt.y) : 0, ball.passTo ? players.indexOf(ball.passTo) : -1],
     sh: r2(game.shake), fl: r2(game.flash), bo: game.bolt ? [r1(game.bolt.x), r1(game.bolt.y), r2(game.bolt.t), Math.round(game.bolt.seed)] : 0,
     an: game.announce ? [game.announce.text, game.announce.col, r2(game.announce.t)] : 0,
     bn: game.banner ? [game.banner.text, game.banner.col, r2(game.banner.t)] : 0,
@@ -1454,7 +1509,8 @@ function guestSendInput() {
   const s = readStick();
   const k = keys.has('j') || keys.has(' ') || keys.has('z') || touchKick, t = keys.has('k') || keys.has('x') || touchTackle;
   if (NET.pk && !k) NET.kr++; if (t && !NET.pt) NET.tc++; NET.pk = k; NET.pt = t;
-  const inp = { mx: s ? r2(s.x) : 0, my: s ? r2(s.y) : 0, k: k ? 1 : 0, kr: NET.kr, tc: NET.tc };
+  const sp = keys.has('shift') || keys.has('u') || touchSprint;
+  const inp = { mx: s ? r2(s.x) : 0, my: s ? r2(s.y) : 0, k: k ? 1 : 0, kr: NET.kr, tc: NET.tc, sp: sp ? 1 : 0 };
   const key = JSON.stringify(inp); if (key !== NET.lastIn) { NET.lastIn = key; setPresence({ in: inp }); }
 }
 function applySnap(s) {
@@ -1485,10 +1541,12 @@ function applySnap(s) {
     p.state = a[4]; p.st = a[5]; p.fx = a[6]; p.fy = a[7]; p.charge = a[8];
     p.mood = a[9] === 1 ? 'cheer' : a[9] === 2 ? 'sad' : null; p.fallExpr = EXPR[a[10]] || 'cry'; p.tag = a[11];
     p.human = a[11] > 0; p.local = a[11] === 2; p.kickSuper = !!a[15]; p.bike = !!a[16]; p.tz = a[17] || 0; p.buff = ITEMS[a[18]] || null;
+    p.stam = (a[19] === undefined ? 20 : a[19])/20; p.tired = !!a[20]; p.sprinting = !!a[21];
     p.emote = a[12] >= 0 ? { type: EMOS[a[12]], t: a[13], age: a[14] } : null;
     if (Math.abs(p.tx - p.x) > 60 || Math.abs(p.ty - p.y) > 60) { p.x = p.tx; p.y = p.ty; } });
   ball.tx = s.B[0]; ball.ty = s.B[1]; ball.tz = s.B[2]; ball.vx = s.B[3]; ball.vy = s.B[4]; ball.superType = SUPS[s.B[5]] || null;
   ball.beam = s.B[8] ? { x: s.B[6], y: s.B[7], t: s.B[8] } : null;
+  ball.passAt = s.B[9] || s.B[10] ? { x: s.B[9], y: s.B[10] } : null; ball.passTo = players[s.B[11]] || null;
   if (Math.abs(ball.tx - ball.x) > 80) { ball.x = ball.tx; ball.y = ball.ty; ball.z = ball.tz; }
   for (const e of (s.ev || [])) { if (e[0] <= NET.lastEv) continue; NET.lastEv = e[0];
     if (e[1] === 's') { if (e[2] === 'whistle' && game.mode === 'end') stopMusic(); sfxLocal(e[2]); if (e[2] === 'hit') buzz(20); }
@@ -1983,6 +2041,11 @@ function render() {
   for (const p of players) { const s = S(p.x, p.y), k = clamp(1 - (p.z || 0)/120, 0.4, 1); pellipse(s.x, s.y, Math.round(9*k), 2, 'rgba(0,30,0,.35)'); }
   for (const it of items) { const s = S(it.x, it.y); pellipse(s.x, s.y, 5, 1, 'rgba(0,30,0,.35)'); }
   { const s = S(ball.x, ball.y), k = clamp(1 - ball.z/180, 0.4, 1)*(giant() ? BIGK : 1); pellipse(s.x, s.y, Math.max(2, Math.round(6*k)), giant() ? 4 : 2, 'rgba(0,30,0,.4)'); }
+  if (ball.passAt && !ball.owner && ball.passTo && game.mode === 'play') {   // where the pass will land
+    const s = S(ball.passAt.x, ball.passAt.y), k = Math.floor(game.t*8) % 2, col = TEAMS[ball.passTo.team].color;
+    pellipseRing(s.x, s.y + 1, 9, 3, '#100810'); pellipseRing(s.x, s.y, 9, 3, k ? col : '#ffffff');
+    ctx.fillStyle = k ? col : '#ffffff'; ctx.fillRect(Math.round(s.x) - 1, Math.round(s.y) - 9, 3, 5); ctx.fillRect(Math.round(s.x), Math.round(s.y) - 4, 1, 2);
+  }
   const ents = players.map(p => ({ y: p.y, f: () => drawPlayer(p) }));
   ents.push({ y: ball.y + 0.5, f: drawBall });
   for (const it of items) ents.push({ y: it.y, f: () => drawItem(it) });

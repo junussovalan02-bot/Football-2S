@@ -49,8 +49,23 @@ fills a charge ring while held and turns into a glowing **СУПЕР** with full
 will do — **ПАС** (blue rim) with the ball, **ПОДКАТ** (red) without, **ОРА!** (gold) when a super tackle is possible;
 the switch button (arrows) only shows when switching can do something (no ball, 2+ outfield players, offline).
 
-A shot is not a pass: after `doKick` the ball is marked `shot`; while it is faster than 160 u/s the shooter's
-teammates (keeper included) don't trap it, it flies past them (`possession`).
+A shot is not a pass: after `doKick` the ball is marked `shot`; for 1 s after the kick, and after that while it is
+faster than 100 u/s, the shooter's teammates (keeper included) don't trap it, it flies past them (`possession`).
+
+**Passing (v0.14).** Target (`facingMate`, 11v11): the teammate closest to where the stick points (or the player
+faces) within ~70°, open players and clear lanes preferred; nobody there → the nearest teammate. Arcade: the only
+mate. Physics (`passPlan`, measured from the ball): aim where the receiver will be on arrival; a ground pass gets
+`v0 = √(90² + 2·125·d)` so it arrives at ~90 u/s; longer than 230 or with an opponent in the lane (`laneBlocked`,
+15 units) it is lofted (`vz = g·T/2`) to drop at his feet. The receiver gets reach ×1.6 and can take it up to
+z 16; AI receivers run to the spot, a human receiver steps to it when not steering; the spot is marked with a
+blinking ring + arrow; control stays on the receiver while the ball travels. The computer teammate plays an
+open human teammate in (rate 1.4/s, not when marked, behind or with the lane blocked); `bestPassTarget` favours
+the human (+0.8) and avoids blocked lanes.
+
+**Sprint (v0.14).** Hold » (touch) / Shift or U: speed ×1.35 (×1.22 with the ball, the ball runs further ahead and
+is 1.5× easier to steal), acceleration ×1.2. Stamina lasts ~2.5 s (−0.4/s), refills at 0.25/s; run dry and you are
+tired until 35 % (refill 0.18/s, button dims red). The green ring on the button shows stamina. Online: input `sp`,
+snapshot carries stamina/tired/sprinting. Switch player is now L / C only.
 
 Responsiveness (v0.11): humans accelerate with `ACCH 1600` (AI 1050), the touch stick is analog with a
 0.16 dead zone and full speed at half deflection, the kick connects after 0.045 s (was 0.07), kick

@@ -55,7 +55,7 @@ img{max-width:100%}
             <button class="mi" id="miSnd">ЗВУК <b>ВКЛ</b></button>
             <button class="mi dim" id="miOptsBack">НАЗАД</button>
           </div>
-          <p class="hint"><span class="tch">ДЖОЙСТИК — БЕГ · УДАР: ДЕРЖИ — СИЛЬНЫЙ ИЛИ СУПЕР · ПОДКАТ С МЯЧОМ — ПАС</span><span class="keys">СТРЕЛКИ — БЕГ · J — УДАР (ДЕРЖИ — СУПЕР) · K — ПОДКАТ/ПАС · L — СМЕНА · P — ПАУЗА</span></p>
+          <p class="hint"><span class="tch">ДЖОЙСТИК — БЕГ · УДАР: ДЕРЖИ — СИЛЬНЫЙ ИЛИ СУПЕР · ПАС — ТОМУ, КУДА СМОТРИТ ДЖОЙСТИК · » — СПРИНТ</span><span class="keys">СТРЕЛКИ — БЕГ · J — УДАР (ДЕРЖИ — СУПЕР) · K — ПОДКАТ/ПАС · SHIFT — СПРИНТ · L — СМЕНА · P — ПАУЗА</span></p>
         </div>
       </div>
     </div>
@@ -115,6 +115,7 @@ img{max-width:100%}
           <li><b class="g">РАСЕНГАН</b> FURIA + мяч на уровне головы: просто жми УДАР. Крутящийся шар петляет по штрафной.</li>
           <li><b class="v">ОРА-ОРА-ОРА</b> FURIA + ПОДКАТ, когда соперник с мячом рядом. Серия ударов раскидывает всех вокруг.</li>
           <li><b>ВРАТАРИ</b> ловят и отбивают удары, ныряют в углы. Супер-удар заносит вратаря в сетку вместе с мячом. Бей в угол подальше от вратаря.</li>
+          <li><b>ПАС И СПРИНТ</b> Пас уходит партнёру, на которого направлен джойстик, — туда, где он будет. Кружок на поле показывает, куда прилетит мяч. Если на пути соперник — пас идёт навесом. Кнопка » — спринт, пока не кончатся силы (кольцо на кнопке). Свой удар пролетает мимо партнёров.</li>
           <li><b>БЕЗ FURIA</b> держишь УДАР — сильный удар. Высокий мяч + УДАР — удар с лёта. Игрок с мячом подсвечен кольцом и подписан.</li>
           <li><b class="c">КАОС</b> Каждые 15 секунд что-то случается: МЯЧ-ГИГАНТ, ПИЦЦА-ЭКСПРЕСС на веспе, ЛУНА, ЭСПРЕССО, ВЕСУВИЙ, ГОЛОЛЁД. В последние 20 секунд гол стоит 2 очка.</li>
           <li><b class="c">ПРЕДМЕТЫ</b> Пробеги по ним. ПИЦЦА: +FURIA. ПЕРЧИК: бежишь быстрее и сносишь всех. КОРНЕТТО: тебя нельзя сбить и отобрать мяч.</li>
@@ -158,6 +159,7 @@ img{max-width:100%}
   <div id="pad">
     <div id="zoneL"><div id="stick"><i class="tick t0"></i><i class="tick t1"></i><i class="tick t2"></i><i class="tick t3"></i><div id="knob"></div></div></div>
     <div id="btns">
+      <button class="pb" id="bR" aria-label="Спринт, удерживать"><svg class="chg" viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="44" pathLength="100"/></svg><svg class="ic" viewBox="0 0 16 16" aria-hidden="true"><path d="M2 3h3l5 5-5 5H2l5-5zM8 3h3l5 5-5 5H8l5-5z"/></svg></button>
       <button class="pb" id="bS" aria-label="Сменить игрока"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2 5h9V2l4 4-4 4V7H2zM14 11H5v3l-4-4 4-4v3h9z"/></svg></button>
       <button class="pb" id="bB" aria-label="Подкат или пас"><span class="lb" id="lbB">ПОДКАТ</span></button>
       <button class="pb" id="bA" aria-label="Удар, удерживать для супер-удара"><svg class="chg" viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="44" pathLength="100"/></svg><span class="lb" id="lbA">УДАР</span></button>
