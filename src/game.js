@@ -683,6 +683,8 @@ function sfxLocal(k) {
     case 'taunt': tone('square', 520, 1040, 0.08, 0.06); tone('square', 1040, 520, 0.08, 0.06, 0.09); break;
     case 'swish': noise(0.35, 0.18, 5000); noise(0.5, 0.08, 1200, 0.05); break;
     case 'rip': tone('sawtooth', 900, 120, 0.35, 0.08); noise(0.4, 0.22, 3000); break;
+    case 'crash': noise(0.9, 0.35, 1500); tone('square', 300, 60, 0.6, 0.1); tone('square', 900, 200, 0.3, 0.05, 0.1); break;
+    case 'clink': tone('square', 1800, 1700, 0.05, 0.04); break;
     case 'beep': tone('square',880,880,0.12,0.12); break;
     case 'go': tone('square',1320,1320,0.25,0.13); tone('square',990,990,0.25,0.08,0.05); break;
     case 'whistle': tone('sine',2600,2500,0.22,0.13); tone('sine',2600,2550,0.4,0.13,0.28); break;
@@ -878,7 +880,7 @@ const ball = { shotT:0, passTo:null, passAt:null, x:LEN/2, y:WID/2, z:0, vx:0, v
   } };
 const game = { mode:'title', t:0, time:MATCH, score:[0,0], goalT:0, weather:'rain', wind:{x:0,y:0}, windT:0, lightT:6,
   len:MATCH, chasers:[[], []], runners:[], skillCd:[0, 0], miracle:[0, 0], gagT:10, shake:0, flash:0, bolt:null, banner:null, announce:null, ctrlCd:0, kickoffTeam:0, hitstop:0, fury:[0,0], furyFlash:[0,0], switchFlash:0, wantSwitch:false, paused:false, emoCd:0, tauntT:8, half:1, flip:0, show:null };
-let patches = [], parts = [], rain = [], pops = [], tears = [];   // tears: holes ripped in the nets this match
+let patches = [], parts = [], rain = [], pops = [], tears = [], goalDown = [0, 0], craters = [];   // goalDown: a wrecked goal, rebuilt after the kick-off   // tears: holes ripped in the nets this match
 
 function hitstop(t) { game.hitstop = Math.max(game.hitstop, t); }
 function setState(p, s) { if (p.state === s) return;
@@ -1095,6 +1097,8 @@ function doKick(p) {
   }
   shotKick(p, dx, dy);
 }
+// the stick pulled back, away from the goal you attack, while releasing a charged shot
+const skyAim = p => p.human && (p.inp.mx || p.inp.my) && p.inp.mx*dirOf(p.team) < -0.6;
 function shotKick(p, dx, dy) {
   if (p.kickSuper) {
     game.fury[p.team] = 0;
@@ -1105,6 +1109,9 @@ function shotKick(p, dx, dy) {
     burst('super', s.x, s.y);
   } else if (p.bike) { // volley without FURIA: hard, low, no magic
     ball.kick(dx, dy, KPOW*1.2, 40, p, null); sfx('kick'); game.shake = Math.max(game.shake, 0.12); fury(p.team, 6);
+  } else if (p.strong && (skyAim(p) || Math.random() < (p.human ? 0.05 : 0.02))) {   // a candle to space: on purpose (stick back) or a miskick
+    ball.kick(dx*0.15, dy*0.15, 60, 950, p, null); sfx('whee'); game.shake = Math.max(game.shake, 0.15);
+    say(skyAim(p) ? 'СВЕЧА В КОСМОС!' : 'ПЕРЕБИЛ!', p.x, p.y);
   } else if (p.strong) { // charged without FURIA: TIRO FORTE
     ball.kick(dx, dy, KPOW*1.22, KLIFT*0.7, p, null); sfx('kick'); game.shake = Math.max(game.shake, 0.1);
   } else { ball.kick(dx, dy, KPOW, KLIFT*rnd(0.5,1.2), p, null); sfx('kick'); }
@@ -1279,6 +1286,7 @@ function updBall(dt) {
     if (TH.phys.air && !b.superType) { const k = 1 - TH.phys.air*dt; b.vx *= k; b.vy *= k; }   // water slows the ball down
     if (!b.superType) { b.vx += game.wind.x*dt; b.vy += game.wind.y*dt; }
     if (b.z <= 0) land();
+    if (game.mode === 'play' && !b.owner && b.z > 220 && b.vz > 0) startSpace();   // too high: off to space
   } else {
     const s = hyp(b.vx, b.vy);
     if (s > 0) { const ns = Math.max(0, s - 125*b.drag*ph('fric')*dt); b.vx *= ns/s; b.vy *= ns/s; }
@@ -1319,7 +1327,12 @@ function updBall(dt) {
   } else {
     // the frame of the goal: posts at Y0 / Y1 and the crossbar at GH send the ball back with a ring
     const post = Math.min(Math.abs(b.y - Y0), Math.abs(b.y - Y1)) < 3.5 && b.z < GH + 2, bar = mouth && Math.abs(b.z - GH) < 3.5;
-    if ((b.x < 0 || b.x > LEN) && (post || bar) && !b.superType) {
+    if ((b.x < 0 || b.x > LEN) && (post || bar) && (b.superType || hyp(b.vx, b.vy) > 430 && Math.random() < 0.3) && !goalDown[b.x > LEN ? 1 : 0]) {
+      wreckGoal(b.x > LEN ? 1 : 0);   // the whole goal comes down: that's a goal too
+      if (b.x > LEN) scored(game.flip); else scored(1 ^ game.flip);
+      if (game.net) { game.net.torn = true; game.net.hit = true; } game.goalT = 3.6;
+    }
+    else if ((b.x < 0 || b.x > LEN) && (post || bar) && !b.superType) {
       const side = b.x < 0 ? 1 : -1; b.x = b.x < 0 ? 1 : LEN - 1;
       b.vx = side*Math.abs(b.vx)*0.55; if (post) b.vy = (b.y < WID/2 ? -1 : 1)*Math.abs(b.vy)*0.6 + rnd(-40, 40); if (bar) { b.vz = -Math.abs(b.vz)*0.4 - 40; b.z = GH - 4; }
       sfx('post'); sfx('ooh'); game.shake = Math.max(game.shake, 0.15); say('ДЗЫНЬ!', b.x, b.y);
@@ -1369,6 +1382,12 @@ function superFx(b) {
 }
 function land() {
   const b = ball; b.z = 0;
+  if (game.meteor) {   // the ball comes back from space as a meteorite: a crater and everybody nearby flies
+    game.meteor = false; b.vz = 0; b.vx = b.vy = 0; sfx('boom'); sfx('roar'); game.shake = Math.max(game.shake, 0.8); hitstop(0.15);
+    const s0 = P(b.x, b.y); burst('quake', s0.x, s0.y); say('БА-БАХ!', b.x, b.y); craters.push({ x: b.x, y: b.y });
+    for (const p of players) if (dist(p, b) < 55 && p.role !== 'gk') { const n = norm(p.x - b.x || 1, p.y - b.y); knockDown(p, n.x, n.y, 220, 'bulge', 170); }
+    return;
+  }
   if (b.vz < -90/Math.max(0.6, ph('bounce'))) { b.vz = -b.vz*Math.min(0.85, 0.45*ph('bounce')); b.vx *= 0.85; b.vy *= 0.85; sfx('bounce'); } else b.vz = 0;
 }
 function possession(dt) {
@@ -2058,6 +2077,7 @@ function buildSnap() {
     pe: pees.map(q => [Math.round(q.x), Math.round(q.y)]), sk: [r1(game.skillCd[0]), r1(game.skillCd[1])], bm: ball.miracle ? 1 : 0,
     ru: game.runners.map(r => [RK.indexOf(r.k), r1(r.x), r1(r.y), r1(r.z || 0), r.dir || 1, r.team]),
     nt: game.net ? [game.net.right ? 1 : 0, r1(game.net.y), r1(game.net.z), r2(game.net.t), r1(game.net.depth), game.net.torn ? 1 : 0, game.net.hit ? 1 : 0] : 0, tr: tears.map(T => [T.right ? 1 : 0, r1(T.y), r1(T.z)]),
+    gd: goalDown.slice(), spc: game.space ? [r2(game.space.t), game.space.sat ? 1 : 0] : 0, mt: game.meteor ? 1 : 0, crt: craters.map(c => [Math.round(c.x), Math.round(c.y)]),
     tm: TEAMS.map(t => CLUB_KEYS.find(k => CLUBS[k] === t) || 'fra'),
     ho: [game.half, game.flip, game.show ? (game.show.kind === 'half' ? 2 : 1) : 0, game.show ? r2(game.show.t) : 0, game.show ? game.show.j : 0, game.show && game.show.wx || 0, game.mode === 'count' ? r2(game.count) : 0],
     bk: game.block ? [game.block.team, Math.round(game.block.taps)] : 0,
@@ -2242,6 +2262,9 @@ function applySnap(s) {
     if (!s.ho[2]) game.show = null; else { const kind = s.ho[2] === 2 ? 'half' : 'intro'; if (!game.show || game.show.kind !== kind) game.show = { kind, t: 0, j: 0 }; game.show.t = s.ho[3]; game.show.j = s.ho[4]; game.show.wx = s.ho[5] || ''; }
     if (s.gm === 'count') game.count = s.ho[6] || 0; }
   game.block = s.bk ? { team: s.bk[0], taps: s.bk[1] } : null;
+  if (s.spc) { if (!game.space) game.space = { t: 0, sat: !!s.spc[1] }; game.space.t = s.spc[0]; game.space.sat = !!s.spc[1]; } else game.space = null;
+  game.meteor = !!s.mt; craters = (s.crt || []).map(([x, y]) => ({ x, y }));
+  if (s.gd && (s.gd[0] !== goalDown[0] || s.gd[1] !== goalDown[1])) { goalDown = s.gd.slice(); buildField(); }
   game.net = s.nt ? { right: !!s.nt[0], y: s.nt[1], z: s.nt[2], t: s.nt[3], depth: s.nt[4], torn: !!s.nt[5], hit: !!s.nt[6] } : null;
   tears = (s.tr || []).map(([r, y, z]) => ({ right: !!r, y, z }));
   game.runners = (s.ru || []).map(([k, x, y, z, dir, team]) => ({ k: RK[k], x, y, z, dir, team, t: 0 }));
@@ -2270,7 +2293,7 @@ function guestUpdate(dt) {
   if (!NET.room) return;
   const h = NET.room.peers().find(p => p.peer === NET.hostPeer), s = h && h.presence && h.presence.s;
   if (s && s !== NET.lastS && s.gp === NET.myPeer && Array.isArray(s.P)) { NET.lastS = s; applySnap(s); }
-  updRain(dt); updParts(dt); chaosFx(dt); if (game.mode === 'show') updShow(dt); if (game.mode === 'count') updCount(dt);
+  updRain(dt); updParts(dt); chaosFx(dt); if (game.mode === 'show') updShow(dt); if (game.mode === 'count') updCount(dt); if (game.mode === 'space') updSpace(dt);
   if (NET.mid < 0) return;
   guestSendInput();
   // between snapshots keep everything moving along its last velocity (up to 0.4 s), then glide toward it,
@@ -2690,6 +2713,7 @@ function kickoff11(team) {
   game.switchFlash = 0; game.mode = 'play'; game.announce = { text:'KICK OFF!', col:'#ffffff', t:1.1 }; sfx('whistle'); startMusic();
 }
 function kickoff(team) {
+  if (goalDown[0] || goalDown[1]) { goalDown = [0, 0]; buildField(); }   // the crew finished: good as new
   if (MODE === 11) return kickoff11(team);
   const c = WID/2, na = players.find(p => p.team === 0 && p.role === 'att'), nd = players.find(p => p.team === 0 && p.role === 'def'),
         ra = players.find(p => p.team === 1 && p.role === 'att'), rd = players.find(p => p.team === 1 && p.role === 'def');
@@ -2744,7 +2768,7 @@ function startMatch(mode, opt) {
   MODE = mode; setPitch(mode); buildTeams(mode); if (game.career) { placeMe(); applySquad(); } NET.mid = (NET.mid + 1) % 100000; NET.rK = NET.rT = -1;
   game.len = mode === 11 ? MATCH11 : MATCH;
   game.score = [0,0]; game.fury = [0, 0]; game.furyFlash = [0, 0]; game.time = game.len; parts = []; game.banner = null; game.bolt = null; game.paused = false;
-  game.half = 1; game.flip = 0; game.show = null; game.tip = null; game.tut = null; game.net = null; game.slowmo = 0; tears = []; newTasks(); game.tauntT = rnd(5, 9); game.emoCd = 0;
+  game.half = 1; game.flip = 0; game.show = null; game.tip = null; game.tut = null; game.net = null; game.slowmo = 0; tears = []; craters = []; game.space = null; game.meteor = false; if (goalDown[0] || goalDown[1]) { goalDown = [0, 0]; buildField(); } newTasks(); game.tauntT = rnd(5, 9); game.emoCd = 0;
   game.chaos = null; game.vespa = null; game.lastChaos = null; game.chaosT = rnd(...PACE().first); game.itemT = rnd(5, 8); game.x2 = false; items = []; pops = [];
   game.runners = []; pees = []; game.skillCd = [12, 12]; game.miracle = [0, 0]; game.gagT = rnd(...PACE().gag)*0.6; NET.rS = -1; NET.rTT = -1;
   const mod = opt && opt.mod; game.curse = mod === 'curse'; game.modTxt = mod ? STORY.modName[mod] : '';
@@ -3016,6 +3040,7 @@ const rdt = dt;
   }
   if (game.mode === 'show') updShow(dt);
   if (game.mode === 'count') updCount(dt);
+  if (game.mode === 'space') updSpace(dt);
   if (NET.role === 'solo') updTips(dt);
   if (game.mode === 'title') {   // menu background: the pizza boy sometimes rides through the players
     if (!game.vespa && Math.random() < dt*0.08) spawnVespa();
@@ -3037,7 +3062,68 @@ const rdt = dt;
 }
 
 // ================== render ==================
+// ---- a candle to space: the ball leaves the atmosphere, sometimes takes out a satellite, and falls back as a meteorite
+const SPACE_LEN = 3.4;
+function startSpace() {
+  game.mode = 'space'; game.space = { t: 0, sat: Math.random() < 0.45, hit: false, x: rnd(LEN*0.25, LEN*0.75), y: rnd(30, WID - 30) };
+  sfx('whee'); game.announce = null;
+}
+function updSpace(dt) {
+  const sp = game.space; if (!sp) return; sp.t += dt;
+  if (NET.role === 'guest') return;
+  if (sp.sat && !sp.hit && sp.t > 1.7) { sp.hit = true; sfx('boom'); game.shake = 0.5; }
+  if (sp.t < SPACE_LEN) return;
+  Object.assign(ball, { x: sp.x, y: sp.y, z: 330, vx: 0, vy: 0, vz: -260, owner: null, superType: null });
+  game.space = null; game.meteor = true; game.mode = 'play'; sfx('whee');
+}
+const STARS = Array.from({ length: 70 }, (_, i) => [(i*97) % 400, (i*53) % 180, i % 5 === 0]);
+function drawSpace() {
+  const sp = game.space; if (!sp) return; const t = sp.t, R = (x, y, w, h, c) => { ctx.fillStyle = c; ctx.fillRect(Math.round(x), Math.round(y), w, h); };
+  const ballAt = (x, y, k) => { const d = 12*(k || 2); ctx.drawImage(BALLSPR[Math.floor(t*20) % 8], Math.round(x - d/2), Math.round(y - d/2), d, d); };
+  if (t < 1) {   // up through the sky
+    const k = t, sky = ['#4ab0ec', '#2a74c4', '#1a3a7a', '#0a0e2a'][Math.min(3, Math.floor(k*4))]; R(0, 0, W, H, sky);
+    for (let i = 0; i < 6; i++) { const y = ((i*41 + t*260) % (H + 40)) - 20; R((i*67) % W, y, 34, 7, 'rgba(255,255,255,.85)'); R((i*67) % W + 8, y - 4, 18, 4, 'rgba(255,255,255,.85)'); }
+    ballAt(W/2, H - 20 - k*120, 2);
+    ptext(ctx, 'ВЫШЕ! ЕЩЁ ВЫШЕ!', W/2, 20, 8, '#ffffff', 'center', '#100810');
+  } else if (t < 2.5) {   // space
+    R(0, 0, W, H, '#05050f');
+    for (const [x, y, big] of STARS) R(x % W, y, big ? 2 : 1, big ? 2 : 1, Math.floor(t*4 + x) % 7 ? '#ffffff' : '#8fe0ff');
+    for (let dy = 0; dy < 40; dy++) { const hw = Math.sqrt(Math.max(0, 300*300 - (300 - dy)*(300 - dy))); R(W/2 - hw, H - 40 + dy, hw*2, 1, dy < 2 ? '#8fe0ff' : dy % 7 === 3 ? '#3a9a3a' : '#2a74c4'); }
+    const k = (t - 1)/1.5, bx = 30 + k*(W - 60), by = 120 - k*70;
+    if (sp.sat) {
+      const sx = W*0.55, sy = 120 - 0.55*70 - 4;
+      if (t < 1.7) { R(sx - 4, sy - 4, 8, 8, '#c8c8d4'); R(sx - 16, sy - 2, 11, 4, '#2a74c4'); R(sx + 5, sy - 2, 11, 4, '#2a74c4'); R(sx - 1, sy - 8, 2, 4, '#ffd23a'); }
+      else {
+        const f = t - 1.7; for (let i = 0; i < 8; i++) { const a = i*0.8; R(sx + Math.cos(a)*f*60, sy + Math.sin(a)*f*40, 3, 3, ['#c8c8d4', '#2a74c4', '#ffd23a'][i % 3]); }
+        if (f < 0.3) { R(sx - 10, sy - 10, 20, 20, '#ffe14a'); R(sx - 6, sy - 6, 12, 12, '#ffffff'); }
+        ptext(ctx, 'СПУТНИК СБИТ!', W/2, 18, 8, '#ff6a5a', 'center', '#100810');
+        ptext(ctx, 'ИНТЕРНЕТ ПРОПАЛ У ПОЛПЛАНЕТЫ', W/2, 30, 8, '#ffffff', 'center', '#100810');
+      }
+    } else ptext(ctx, 'МЯЧ НА ОРБИТЕ', W/2, 18, 8, '#8fe0ff', 'center', '#100810');
+    ballAt(bx, by, 1.5);
+  } else {   // re-entry: a burning meteorite
+    const k = (t - 2.5)/(SPACE_LEN - 2.5); R(0, 0, W, H, ['#2a0a1a', '#5a1a1a', '#8a3a1a', '#c86a2a'][Math.min(3, Math.floor(k*4))]);
+    const bx = W*0.8 - k*W*0.5, by = 10 + k*(H - 40);
+    for (let i = 1; i < 14; i++) R(bx + i*5, by - i*4, Math.max(1, 8 - i/2), Math.max(1, 8 - i/2), ['#ffe14a', '#ff9a1a', '#ff3a10'][i % 3]);
+    ballAt(bx, by, 1.6);
+    ptext(ctx, 'МЕТЕОРИТ!', W/2, 18, 16, Math.floor(t*8) % 2 ? '#ffe14a' : '#ff6a5a', 'center', '#100810');
+  }
+}
+function wreckGoal(side) {
+  goalDown[side] = 1; buildField(); sfx('crash'); game.shake = Math.max(game.shake, 0.7); hitstop(0.15);
+  const x = side ? LEN : 0, s0 = P(x, WID/2, 20); say('ВОРОТА СНЕСЕНЫ!', x, WID/2);
+  for (let i = 0; i < 40; i++) spawn(s0.x + rnd(-10, 10), s0.y + rnd(-30, 10), rnd(-120, 120), rnd(-160, -20), rnd(0.6, 1.2), ['#ffffff', '#d8d8e0', '#8a8a9a'][i % 3], i % 4 ? 2 : 3, 300);
+}
+// a wrecked goal: the frame lies on the grass, the net crumpled next to it
+function drawGoalWreck(right, g, S) {
+  const xl = right ? LEN : 0, out = right ? 1 : -1, ln = (a, b, col, w) => pline(g, a.x, a.y, b.x, b.y, col, w);
+  for (const [w, col] of [[5, '#100810'], [3, '#ffffff']]) {
+    ln(S(xl + out*4, Y0 - 6, 0), S(xl + out*30, Y0 + 14, 0), col, w); ln(S(xl - out*6, Y1 + 4, 0), S(xl + out*20, Y1 - 18, 0), col, w);
+    ln(S(xl + out*8, Y0 + 10, 0), S(xl + out*14, Y1 - 6, 2), col, w); }
+  for (let k = 0; k < 14; k++) { const y = Y0 + 10 + k*4.5; ln(S(xl + out*(16 + (k % 3)*4), y, 0), S(xl + out*(24 + (k % 2)*5), y + 3, 4), 'rgba(255,255,255,.7)', 1); }
+}
 function drawGoalBack(right, g, S) {
+  if (goalDown[right ? 1 : 0]) { drawGoalWreck(right, g, S); return; }
   const xl = right ? LEN : 0, xb = right ? LEN + GD : -GD, zb = GH - 10, net = 'rgba(255,255,255,0.85)';
   const ln = (a, b, col, w) => pline(g, a.x, a.y, b.x, b.y, col, w);
   for (let k = 0; k <= 10; k++) { const y = Y0 + (Y1-Y0)*k/10; ln(S(xb, y, 0), S(xb, y, zb), net, 1); ln(S(xb, y, zb), S(xl, y, GH), net, 1); }
@@ -3053,6 +3139,22 @@ function drawGoalBack(right, g, S) {
   ln(S(xb, Y0, 0), S(xb, Y0, zb), '#d8d8e0', 2); ln(S(xb, Y1, 0), S(xb, Y1, zb), '#d8d8e0', 2); ln(S(xb, Y0, zb), S(xb, Y1, zb), '#d8d8e0', 2);
 }
 // the live part of the net: a pocket stretched by the ball (wobbling back), and holes ripped by hard shots
+function drawRepair() {   // two workers in hard hats hammering the goal back together
+  for (const side of [0, 1]) if (goalDown[side]) {
+    const x0 = side ? LEN - 6 : 6, out = side ? 1 : -1;
+    for (const [k, dy] of [[0, -18], [1, 16]]) {
+      const s0 = S(x0 + out*10, WID/2 + dy), x = Math.round(s0.x), y = Math.round(s0.y), hit = Math.floor(game.t*6 + k) % 2;
+      pellipse(x, y, 6, 2, 'rgba(0,30,0,.35)');
+      ctx.fillStyle = '#100810'; ctx.fillRect(x - 4, y - 18, 9, 18);
+      ctx.fillStyle = '#ff8a1a'; ctx.fillRect(x - 3, y - 11, 7, 7); ctx.fillStyle = '#ffd23a'; ctx.fillRect(x - 3, y - 9, 7, 1);
+      ctx.fillStyle = '#2a4ad8'; ctx.fillRect(x - 3, y - 4, 7, 4); ctx.fillStyle = PAL.skin; ctx.fillRect(x - 3, y - 16, 7, 5);
+      ctx.fillStyle = '#ffd23a'; ctx.fillRect(x - 4, y - 18, 9, 3);
+      ctx.fillStyle = '#6a4a2a'; ctx.fillRect(x + 4, y - (hit ? 16 : 11), 1, 6); ctx.fillStyle = '#8a8a9a'; ctx.fillRect(x + 3, y - (hit ? 17 : 12), 4, 2);
+    }
+    if (game.mode === 'goal') { const s1 = S(x0, WID/2, 60); ptext(ctx, 'РЕМОНТ…', Math.round(s1.x), Math.round(s1.y), 8, '#ffd23a', 'center', '#100810'); }
+    if (game.mode === 'goal' && Math.random() < 0.05) sfxLocal('clink');
+  }
+}
 function drawNetFx() {
   const N = game.net, white = 'rgba(255,255,255,0.95)';
   const ln = (a, b) => pline(ctx, a.x, a.y, b.x, b.y, white, 1);
@@ -3073,6 +3175,7 @@ function drawNetFx() {
   }
 }
 function drawGoalFront(right, g, S) {
+  if (goalDown[right ? 1 : 0]) return;
   const xl = right ? LEN : 0, xb = right ? LEN + GD : -GD, zb = GH - 10, net = 'rgba(255,255,255,0.85)';
   const ln = (a, b, col, w) => pline(g, a.x, a.y, b.x, b.y, col, w);
   for (let j = 0; j <= 4; j++) { const x = xl + (xb-xl)*j/4, z = GH + (zb-GH)*j/4; ln(S(x, Y1, 0), S(x, Y1, z), net, 1); }
@@ -3192,6 +3295,7 @@ function edgeArrow(s, col, isBall) {
   for (let k = 0; k < 4; k++) { if (dx) ctx.fillRect(x + dx*(3-k) - (dx<0?0:0), y-k, 1, k*2+1); else ctx.fillRect(x-k, y + dy*(3-k), k*2+1, 1); }
 }
 function drawBall() {
+  if (game.meteor && Math.random() < 0.9) { const q = P(ball.x, ball.y, ball.z + 6); for (let k = 0; k < 3; k++) spawn(q.x + rnd(-3, 3), q.y + rnd(-3, 3), rnd(-20, 20), rnd(-60, -20), rnd(0.3, 0.6), ['#ffe14a', '#ff9a1a', '#ff3a10'][k], 3, 0); }
   const b = ball, s = S(b.x, b.y, b.z), x = Math.round(s.x), y = Math.round(s.y);
   const t = b.superType;
   if (t === 'tiger') { pellipse(x, y-6, 10, 8, 'rgba(255,150,30,.6)'); for (let k = -1; k <= 1; k++) { ctx.fillStyle = '#100810'; ctx.fillRect(x + k*4 - 1, y - 13 + (Math.floor(game.t*20) % 2), 2, 14); } }
@@ -3307,6 +3411,7 @@ function render() {
     const s = S(p.x, p.y), col = p.tag === 2 ? '#7fe0ff' : '#f2c230', r = 11 + (Math.floor(game.t*4) % 2);
     pellipseRing(s.x, s.y + 1, r, 4, '#100810'); pellipseRing(s.x, s.y, r, 4, col); }
   for (const it of items) { const s = S(it.x, it.y); pellipse(s.x, s.y, 5, 1, 'rgba(0,30,0,.35)'); }
+  for (const c of craters) { const s = S(c.x, c.y); pellipse(s.x, s.y, 16, 5, '#3a2a1a'); pellipse(s.x, s.y - 1, 11, 3, '#1a120a'); }
   for (const q of pees) { const s = S(q.x, q.y); pellipse(s.x, s.y, 9, 3, 'rgba(240,210,40,.75)'); pellipse(s.x - 2, s.y - 1, 4, 1, 'rgba(255,245,160,.9)'); }
   for (const r of game.runners) if (r.k === 'wave') drawWave(r); else if (r.k === 'hole') drawHole(r);
   { const s = S(ball.x, ball.y), k = clamp(1 - ball.z/180, 0.4, 1)*(giant() ? BIGK : 1); pellipse(s.x, s.y, Math.max(2, Math.round(6*k)), giant() ? 4 : 2, 'rgba(0,30,0,.4)'); }
@@ -3318,6 +3423,7 @@ function render() {
   const ents = players.map(p => ({ y: p.y, f: () => drawPlayer(p) }));
   ents.push({ y: ball.y + 0.5, f: drawBall });
   if (game.net || tears.length) ents.push({ y: Y0 + 0.2, f: drawNetFx });
+  if (goalDown[0] || goalDown[1]) ents.push({ y: WID/2 + 30, f: drawRepair });
   for (const it of items) ents.push({ y: it.y, f: () => drawItem(it) });
   if (game.vespa) ents.push({ y: game.vespa.y, f: drawVespa });
   if (game.critter) ents.push({ y: game.critter.y, f: drawCritter });
@@ -3343,6 +3449,7 @@ function render() {
   drawOffscreen();
   cam.x = cx; cam.y = cy;
   if (game.flash > 0) { ctx.fillStyle = `rgba(255,255,255,${Math.min(REDUCED ? 0.3 : 0.85, game.flash)})`; ctx.fillRect(0, 0, W, H); }
+  if (game.mode === 'space') { drawSpace(); cam.x = cx; cam.y = cy; return; }
   if (game.mode !== 'title') { drawHUD(); drawChaosBar(); drawHalfBoard(); drawCount(); drawBlock(); drawTip(); drawTasks(); drawTut(); }
   if (game.show && NET.role === 'solo' && game.show.t > 0.6 && Math.floor(game.t*2) % 2) ptext(ctx, 'ТАП - ПРОПУСТИТЬ', W/2, H - 12, 8, '#ffffff', 'center', '#100810');
   if (NET.role === 'guest' && game.mode === 'play' && performance.now() - NET.snapAt > 600 && Math.floor(game.t*4) % 2)
@@ -3795,6 +3902,11 @@ const HELP = (() => {
       put(g, getSprite(CLUBS.eng, t > 0.8 && t < 1.6 ? 'cheer' : 'idle', 'grit', 0, 'side', { gk: true }), 64, 44, true);
       if (t < 0.9) { for (let j = 0; j < 5; j++) dot(g, bx - j*5, 37 + (j % 2), j % 2 ? '#100810' : '#ff9a1a', 3); ballAt(g, bx, 43, t); ptext(g, 'ЖМИ!', 40, 2, 8, Math.floor(t*10) % 2 ? '#7fe0ff' : '#ffffff', 'center', '#100810'); }
       else { ballAt(g, 60 - (t - 0.9)*50, 40 - Math.sin(Math.min(1, t - 0.9)*Math.PI)*20, t); if (Math.floor(t*6) % 2) ptext(g, 'БЛОК!', 34, 2, 8, '#7fe0ff', 'center', '#100810'); } },
+    sky(g, t) { const up = t < 1.2; g.fillStyle = up ? '#4ab0ec' : '#05050f'; g.fillRect(0, 0, 80, 48);
+      if (!up) for (let k = 0; k < 12; k++) dot(g, (k*29) % 80, (k*17) % 40, '#ffffff', 1);
+      if (up) { grass(g); g.fillStyle = '#4ab0ec'; g.fillRect(0, 0, 80, 24); put(g, sp(0, t < 0.3 ? 'kick' : 'cheer', 'shout', 0), 20, 44); ballAt(g, 30, 40 - t*40, t); }
+      else { const k = t - 1.2; for (let i = 1; i < 6; i++) dot(g, 70 - k*40 + i*3, k*30 - i*3, ['#ffe14a', '#ff9a1a', '#ff3a10'][i % 3], 2); ballAt(g, 66 - k*40, 6 + k*30, t);
+        if (Math.floor(t*6) % 2) ptext(g, 'МЕТЕОРИТ!', 40, 36, 8, '#ff9a1a', 'center', '#100810'); } },
     gk(g, t) { grass(g); goal(g, 70); const k = Math.min(1, t/0.6), bx = 10 + k*56, by = 44 - k*14;
       if (t < 0.45) put(g, getSprite(CLUBS.eng, 'idle', 'grit', 0, 'side', { gk: true }), 64, 44, true);
       else { g.save(); g.translate(62, 26); g.drawImage(getSprite(CLUBS.eng, 'dive', 'grit', 0, 'side', { gk: true }), -20, -20); g.restore(); }

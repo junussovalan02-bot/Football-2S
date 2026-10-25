@@ -32,6 +32,17 @@ Main menu (v0.18.1): **КАРЬЕРА · АРКАДА · С ДРУГОМ · НА
   Everything that used to assume «team 0 attacks right» goes through `dirOf` (AI, keepers, skills, kickoffs, scoring).
 - Online: `ho: [half, flip, showKind, showT, joke, weather]` in the snapshot; the guest draws the show itself.
 
+## v0.22: wrecked goals, candle to space
+- **Wrecking the goal**: a super shot (or a > 430 u/s shot, 30 %) hitting a post or the crossbar brings the whole goal
+  down (`wreckGoal`, `goalDown`): «ВОРОТА СНЕСЕНЫ!», debris, it counts as a goal, the ball goes through. During the
+  longer break (3.6 s) two workers in hard hats hammer it back («РЕМОНТ…»); rebuilt at the kick-off. Synced (`gd`).
+- **Candle to space**: release a charged shot with the stick pulled back (away from the goal you attack) — or a 5 %
+  miskick «ПЕРЕБИЛ!» on any charged shot (computer 2 %). The ball flies straight up; above z 220 a 3.4 s cutscene
+  (`game.mode = 'space'`, `drawSpace`): up through the clouds, orbit with stars and the Earth, 45 % a satellite gets
+  hit («СПУТНИК СБИТ! ИНТЕРНЕТ ПРОПАЛ У ПОЛПЛАНЕТЫ»), re-entry as a burning meteorite. Back on the pitch it falls
+  with a fire trail at a random spot; impact knocks down everyone within 55, «БА-БАХ!», a crater stays for the match.
+  Synced (`spc`, `mt`, `crt`). Rules card СВЕЧА В КОСМОС.
+
 ## v0.21: nets, dribbling fix, cartoon sounds
 - **The ball in the net**: a goal plays in slow motion for ~0.5 s (×0.35, camera at full speed). Where the ball hits
   the back of the net it makes a pocket (`game.net`: depth from the shot's speed, 6–16) that wobbles out; the net
