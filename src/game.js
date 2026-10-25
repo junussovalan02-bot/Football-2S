@@ -13,7 +13,7 @@ ctx.imageSmoothingEnabled = false;
 
 let LEN = 720, WID = 200;              // x = length of the pitch, y = depth (0 = far touchline); bigger for 11 on 11, see setPitch
 const SK = 0.3, SY = 0.8;              // oblique slant and depth squash
-const OX = 44, OY = 64;                // field canvas margins (OY leaves room for the stands)
+let OX = 44, OY = 64;                  // field canvas margins (OY leaves room for the stands / scenery; taller on the big pitch)
 let Y0 = WID/2 - 40, Y1 = WID/2 + 40; const GH = 46, GD = 24; // goal mouth, crossbar height, net depth
 const P = (x, y, z) => ({ x: OX + x + y*SK, y: OY + y*SY - (z||0) }); // field-canvas coords
 const cam = { x: 0, y: 0 };
@@ -241,6 +241,91 @@ const VESPA = (() => {
   outline(g, PAL.ink, 36, 28); return c;
 })();
 for (const [k, ic] of Object.entries(ICONS)) EMO[k] = makeIcon(r => ic.rows.forEach((row, y) => [...row].forEach((ch, x) => { if (ch !== '.') r(x, y, 1, 1, ic.pal[ch]); })));
+// Critters that live on themed pitches and wander across now and then (11 on 11 / career only).
+// speed u/s, r = hit radius, lift = how far they throw players (0 = they just shove), axis 'y' = they cross the
+// pitch's width, fly = height, life = they stand still for a while, steal = they carry the ball off.
+const CRIT = {
+  elephant: { speed: 60, r: 24, lift: 230, every: [14, 22], snd: 'trumpet', name: 'СЛОН!' },
+  panda:    { speed: 38, r: 15, lift: 0, every: [12, 18], name: 'ПАНДА!' },
+  snowman:  { speed: 0, r: 12, lift: 0, life: 12, every: [14, 20], name: 'СНЕГОВИК!' },
+  penguin:  { speed: 240, r: 11, lift: 120, every: [8, 13], name: 'ПИНГВИН!' },
+  horse:    { speed: 330, r: 20, lift: 260, every: [11, 17], snd: 'neigh', name: 'ДЖИГИТ!' },
+  crab:     { speed: 90, r: 9, lift: 70, axis: 'y', every: [8, 13], name: 'КРАБ!' },
+  cow:      { speed: 45, r: 20, lift: 0, every: [13, 19], snd: 'moo', name: 'КОРОВА!' },
+  seagull:  { speed: 190, r: 16, lift: 0, fly: 26, steal: true, every: [10, 16], snd: 'squawk', name: 'ЧАЙКА!' },
+  pigeon:   { speed: 140, r: 10, lift: 0, fly: 8, every: [8, 12], name: 'ГОЛУБИ!' },
+  shark:    { speed: 230, r: 16, lift: 200, every: [11, 17], name: 'АКУЛА!' },
+};
+const CRITSPR = (() => {
+  const mk = (w, h, fn) => { const c = document.createElement('canvas'); c.width = w; c.height = h; const g = c.getContext('2d');
+    fn((x, y, ww, hh, col) => { g.fillStyle = col; g.fillRect(x, y, ww, hh); }); outline(g, PAL.ink, w, h); return c; };
+  const two = (w, h, fn) => [mk(w, h, r => fn(r, 0)), mk(w, h, r => fn(r, 1))];
+  const K = PAL.ink;
+  return {
+    elephant: two(36, 26, (r, f) => { const G = '#9a9aa8', D = '#7a7a88';
+      r(4,6,22,13,G); r(22,3,10,12,G); r(19,4,5,10,D); r(29,12,3,9,G); r(27,20,3,2,G); r(27,13,4,1,'#ffffff'); r(28,6,1,1,K); r(3,8,1,5,D);
+      for (const [x, k] of [[6,0],[11,1],[18,0],[22,1]]) r(x, 18, 4, 6 - (k === f ? 2 : 0), D); }),
+    panda: two(22, 20, (r, f) => { r(3,6,14,9,'#ffffff'); r(3,14,4,5 - f,K); r(13,14,4,4 + f,K); r(2,8,3,5,K); r(15,8,3,5,K);
+      r(11,0,10,8,'#ffffff'); r(11,0,2,2,K); r(19,0,2,2,K); r(13,3,2,2,K); r(17,3,2,2,K); r(20,5,1,1,K); }),
+    snowman: two(18, 26, (r, f) => { r(2,13,14,12,'#ffffff'); r(4,7,10,7,'#ffffff'); r(5,1,8,7,'#ffffff'); r(5,0,8,2,'#202030'); r(4,2,10,1,'#202030');
+      r(7,4,1,1,K); r(10,4,1,1,K); r(12,5,4,1,'#ff8a1a'); r(8,9,1,1,K); r(8,15,1,1,K); r(8,18,1,1,K); r(0,8 + f,4,1,'#6a4020'); r(14,9 - f,4,1,'#6a4020'); r(4,7,10,1,'#d8243a'); }),
+    penguin: two(18, 12, (r, f) => { r(2,3,12,7,'#202030'); r(3,6,10,3,'#ffffff'); r(11,1,6,7,'#202030'); r(14,3,1,1,'#ffffff'); r(16,4,2,1,'#ff9a1a'); r(0,4 + f,2,3,'#ff9a1a'); }),
+    horse: two(32, 30, (r, f) => { const B = '#8a4a2a', M = '#3a2010';
+      r(6,12,18,8,B); r(21,6,5,9,B); r(23,3,8,5,B); r(20,4,3,7,M); r(28,4,1,1,K); r(2,12,4,7,M);
+      for (const [x, k] of [[7,0],[11,1],[18,0],[22,1]]) r(x + (k === f ? 1 : -1), 20, 2, 8, B);
+      r(11,4,6,8,'#2fb8e8'); r(12,0,5,4,'#e8a070'); r(11,-1,7,2,'#d8243a'); r(10,-1,1,3,'#ffd23a'); r(17,6,5,2,'#2fb8e8'); r(12,11,3,4,'#202030'); }),
+    crab: [EMO.crab, EMO.crab],
+    cow: two(30, 22, (r, f) => { r(4,5,18,10,'#ffffff'); r(7,6,5,4,K); r(14,9,4,4,K); r(20,2,8,8,'#ffffff'); r(20,2,3,3,K); r(26,7,3,3,'#ffb0b0'); r(24,4,1,1,K);
+      r(20,0,1,2,'#e8e0c8'); r(26,0,1,2,'#e8e0c8'); r(10,15,4,2,'#ffb0b0'); r(2,6,2,6,K);
+      for (const [x, k] of [[5,0],[9,1],[16,0],[19,1]]) r(x, 15, 3, 6 - (k === f ? 1 : 0), '#e8e8e8'); }),
+    seagull: two(20, 12, (r, f) => { r(6,5,9,4,'#ffffff'); r(14,4,4,3,'#ffffff'); r(18,5,2,1,'#ffd23a'); r(16,4,1,1,K); r(4,6,3,2,'#c8c8d0');
+      if (f) { r(2,1,8,3,'#a0a0b0'); r(10,1,5,3,'#a0a0b0'); } else { r(3,8,7,3,'#a0a0b0'); r(10,8,5,3,'#a0a0b0'); } }),
+    pigeon: two(24, 12, (r, f) => { for (const [x, y] of [[0,4],[9,0],[16,5]]) { r(x+1,y+3,6,3,'#8a8a98'); r(x+5,y+1,3,3,'#6a6a7a'); r(x+7,y+2,1,1,'#ffd23a');
+      if (f) r(x+2,y,4,2,'#a0a0b0'); else r(x+2,y+6,4,2,'#a0a0b0'); } }),
+    shark: two(22, 14, (r, f) => { for (let k = 0; k < 10; k++) r(6 + (k*0.6|0), k, 10 - k, 1, '#7a8a9a'); r(0,10,22,2,'#bfe8ff'); r(2 + f*2,12,18,2,'#5aa8d8'); }),
+  };
+})();
+function spawnCritter() {
+  const kind = TH.critter, C = CRIT[kind]; if (!C) return;
+  const dir = Math.random() < 0.5 ? 1 : -1;
+  const cr = { kind, dir, t: 0, life: C.life || 0, held: 0 };
+  if (C.life) { cr.x = clamp(ball.x + rnd(-120, 120), 80, LEN - 80); cr.y = rnd(40, WID - 40); }
+  else if (C.axis === 'y') { cr.x = clamp(ball.x + rnd(-140, 140), 40, LEN - 40); cr.y = dir > 0 ? -12 : WID + 12; }
+  else { cr.x = dir > 0 ? -40 : LEN + 40; cr.y = clamp(ball.y + rnd(-60, 60), 20, WID - 20); }
+  game.critter = cr; if (C.snd) sfx(C.snd);
+  game.announce = { text: C.name, col: '#ffe14a', t: 1.2 };
+}
+function updCritter(dt) {
+  const cr = game.critter, C = CRIT[cr.kind]; cr.t += dt;
+  if (C.axis === 'y') cr.y += cr.dir*C.speed*dt; else cr.x += cr.dir*C.speed*dt;
+  if (C.fly) cr.z = C.fly + Math.sin(cr.t*6)*3; else cr.z = 0;
+  for (const p of players) {
+    if (p.state === ST.FALL || p.state === ST.STUN || C.fly) continue;
+    const d = hyp(p.x - cr.x, (p.y - cr.y)*1.3);
+    if (d < C.r) {
+      if (C.lift) { knockDown(p, C.axis === 'y' ? 0.3 : cr.dir, C.axis === 'y' ? cr.dir : (p.y - cr.y)/12 || 0.3, 200, 'bulge', C.lift); if (p.state === ST.FALL) { sfx('hit'); game.shake = Math.max(game.shake, 0.2); } }
+      else { const n = norm(p.x - cr.x || 1, p.y - cr.y); p.x = cr.x + n.x*C.r; p.y = clamp(cr.y + n.y*C.r/1.3, 4, WID - 4); }   // big and calm: you just bump off
+    }
+  }
+  const b = ball;
+  if (C.steal && !cr.held && !b.owner && b.z < 40 && hyp(b.x - cr.x, b.y - cr.y) < C.r) { cr.held = 1.4; sfx('squawk'); }
+  if (cr.held > 0) { cr.held -= dt; b.owner = null; b.x = cr.x + cr.dir*6; b.y = cr.y; b.z = (cr.z || 0) - 2; b.vx = cr.dir*C.speed; b.vy = 0; b.vz = 0;
+    if (cr.held <= 0) { cr.held = -1; b.vz = 40; b.superType = null; } }
+  else if (!C.fly && !b.owner && b.z < 26 && hyp(b.x - cr.x, (b.y - cr.y)*1.3) < C.r) {   // the ball bounces off it
+    const n = norm(b.x - cr.x || 1, b.y - cr.y), sp = Math.max(120, hyp(b.vx, b.vy)*0.8);
+    b.vx = n.x*sp + (C.axis === 'y' ? 0 : cr.dir*C.speed); b.vy = n.y*sp; b.vz = Math.max(b.vz, 60); b.z = Math.max(b.z, 1); b.x = cr.x + n.x*(C.r + 2); sfx('bounce');
+  }
+  const out = C.life ? cr.t > C.life : C.axis === 'y' ? (cr.y < -20 || cr.y > WID + 20) : (cr.x < -60 || cr.x > LEN + 60);
+  if (out) { game.critter = null; game.critterT = rnd(...C.every); }
+}
+function drawCritter() {
+  const cr = game.critter, spr = CRITSPR[cr.kind][Math.floor(cr.t*(cr.kind === 'snowman' ? 2 : 8)) % 2];
+  const s = S(cr.x, cr.y, cr.z || 0), x = Math.round(s.x), y = Math.round(s.y) + (cr.kind === 'horse' ? Math.floor(cr.t*10) % 2 : 0);
+  if (cr.kind === 'snowman' && cr.life - cr.t < 2) ctx.globalAlpha = Math.max(0.2, (cr.life - cr.t)/2);   // melting
+  if (cr.dir > 0 || CRIT[cr.kind].axis === 'y') ctx.drawImage(spr, x - (spr.width >> 1), y - spr.height + 2);
+  else { ctx.save(); ctx.translate(x, 0); ctx.scale(-1, 1); ctx.drawImage(spr, -(spr.width >> 1), y - spr.height + 2); ctx.restore(); }
+  ctx.globalAlpha = 1;
+}
 const TAUNTS = ['tongue', 'finger', 'laugh', 'zzz', 'finger'];
 const clubEmo = team => { const e = TEAMS[team].emo || []; return e[Math.floor(Math.random()*e.length)] || 'laugh'; };
 function emote(p, type, force) {
@@ -344,6 +429,11 @@ function sfxLocal(k) {
     case 'rasen': tone('sawtooth',500,1800,0.45,0.06); tone('square',1800,600,0.45,0.04); noise(0.4,0.15,6000); break;
     case 'ora': for (let k = 0; k < 8; k++) { tone('square',520 + k*30,140,0.05,0.08,k*0.06); noise(0.04,0.15,2500,k*0.06); } break;
     case 'dive': noise(0.15,0.18,1200); break;
+    case 'trumpet': tone('sawtooth',260,520,0.25,0.08); tone('sawtooth',520,300,0.4,0.07,0.25); break;
+    case 'neigh': for (let k = 0; k < 5; k++) tone('square',900 - k*60,700 - k*60,0.06,0.05,k*0.07); break;
+    case 'moo': tone('sawtooth',140,110,0.7,0.08); break;
+    case 'squawk': tone('square',1400,900,0.12,0.06); tone('square',1300,800,0.12,0.06,0.14); break;
+    case 'post': tone('triangle',1800,1700,0.4,0.12); tone('square',2400,2300,0.2,0.04); break;
     case 'catch': tone('square',300,200,0.06,0.12); noise(0.06,0.2,800); break;
     case 'parry': tone('square',700,200,0.12,0.1); noise(0.08,0.25,2000); break;
   } } catch (e) {}
@@ -435,15 +525,16 @@ function buildTeams(mode) {
 // arcade 720x200, reality 1200x380 (the field canvases are resized and rebuilt)
 function setPitch(mode) {
   const L = mode === 11 ? 1200 : 720, Wd = mode === 11 ? 380 : 200;
-  if (L === LEN && Wd === WID) return false;
-  LEN = L; WID = Wd; Y0 = WID/2 - 40; Y1 = WID/2 + 40;
+  const oy = mode === 11 ? 92 : 64;
+  if (L === LEN && Wd === WID && oy === OY) return false;
+  LEN = L; WID = Wd; Y0 = WID/2 - 40; Y1 = WID/2 + 40; OY = oy;
   FCV.width = FRONT.width = Math.ceil(OX + LEN + WID*SK + 44); FCV.height = FRONT.height = Math.ceil(OY + WID*SY + 30);
   return true;
 }
 const ball = { shotT:0, passTo:null, passAt:null, x:LEN/2, y:WID/2, z:0, vx:0, vy:0, vz:0, owner:null, superType:null, gs:1, lock:null, lockT:0, last:null, rot:0, drag:1,
   kick(dx, dy, pow, lift, by, type) {
     this.owner = null; this.vx = dx*pow; this.vy = dy*pow; this.vz = lift; this.superType = type || null; this.gs = 1;
-    this.shot = false; this.shotT = 0; this.passTo = null; this.passAt = null;
+    this.shot = false; this.shotT = 0; this.passTo = null; this.passAt = null; this.curve = 0;
     this.lock = by; this.lockT = 0.3; this.last = by;
     this.beam = null;
     if (type === 'tiger') { this.vz = 18; this.gs = 0.12; }
@@ -526,8 +617,12 @@ const ITEMNAME = { pizza: '+FURIA', pepper: 'ПЕРЧИК!', horn: 'КОРНЕТ
 const VSPD = 290, BIGK = 2.5, X2T = 20;   // vespa speed, giant ball scale, last seconds when a goal counts double
 let chaosOn = true, items = [];
 const chaosIs = t => !!game.chaos && game.chaos.type === t;
-const gravK = () => chaosIs('moon') ? 0.32 : 1;
+const gravK = () => (chaosIs('moon') ? 0.32 : 1)*ph('grav');
 const giant = () => chaosIs('giant');
+// pitch theme (src/data.js THEMES): scenery, colours, weather, critters and physics multipliers
+let TH = THEMES.stadium, themeKey = 'stadium';
+function setTheme(k) { themeKey = THEMES[k] ? k : 'stadium'; TH = THEMES[themeKey]; }
+const ph = k => (TH.phys && TH.phys[k] !== undefined) ? TH.phys[k] : 1;
 
 function startChaos(type) {
   game.chaos = { type, t: CHAOS[type].dur }; game.lastChaos = type;
@@ -572,7 +667,7 @@ function updVespa(dt) {
   if (v.dir > 0 ? v.x > LEN + 50 : v.x < -50) game.vespa = null;
 }
 function updChaos(dt) {
-  if (!chaosOn) return;
+  if (!chaosOn) { if (MODE === 11 && TH.critter && game.mode === 'play') { if (game.critter) updCritter(dt); else if ((game.critterT -= dt) <= 0) spawnCritter(); } return; }
   if (game.mode === 'play') {
     if (!game.x2 && game.time <= X2T) { game.x2 = true; game.announce = { text: 'ГОЛ = 2 ОЧКА!', col: '#ffd23a', t: 2 }; sfx('chaos'); }
     if (game.chaos) {
@@ -593,10 +688,16 @@ function updChaos(dt) {
     if (p) { items.splice(i, 1); pickUp(p, it); }
   }
   if (game.vespa) updVespa(dt);
+  if (MODE === 11 && TH.critter && game.mode === 'play') {
+    if (game.critter) updCritter(dt); else if ((game.critterT -= dt) <= 0) spawnCritter();
+  } else if (game.critter) updCritter(dt);
   for (const p of players) { p.dingCd -= dt; if (p.buff && (p.buffT -= dt) <= 0) p.buff = null; }
 }
 // cosmetic only (runs on the guest too): exhaust, falling rocks, chili flames, espresso steam
 function chaosFx(dt) {
+  if (TH.bubbles && Math.random() < dt*14) spawn(cam.x + rnd(0, W), cam.y + H + 2, rnd(-6, 6), rnd(-50, -25), rnd(1.5, 3), Math.random() < 0.5 ? '#bfe8ff' : '#ffffff', Math.random() < 0.3 ? 2 : 1, -4);
+  if (TH.leaves && Math.random() < dt*5) spawn(cam.x + rnd(0, W), cam.y - 2, rnd(10, 30), rnd(20, 40), rnd(2, 4), Math.random() < 0.5 ? '#6ad05a' : '#3a9a2a', 2, 0);
+  if (TH.dust && Math.random() < dt*2) { const x = cam.x + rnd(0, W), y = cam.y + rnd(60, H); for (let k = 0; k < 8; k++) spawn(x + rnd(-6, 6), y, rnd(-30, 30), rnd(-40, -10), rnd(0.5, 1), '#d8a860', 2, 30); }
   const v = game.vespa;
   if (v && Math.random() < 0.7) { const q = P(v.x - v.dir*14, v.y, 4); spawn(q.x, q.y, -v.dir*rnd(20, 50), rnd(-20, -5), 0.4, Math.random() < 0.5 ? '#c8c8d0' : '#8a8a98', 2, -30); }
   if (chaosIs('quake') && Math.random() < dt*30) spawn(cam.x + rnd(0, W), cam.y - 4, rnd(-10, 10), rnd(60, 120), rnd(0.8, 1.4), Math.random() < 0.5 ? '#5a4a4a' : '#ff7a2a', Math.random() < 0.3 ? 3 : 2, 200);
@@ -658,6 +759,9 @@ function shotKick(p, dx, dy) {
     ball.kick(dx, dy, KPOW*1.22, KLIFT*0.7, p, null); sfx('kick'); game.shake = Math.max(game.shake, 0.1);
   } else { ball.kick(dx, dy, KPOW, KLIFT*rnd(0.5,1.2), p, null); sfx('kick'); }
   ball.shot = true;   // a shot, not a pass: the shooter's teammates won't trap it (see possession)
+  // curve: the stick held sideways to the shot when it leaves the foot bends it (AI adds a little random swerve)
+  const sx = p.human ? p.inp.mx : rnd(-0.4, 0.4), sy = p.human ? p.inp.my : rnd(-0.4, 0.4);
+  ball.curve = !p.kickSuper || p.superType === 'tiger' ? clamp(dx*sy - dy*sx, -1, 1)*170 : 0;
 }
 // an opponent standing in the lane between two points (a ground pass would be cut out)
 function laneBlocked(p, tx, ty) {
@@ -714,6 +818,7 @@ function updPlayer(p, dt) {
   const surf = surfaceAt(p.x, p.y);
   p.sm = surf === 'mud' ? 0.58 : surf === 'puddle' ? 0.85 : 1;
   p.tr = surf === 'puddle' ? 0.16 : surf === 'mud' ? 0.8 : 1;
+  p.tr *= ph('traction');
   if (chaosIs('ice')) p.tr = Math.min(p.tr, 0.13);
   const turbo = (chaosIs('espresso') ? 1.5 : 1)*(p.buff === 'pepper' ? 1.4 : 1);
   const i = p.inp;
@@ -727,7 +832,7 @@ function updPlayer(p, dt) {
       else { p.stam = Math.min(1, p.stam + dt*(p.tired ? 0.18 : 0.25)); if (p.tired && p.stam > 0.35) p.tired = false; }
       p.sprinting = want;
       const spr = want ? (ball.owner === p ? 1.22 : 1.35) : 1;
-      const sp = MAXSP * p.sm * turbo * spr * (p.human ? 1 : aiSp) * (ball.owner === p ? 0.9 : 1);
+      const sp = MAXSP * p.sm * turbo * spr * ph('speed') * (p.human ? 1 : aiSp) * (ball.owner === p ? 0.9 : 1);
       approach(p, i.mx*sp, i.my*sp, (p.human ? ACCH : ACC)*p.tr*turbo*(want ? 1.2 : 1)*dt);
       if (p.buff === 'pepper' && hyp(p.vx, p.vy) > 70) for (const q of players)   // chili: run people over
         if (q.team !== p.team && q.state <= ST.KICK && dist(p, q) < 14) { knockDown(q, p.vx, p.vy, 200, 'bulge', 120);
@@ -811,12 +916,17 @@ function updBall(dt) {
   const surf = surfaceAt(b.x, b.y); b.drag = (surf === 'puddle' ? 5 : surf === 'mud' ? 2.5 : 1)*(chaosIs('ice') ? 0.35 : 1);
   if (b.z > 0 || b.vz > 0) {
     b.vz -= GRAV*b.gs*gravK()*dt; b.z += b.vz*dt;
+    if (TH.phys.air && !b.superType) { const k = 1 - TH.phys.air*dt; b.vx *= k; b.vy *= k; }   // water slows the ball down
     if (!b.superType) { b.vx += game.wind.x*dt; b.vy += game.wind.y*dt; }
     if (b.z <= 0) land();
   } else {
     const s = hyp(b.vx, b.vy);
-    if (s > 0) { const ns = Math.max(0, s - 125*b.drag*dt); b.vx *= ns/s; b.vy *= ns/s; }
+    if (s > 0) { const ns = Math.max(0, s - 125*b.drag*ph('fric')*dt); b.vx *= ns/s; b.vy *= ns/s; }
     b.vx += game.wind.x*0.2*dt; b.vy += game.wind.y*0.2*dt;
+  }
+  if (b.curve && !b.owner) {   // side force across the flight, fading out
+    const v = hyp(b.vx, b.vy); if (v > 60) { b.vx += -b.vy/v*b.curve*dt; b.vy += b.vx/v*b.curve*dt; }
+    b.curve *= Math.max(0, 1 - 1.4*dt); if (Math.abs(b.curve) < 5) b.curve = 0;
   }
   b.x += b.vx*dt; b.y += b.vy*dt; b.rot += hyp(b.vx, b.vy)*dt;
   if (b.beam) { b.beam.t -= dt; if (b.beam.t <= 0) b.beam = null; }
@@ -835,7 +945,14 @@ function updBall(dt) {
   } else if (game.mode === 'title') {
     if (b.x < 0) endBounce(0, 1); else if (b.x > LEN) endBounce(LEN, -1);
   } else {
-    if (b.x < 0) { if (mouth && b.z < GH) scored(1); else endBounce(0, 1); }
+    // the frame of the goal: posts at Y0 / Y1 and the crossbar at GH send the ball back with a ring
+    const post = Math.min(Math.abs(b.y - Y0), Math.abs(b.y - Y1)) < 3.5 && b.z < GH + 2, bar = mouth && Math.abs(b.z - GH) < 3.5;
+    if ((b.x < 0 || b.x > LEN) && (post || bar) && !b.superType) {
+      const side = b.x < 0 ? 1 : -1; b.x = b.x < 0 ? 1 : LEN - 1;
+      b.vx = side*Math.abs(b.vx)*0.55; if (post) b.vy = (b.y < WID/2 ? -1 : 1)*Math.abs(b.vy)*0.6 + rnd(-40, 40); if (bar) { b.vz = -Math.abs(b.vz)*0.4 - 40; b.z = GH - 4; }
+      sfx('post'); game.shake = Math.max(game.shake, 0.15); const s = P(b.x, b.y, b.z); pops.push({ text: 'ДЗЫНЬ!', col: '#ffffff', x: s.x, y: s.y - 10, t: 0.9 });
+    }
+    else if (b.x < 0) { if (mouth && b.z < GH) scored(1); else endBounce(0, 1); }
     else if (b.x > LEN) { if (mouth && b.z < GH) scored(0); else { endBounce(LEN, -1); if (b.last && b.last.team === 0 && Math.random() < 0.6) emote(nearestRival(b), Math.random() < 0.5 ? 'laugh' : 'zzz'); } }
   }
   if (b.superType) {
@@ -859,7 +976,7 @@ function superFx(b) {
 }
 function land() {
   const b = ball; b.z = 0;
-  if (b.vz < -90) { b.vz = -b.vz*0.45; b.vx *= 0.85; b.vy *= 0.85; sfx('bounce'); } else b.vz = 0;
+  if (b.vz < -90/Math.max(0.6, ph('bounce'))) { b.vz = -b.vz*Math.min(0.85, 0.45*ph('bounce')); b.vx *= 0.85; b.vy *= 0.85; sfx('bounce'); } else b.vz = 0;
 }
 function possession(dt) {
   const b = ball;
@@ -1175,7 +1292,7 @@ function buildField() {
   g.imageSmoothingEnabled = false;
   const img = g.createImageData(FWd, FHt), d = img.data;
   const put = (x, y, c) => { const k = (y*FWd + x)*4; d[k] = c[0]; d[k+1] = c[1]; d[k+2] = c[2]; d[k+3] = 255; };
-  const G1c = hex('#46cf40'), G1d = hex('#3cbc38'), G2a = hex('#30a82e'), G2b = hex('#44c83e'), TRK = hex('#bcbcc4'), TRK2 = hex('#a4a4b0');
+  const G1c = hex(TH.grass[0]), G1d = hex(TH.grass[1]), G2a = hex(TH.grass[2]), G2b = hex(TH.grass[3]), TRK = hex(TH.track[0]), TRK2 = hex(TH.track[1]);
   const pud = hex('#a6e4e6'), pudE = hex('#62bccc'), pudH = hex('#e4fbff'), mudA = hex('#2f7a2c'), mudB = hex('#5c4a26'), mudC = hex('#3e3418');
   const TRACK_TOP = Math.round(OY - 14*SY - 26) + 14;
   let seed = 11; const rr = () => (seed = (seed*16807) % 2147483647) / 2147483647;
@@ -1201,25 +1318,12 @@ function buildField() {
   }
   g.putImageData(img, 0, 0);
 
-  // stands: crowd rows
+  // scenery behind the pitch
   const crowdBottom = OY - 14*SY - 26;
-  for (let row = 0; row < 5; row++) {
-    const yy = 2 + row*6;
-    if (yy + 6 > crowdBottom) break;
-    for (let x = (row % 2) * 3; x < FWd; x += 6) {
-      if (rr() < 0.07) continue;
-      const f = rr(), shirt = f < 0.55 ? TEAMS[0].jersey : f < 0.75 ? '#ffffff' : f < 0.92 ? TEAMS[1].jersey : '#f2c230';
-      const dim = 0.55 + row*0.1; g.globalAlpha = Math.min(1, dim);
-      g.fillStyle = shirt; g.fillRect(x, yy + 4, 5, 3);
-      g.fillStyle = '#ffb88a'; g.fillRect(x+1, yy+1, 3, 3);
-      g.fillStyle = rr() < 0.7 ? '#1a1420' : '#a8381c'; g.fillRect(x+1, yy, 3, 1);
-      if (rr() < 0.15) { g.fillStyle = '#ffb88a'; g.fillRect(x + (rr()<0.5?0:4), yy-1, 1, 2); }
-    }
-  }
-  g.globalAlpha = 1;
+  drawBack(g, TH.back, crowdBottom, FWd, rr);
   // ad boards
   const bTop = Math.round(crowdBottom), bH = 13;
-  const boards = [['#1d4f8f','#ffffff','AZZURRI'], ['#d8344a','#ffffff','PIZZA'], ['#f4f1e6','#1d4f8f','SFOGLIA'], ['#1a1420','#f2c230','VESUVIO'], ['#4aa8f0','#ffffff','CAFFE'], ['#ffffff','#d8344a','GOL TV']];
+  const boards = (ADS[TH.back] || ADS.crowd).map((t, i) => [BOARDCOL[i % BOARDCOL.length][0], BOARDCOL[i % BOARDCOL.length][1], t]);
   for (let i = 0, x = 0; x < FWd; i++, x += 74) {
     const [bg, fg, txt] = boards[i % boards.length];
     g.fillStyle = '#100810'; g.fillRect(x, bTop-1, 74, bH+2);
@@ -1229,10 +1333,11 @@ function buildField() {
   g.fillStyle = '#d8d8e0'; g.fillRect(0, bTop + bH + 1, FWd, 3);
 
   // pitch lines
-  const L = (x0, y0, x1, y1) => { const a = P(x0, y0), b = P(x1, y1); pline(g, a.x, a.y, b.x, b.y, '#ffffff', 2); };
+  const LC = TH.line || '#ffffff';
+  const L = (x0, y0, x1, y1) => { const a = P(x0, y0), b = P(x1, y1); pline(g, a.x, a.y, b.x, b.y, LC, 2); };
   const arc = (cx, cy, rad, a0, a1) => { let prev = null;
     for (let k = 0; k <= 48; k++) { const a = a0 + (a1-a0)*k/48, p = P(cx + Math.cos(a)*rad, cy + Math.sin(a)*rad);
-      if (prev) pline(g, prev.x, prev.y, p.x, p.y, '#ffffff', 2); prev = p; } };
+      if (prev) pline(g, prev.x, prev.y, p.x, p.y, LC, 2); prev = p; } };
   L(0,0,LEN,0); L(0,WID,LEN,WID); L(0,0,0,WID); L(LEN,0,LEN,WID); L(LEN/2,0,LEN/2,WID);
   arc(LEN/2, WID/2, 52, 0, Math.PI*2);
   const big = WID > 300, bh = big ? 115 : 70, bd = big ? 130 : 96, sh = big ? 58 : 40, sd = big ? 44 : 32, ps = big ? 88 : 66;
@@ -1244,6 +1349,7 @@ function buildField() {
   }
   const cs = P(LEN/2, WID/2); g.fillStyle = '#ffffff'; g.fillRect(Math.round(cs.x)-1, Math.round(cs.y)-1, 3, 2);
   arc(0, 0, 8, 0, Math.PI/2); arc(LEN, 0, 8, Math.PI/2, Math.PI); arc(0, WID, 8, -Math.PI/2, 0); arc(LEN, WID, 8, Math.PI, Math.PI*1.5);
+  drawFore(g, TH.back, FWd, FHt, rr);
   // far corner flags (near ones are drawn live)
   for (const x of [0, LEN]) drawFlag(g, P(x, 0));
   // goals are static: bake the back nets into the field and the near posts into a front layer
@@ -1257,6 +1363,133 @@ function buildField() {
     if (t === 1) { g.save(); g.translate(px, 0); g.scale(-1, 1); g.drawImage(spr, -20, trackY - 39); g.restore(); }
     else g.drawImage(spr, px - 20, trackY - 39);
   });
+}
+const ADS = {
+  crowd: ['AZZURRI', 'PIZZA', 'SFOGLIA', 'VESUVIO', 'CAFFE', 'GOL TV'], snowcrowd: ['ГЛИНТВЕЙН', 'ШАРФЫ', 'ЛЫЖИ', 'ЗИМА TV'],
+  bricks: ['ЧАЙ', 'ЗОНТЫ', 'ПУДИНГ', 'ТУМАН TV'], savanna: ['САФАРИ', 'БАОБАБ', 'МАНГО', 'ЛЕВ TV'],
+  bamboo: ['ПАНДА', 'РИС', 'ЧАЙ', 'БАМБУК'], icebergs: ['ПИНГВИН', 'ИГЛУ', 'ТЮЛЕНЬ', 'ЛЁД TV'],
+  steppe: ['КУМЫС', 'БАУРСАК', 'БЕШБАРМАК', 'СТЕПЬ TV'], sea: ['САРДИНЫ', 'СЁРФ', 'КРЕМ SPF', 'ПЛЯЖ TV'],
+  windmills: ['ТЮЛЬПАН', 'СЫР', 'ВЕЛИК', 'МЕЛЬНИЦА'], ocean: ['ЯКОРЬ', 'РЫБА', 'МАЯК', 'ШТОРМ TV'],
+  colonnade: ['ДЖЕЛАТО', 'ФРЕСКА', 'КЛЮЧИ', 'ГЕЛАТО'], reef: ['КОРАЛЛ', 'ЖЕМЧУГ', 'ПУЗЫРИ', 'НЕПТУН'],
+};
+const BOARDCOL = [['#1d4f8f','#ffffff'], ['#d8344a','#ffffff'], ['#f4f1e6','#1d4f8f'], ['#1a1420','#f2c230'], ['#4aa8f0','#ffffff'], ['#ffffff','#d8344a']];
+// paints the strip above the ad boards (0..bot) for a theme: stands, sky, landscape
+function drawBack(g, kind, bot, FW, rr) {
+  const R = (x, y, w, h, c) => { g.fillStyle = c; g.fillRect(Math.round(x), Math.round(y), Math.round(w), Math.round(h)); };
+  const sky = cols => { for (let i = 0; i < cols.length; i++) R(0, bot*i/cols.length, FW, bot/cols.length + 1, cols[i]); };
+  const tri = (x, base, w, h, c, cap) => { for (let k = 0; k < h; k++) { const ww = w*(k + 1)/h; R(x - ww/2, base - h + k, ww, 1, k < h*0.3 && cap ? cap : c); } };
+  const crowd = (bg, hat) => {
+    R(0, 0, FW, bot, bg);
+    for (let row = 0; row*6 + 8 < bot; row++) {
+      const yy = 2 + row*6;
+      for (let x = (row % 2)*3; x < FW; x += 6) {
+        if (rr() < 0.07) continue;
+        const f = rr(), shirt = f < 0.55 ? TEAMS[0].jersey : f < 0.75 ? '#ffffff' : f < 0.92 ? TEAMS[1].jersey : '#f2c230';
+        g.globalAlpha = Math.min(1, 0.55 + row*0.08);
+        R(x, yy + 4, 5, 3, shirt); R(x + 1, yy + 1, 3, 3, rr() < 0.25 ? '#8a5634' : '#ffb88a');
+        if (hat) { R(x + 1, yy - 1, 3, 2, rr() < 0.5 ? '#d8243a' : '#2a4ad8'); R(x + 2, yy - 2, 1, 1, '#ffffff'); }
+        else R(x + 1, yy, 3, 1, rr() < 0.7 ? '#1a1420' : '#a8381c');
+        if (rr() < 0.15) R(x + (rr() < 0.5 ? 0 : 4), yy - 1, 1, 2, '#ffb88a');
+      }
+    }
+    g.globalAlpha = 1;
+  };
+  switch (kind) {
+    case 'snowcrowd': crowd('#2a3040', true); for (let x = 0; x < FW; x += 2) R(x, 0, 2, 1 + (rr()*2|0), '#ffffff'); break;
+    case 'bricks': crowd('#5a2a24', false); for (let y = bot - 8; y < bot; y += 3) for (let x = (y % 2)*4; x < FW; x += 8) R(x, y, 7, 2, '#8a3a2a'); break;
+    case 'savanna': {
+      sky(['#ff8a3a', '#ffa04a', '#ffb85a', '#ffcf78', '#ffe09a']);
+      for (let x = 0; x < FW; x += 300) { R(x + 200, bot*0.25, 24, 24, '#fff0b0'); R(x + 196, bot*0.25 + 4, 32, 16, '#fff0b0'); }   // sun
+      for (let x = 0; x < FW; x += 2) R(x, bot - 10 - Math.sin(x/60)*4, 2, 14, '#c88a3a');
+      for (let x = 30; x < FW; x += 70 + (rr()*50|0)) {   // acacias
+        const h = 16 + (rr()*10|0), y = bot - 6;
+        R(x, y - h, 3, h, '#3a2410'); R(x - 14, y - h - 4, 31, 5, '#3a4a1a'); R(x - 9, y - h - 7, 21, 3, '#3a4a1a'); R(x - 4, y - h - 2, 4, 3, '#3a2410');
+        if (rr() < 0.3) { const gx = x + 30; R(gx, y - 22, 3, 16, '#e8b040'); R(gx, y - 25, 6, 3, '#e8b040'); R(gx - 8, y - 10, 12, 5, '#e8b040');   // giraffe
+          R(gx - 8, y - 5, 1, 5, '#a86a20'); R(gx + 3, y - 5, 1, 5, '#a86a20'); R(gx - 5, y - 9, 2, 2, '#a86a20'); R(gx + 1, y - 18, 1, 2, '#a86a20'); }
+      }
+      break; }
+    case 'bamboo': {
+      sky(['#d8f0c8', '#c0e8b0', '#a8dc98']);
+      for (let x = 0; x < FW; x += 4 + (rr()*4|0)) {
+        const c = ['#3a8a2a', '#4aa83a', '#5ac04a', '#2a7020'][rr()*4|0], w = 2 + (rr()*2|0);
+        R(x, 0, w, bot, c); for (let y = (rr()*9|0); y < bot; y += 9) R(x, y, w, 1, '#1a5014');
+        if (rr() < 0.4) R(x + w, (rr()*bot)|0, 4, 1, '#6ad05a');
+      }
+      for (let x = 60; x < FW; x += 260) { const y = bot - 14; R(x, y, 12, 10, '#ffffff'); R(x + 2, y - 7, 8, 7, '#ffffff');   // panda sitting
+        R(x + 2, y - 8, 2, 2, '#141010'); R(x + 8, y - 8, 2, 2, '#141010'); R(x + 3, y - 5, 2, 2, '#141010'); R(x + 7, y - 5, 2, 2, '#141010');
+        R(x - 1, y + 2, 3, 5, '#141010'); R(x + 10, y + 2, 3, 5, '#141010'); R(x + 11, y - 2, 4, 2, '#5ac04a'); }
+      break; }
+    case 'icebergs': {
+      sky(['#9ad0f4', '#b8dcf8', '#d4ecfc', '#e8f6fe']);
+      for (let x = 0; x < FW; x += 60 + (rr()*40|0)) tri(x, bot - 6, 50 + rr()*40, 18 + rr()*20, '#e8f4fc', '#ffffff');
+      R(0, bot - 8, FW, 8, '#f4fafe');
+      for (let x = 4; x < FW; x += 7) { if (rr() < 0.25) continue; const y = bot - 9; R(x, y - 6, 4, 7, '#202030'); R(x + 1, y - 4, 2, 4, '#ffffff'); R(x + 1, y - 6, 2, 1, '#ff9a1a'); }
+      break; }
+    case 'steppe': {
+      sky(['#4ab0ec', '#6abcf0', '#8acaf4', '#aad8f8']);
+      for (let x = 0; x < FW; x += 70) tri(x + 35, bot - 8, 110, 26 + (rr()*12|0), '#6a7a9a', '#ffffff');
+      R(0, bot - 10, FW, 10, '#c8b048');
+      for (let x = 40; x < FW; x += 110 + (rr()*80|0)) { const y = bot - 9;   // yurts
+        R(x, y - 8, 18, 8, '#f4f0e4'); R(x + 2, y - 11, 14, 3, '#f4f0e4'); R(x + 5, y - 13, 8, 2, '#e8e0d0'); R(x, y - 6, 18, 1, '#d8243a'); R(x + 7, y - 6, 4, 6, '#a8541a'); }
+      for (let x = 120; x < FW; x += 400) { R(x, 8, 10, 2, '#3a2410'); R(x + 3, 7, 4, 2, '#3a2410'); R(x - 3, 6, 3, 2, '#3a2410'); R(x + 10, 6, 3, 2, '#3a2410'); }   // eagle
+      break; }
+    case 'sea': {
+      sky(['#5ac0f8', '#7accf8', '#9ad8fa']);
+      R(0, bot*0.55, FW, bot*0.45, '#2a8ad8'); for (let x = 0; x < FW; x += 6) R(x + (rr()*4|0), bot*0.55 + (rr()*bot*0.4|0), 3, 1, '#bfe8ff');
+      R(0, bot - 4, FW, 4, '#f2dc9a');
+      for (let x = 50; x < FW; x += 150 + (rr()*60|0)) { for (let k = 0; k < 22; k++) R(x + Math.sin(k/6)*4, bot - 4 - k, 3, 1, '#8a5a2a');   // palms
+        const tx = x + Math.sin(22/6)*4, ty = bot - 26; for (const [dx, dy] of [[-12, 3], [-7, -2], [0, -4], [7, -2], [12, 3]]) R(tx + Math.min(0, dx), ty + Math.min(0, dy), Math.abs(dx) || 3, 3, '#2a8a2a'); }
+      break; }
+    case 'windmills': {
+      sky(['#80c0f0', '#a0d0f6', '#c0e0fa']);
+      const cols = ['#e8243a', '#ffd23a', '#ff6a9a', '#ffffff', '#ff8a1a'];
+      for (let k = 0; k < 5; k++) R(0, bot - 12 + k*2, FW, 2, cols[k]);
+      for (let x = 60; x < FW; x += 180 + (rr()*80|0)) { const y = bot - 12;
+        R(x, y - 22, 8, 22, '#8a5a3a'); R(x - 1, y - 24, 10, 3, '#5a3a2a'); const cx = x + 4, cy = y - 22;
+        pline(g, cx - 12, cy - 12, cx + 12, cy + 12, '#f4f0e8', 2); pline(g, cx - 12, cy + 12, cx + 12, cy - 12, '#f4f0e8', 2); }
+      break; }
+    case 'ocean': {
+      sky(['#2a3448', '#3a4458', '#4a5468']);
+      R(0, bot*0.45, FW, bot*0.55, '#1a3a5a'); for (let x = 0; x < FW; x += 5) R(x, bot*0.45 + (rr()*bot*0.5|0), 4, 1, '#cfe0f0');
+      R(0, bot - 9, FW, 2, '#a85a2a'); R(0, bot - 5, FW, 2, '#a85a2a'); for (let x = 0; x < FW; x += 24) R(x, bot - 10, 2, 10, '#7a3a1a');
+      break; }
+    case 'colonnade': {
+      sky(['#8ac8f4', '#a8d8f8', '#c8e8fa']);
+      const mid = FW/2; for (let k = 0; k < 16; k++) { const w = Math.sqrt(256 - k*k)*3; R(mid - w, bot*0.35 - k, w*2, 1, '#8a9ab0'); }   // dome
+      R(0, bot*0.45, FW, bot*0.55, '#e8e0d0'); R(0, bot*0.45, FW, 3, '#c8c0b0');
+      for (let x = 4; x < FW; x += 20) { R(x, bot*0.3, 8, bot*0.7, '#f8f4ec'); R(x + 6, bot*0.3, 2, bot*0.7, '#d0c8b8'); R(x - 1, bot*0.3, 10, 3, '#d8d0c0'); }
+      break; }
+    case 'reef': {
+      sky(['#0a2a5a', '#0e3a6a', '#124a7a', '#1a5a8a']);
+      for (let x = 0; x < FW; x += 40) for (let k = 0; k < bot; k += 2) R(x + k*0.4, k, 2, 2, 'rgba(160,220,255,.08)');
+      for (let x = 0; x < FW; x += 10 + (rr()*12|0)) { const c = ['#ff6a9a', '#ff8a3a', '#b86aff', '#ffd23a', '#5af0c0'][rr()*5|0], h = 6 + (rr()*12|0);
+        R(x, bot - h, 3, h, c); R(x - 2, bot - h + 2, 2, 3, c); R(x + 3, bot - h + 4, 2, 3, c); }
+      for (let k = 0; k < FW/40; k++) { const x = rr()*FW, y = 6 + rr()*(bot - 20); R(x, y, 5, 3, '#ffd23a'); R(x + 5, y + 1, 2, 1, '#ffd23a'); R(x - 2, y, 2, 3, '#ff8a1a'); }
+      break; }
+    default: crowd('#100e1a', false);
+  }
+}
+// the near side of the pitch (below the touchline): small props per theme
+function drawFore(g, kind, FW, FH, rr) {
+  const R = (x, y, w, h, c) => { g.fillStyle = c; g.fillRect(Math.round(x), Math.round(y), Math.round(w), Math.round(h)); };
+  const top = Math.round(OY + (WID + 14)*SY) + 2;
+  for (let x = rr()*20; x < FW; x += 14 + rr()*26) {
+    const y = top + 2 + rr()*Math.max(1, FH - top - 12);
+    switch (kind) {
+      case 'savanna': R(x, y, 1, 6, '#8a7a2a'); R(x + 2, y - 2, 1, 8, '#a89a3a'); R(x + 4, y + 1, 1, 5, '#8a7a2a'); if (rr() < 0.2) R(x + 8, y + 3, 6, 3, '#9a8a7a'); break;
+      case 'bamboo': R(x, y - 6, 2, 12, '#4aa83a'); R(x, y - 2, 2, 1, '#1a5014'); R(x + 3, y - 3, 2, 9, '#3a8a2a'); R(x + 2, y - 5, 4, 1, '#6ad05a'); break;
+      case 'snowcrowd': R(x, y, 12, 4, '#ffffff'); R(x + 2, y - 2, 8, 2, '#f4f8fc'); R(x + 1, y + 3, 10, 1, '#c8d8e8'); break;
+      case 'icebergs': if (rr() < 0.5) { R(x, y - 4, 4, 6, '#202030'); R(x + 1, y - 2, 2, 4, '#ffffff'); R(x + 1, y - 4, 2, 1, '#ff9a1a'); } else { R(x, y, 10, 5, '#d8f0fc'); R(x, y, 10, 1, '#ffffff'); } break;
+      case 'steppe': R(x, y, 1, 5, '#a8902a'); R(x + 2, y - 1, 1, 6, '#c8b048'); if (rr() < 0.15) { R(x + 6, y + 2, 5, 2, '#8a8a8a'); } break;
+      case 'sea': if (rr() < 0.3) { R(x, y - 8, 1, 10, '#ffffff'); R(x - 5, y - 9, 11, 3, ['#ff6a6a', '#4ab8ff', '#ffd23a'][rr()*3|0]); } else { R(x, y, 3, 2, '#fff0e0'); R(x + 1, y - 1, 1, 1, '#ffd0c0'); } break;
+      case 'windmills': R(x, y - 3, 1, 6, '#3a9a3a'); R(x - 1, y - 5, 3, 3, ['#e8243a', '#ffd23a', '#ff6a9a', '#ffffff'][rr()*4|0]); break;
+      case 'ocean': R(x, y, 10, 1, '#cfe0f0'); R(x + 3, y + 2, 6, 1, '#8aa8c8'); break;
+      case 'colonnade': if (rr() < 0.4) { R(x, y - 2, 8, 6, '#c8743a'); R(x + 1, y - 7, 6, 5, '#3a9a3a'); R(x + 2, y - 8, 2, 2, '#e8243a'); } break;
+      case 'reef': R(x, y - 6, 2, 10, '#2a8a5a'); R(x + 2, y - 3, 2, 7, '#3aa86a'); if (rr() < 0.3) R(x + 6, y + 2, 4, 3, '#ff8aa8'); break;
+      case 'bricks': if (rr() < 0.25) { R(x, y - 6, 1, 8, '#202030'); R(x - 4, y - 8, 9, 3, '#202030'); } break;
+      default: return;
+    }
+  }
 }
 function drawFlag(g, p) {
   const x = Math.round(p.x), y = Math.round(p.y);
@@ -1280,25 +1513,25 @@ function setWeather(w) {
       patches.push({ type, x, y, rx, ry, blobs }); return;
     }
   };
-  if (w === 'clear') { add('mud', 30, 16); add('mud', 22, 12); }
+  if (w === 'clear') { if (TH.grass === THEMES.stadium.grass || themeKey === 'rainy') { add('mud', 30, 16); add('mud', 22, 12); } }
+  else if (w === 'snow') {}
   else {
     add('mud', 34, 18); add('mud', 26, 14); add('puddle', 34, 18); add('puddle', 28, 15); add('puddle', 24, 13); add('puddle', 30, 16);
     if (w === 'storm') { add('puddle', 26, 14); add('mud', 24, 13); }
   }
   buildField(); newWind(); game.lightT = rnd(4, 8);
-  rain = [];
-  if (w !== 'clear') for (let i = 0; i < (w === 'storm' ? 120 : 80); i++) rain.push({ x: rnd(0, W), y: rnd(0, H), s: rnd(200, 300) });
+  makeRain(w);
 }
-const WXNAME = { clear: 'СОЛНЦЕ!', rain: 'ДОЖДЬ!', storm: 'ГРОЗА!' };
+const WXNAME = { clear: 'СОЛНЦЕ!', rain: 'ДОЖДЬ!', storm: 'ГРОЗА!', snow: 'СНЕГ!' };
 function randomWeather(not) { const opts = ['clear', 'rain', 'rain', 'storm', 'storm'].filter(w => w !== not); return opts[Math.floor(Math.random()*opts.length)]; }
 function newWind() {
-  const a = Math.random()*Math.PI*2, m = game.weather === 'storm' ? rnd(45, 90) : game.weather === 'rain' ? rnd(8, 24) : 0;
+  const a = Math.random()*Math.PI*2, m = TH.wind ? TH.wind*rnd(0.7, 1.2) : game.weather === 'storm' ? rnd(45, 90) : game.weather === 'rain' ? rnd(8, 24) : 0;
   game.wind = { x: Math.cos(a)*m, y: Math.sin(a)*m*0.5 }; game.windT = rnd(7, 11);
 }
 function updWeather(dt) {
   if (NET.role === 'guest') { updRain(dt); return; }
-  game.windT -= dt; if (game.windT <= 0 && game.weather === 'storm') newWind();
-  if (weatherOn && game.mode === 'play' && !game.wxChanged && game.time < game.len/2) {
+  game.windT -= dt; if (game.windT <= 0 && (game.weather === 'storm' || TH.wind)) newWind();
+  if (weatherOn && !TH.weather && game.mode === 'play' && !game.wxChanged && game.time < game.len/2) {
     game.wxChanged = true; const next = randomWeather(game.weather);
     if (next !== game.weather) { setWeather(next); game.announce = { text: WXNAME[next], col: '#8fe0ff', t: 1.6 }; }
   }
@@ -1314,10 +1547,13 @@ function updWeather(dt) {
   updRain(dt);
 }
 function updRain(dt) {
-  for (const d of rain) { d.y += d.s*dt; d.x += (game.wind.x*1.2 - 40)*dt;
+  const snow = game.weather === 'snow';
+  for (const d of rain) { d.y += d.s*dt; d.x += snow ? (game.wind.x*0.4 + Math.sin(game.t*2 + d.ph)*12)*dt : (game.wind.x*1.2 - 40)*dt;
     if (d.y > H) { d.y = rnd(-20, 0); d.x = rnd(0, W+40); } if (d.x < -10) d.x += W+20; if (d.x > W+10) d.x -= W+20; }
 }
-function makeRain(w) { rain = []; if (w === 'rain' || w === 'storm') for (let i = 0; i < (w === 'storm' ? 120 : 80); i++) rain.push({ x: rnd(0, W), y: rnd(0, H), s: rnd(200, 300) }); }
+function makeRain(w) { rain = [];
+  if (w === 'rain' || w === 'storm') for (let i = 0; i < (w === 'storm' ? 120 : 80); i++) rain.push({ x: rnd(0, W), y: rnd(0, H), s: rnd(200, 300) });
+  if (w === 'snow') for (let i = 0; i < 90; i++) rain.push({ x: rnd(0, W), y: rnd(0, H), s: rnd(18, 40), ph: rnd(0, 6) }); }
 
 // ================== online: two friends, one host runs the match ==================
 // Built on a pluggable "room" (src/net/). Each page keeps one "presence" object:
@@ -1527,7 +1763,7 @@ function guestSendInput() {
 }
 function applySnap(s) {
   if (s.mid !== NET.mid) {
-    NET.mid = s.mid; NET.mode = s.md; MODE = s.md === 'vs' ? 1 : 2; setTeams('nap', 'rom'); setPitch(MODE); buildTeams(MODE); game.pv = -1; parts = [];
+    NET.mid = s.mid; NET.mode = s.md; MODE = s.md === 'vs' ? 1 : 2; setTeams('nap', 'rom'); setTheme('stadium'); setPitch(MODE); buildTeams(MODE); game.pv = -1; parts = [];
     NET.lastEv = s.ev && s.ev.length ? s.ev[s.ev.length-1][0] : 0; showOv(null); startMusic();
     s.P.forEach((a, i) => { if (players[i]) { players[i].x = a[0]; players[i].y = a[1]; } });
     ball.x = s.B[0]; ball.y = s.B[1]; updCamera(0, true);
@@ -1682,12 +1918,15 @@ function showOv(id) {
 function startMatch(mode) {
   if (NET.role === 'guest') return;
   if (mode === 11) setTeams(CLUB_KEYS[pick[0]], CLUB_KEYS[pick[1]]); else setTeams('nap', 'rom');
+  setTheme(mode === 11 ? (fieldPick || TEAMS[1].home) : 'stadium');
+  game.critter = null; game.critterT = rnd(8, 14);
   MODE = mode; setPitch(mode); buildTeams(mode); NET.mid = (NET.mid + 1) % 100000; NET.rK = NET.rT = -1;
   game.len = mode === 11 ? MATCH11 : MATCH;
   game.score = [0,0]; game.fury = [0, 0]; game.furyFlash = [0, 0]; game.time = game.len; parts = []; game.banner = null; game.bolt = null; game.paused = false;
   game.wxChanged = false; game.tauntT = rnd(5, 9); game.emoCd = 0;
   game.chaos = null; game.vespa = null; game.lastChaos = null; game.chaosT = rnd(12, 16); game.itemT = rnd(5, 8); game.x2 = false; items = []; pops = [];
-  setWeather(weatherOn ? randomWeather(null) : 'off'); kickoff(0); showOv(null);
+  setWeather(!weatherOn ? 'off' : TH.weather || randomWeather(null)); kickoff(0); showOv(null);
+  if (MODE === 11) game.announce = { text: TH.name + ' · ' + TEAMS[1].name, col: '#ffe14a', t: 2.2 };
   const dl = derbyLine(); if (dl) game.banner = null, game.announce = { text: dl, col: '#ffd23a', t: 2.2 };
 }
 // little jokes for special pairings
@@ -1703,7 +1942,8 @@ function derbyLine() {
   return '';
 }
 function attract() {
-  game.mode = 'title'; game.paused = false; stopMusic(); MODE = 2; setTeams('nap', 'rom'); if (setPitch(2)) setWeather(game.weather || 'rain'); buildTeams(2);
+  game.mode = 'title'; game.paused = false; stopMusic(); MODE = 2; setTeams('nap', 'rom'); game.critter = null;
+  const th = themeKey !== 'stadium'; setTheme('stadium'); if (setPitch(2) || th) setWeather(game.weather === 'snow' ? 'rain' : game.weather || 'rain'); buildTeams(2);
   const c = WID/2;
   [[LEN/2-40, c-20], [LEN/2-90, c+30], [LEN/2+40, c+20], [LEN/2+90, c-30], [20, c], [LEN-20, c]].forEach(([x, y], i) => Object.assign(players[i], { x, y, fx: i % 4 < 2 && i !== 5 ? 1 : -1 }));
   Object.assign(ball, { x: LEN/2, y: c, z: 0, vx: 0, vy: 0, vz: 0, owner: null, superType: null });
@@ -1722,7 +1962,8 @@ function syncSound() { for (const id of ['miSound', 'miSnd']) { $(id).innerHTML 
 const store = { get(k, d) { try { const v = localStorage.getItem('azz-' + k); return v === null ? d : JSON.parse(v); } catch (e) { return d; } },
   set(k, v) { try { localStorage.setItem('azz-' + k, JSON.stringify(v)); } catch (e) {} } };
 diff = clamp(store.get('diff', 1) | 0, 0, DIFFS.length - 1); chaosOn = store.get('chaos', true) !== false; weatherOn = store.get('wx', true) !== false;
-let pick = store.get('pick', [0, 2]);
+let pick = store.get('pick', [0, 2]), fieldPick = null;   // null = the opponent's home pitch
+const THEME_KEYS = Object.keys(THEMES);
 if (!Array.isArray(pick) || pick.length !== 2 || pick.some(v => !(v >= 0 && v < CLUB_KEYS.length)) || pick[0] === pick[1]) pick = [0, 2];
 function syncOpts() {
   for (const id of ['miDiff', 'miDiffA', 'miDiffT']) $(id).innerHTML = 'СЛОЖНОСТЬ <b>' + D().name + '</b>';
@@ -1739,7 +1980,13 @@ function renderTeams() {
     g.imageSmoothingEnabled = false; g.clearRect(0, 0, 40, 40); g.drawImage(getSprite(c, 'cheer', 'shout', 0, 'side', { look: 0, num: 9 }), 0, 0);
   }
   const codes = pick.map(k => CLUBS[CLUB_KEYS[k]].code).sort().join('');
+  const opp = CLUBS[CLUB_KEYS[pick[1]]];
+  $('miField').innerHTML = 'ПОЛЕ <b>' + (fieldPick ? THEMES[fieldPick].name : THEMES[opp.home].name + ' (ДОМА)') + '</b>';
   $('derby').textContent = codes === 'RHOZIM' ? 'ДЕРБИ ОДНОЙ СТРАНЫ!' : codes === 'NAPROM' ? 'ДЕРБИ СОЛНЦА!' : codes.includes('PRK') ? 'МАТЧ ПОКАЖЕТ ЦТ КНДР' : '';
+}
+function cycleField() {
+  const i = fieldPick === null ? -1 : THEME_KEYS.indexOf(fieldPick);
+  fieldPick = i + 1 >= THEME_KEYS.length ? null : THEME_KEYS[i + 1]; renderTeams();
 }
 function cycleTeam(side, d) {
   do pick[side] = (pick[side] + d + CLUB_KEYS.length) % CLUB_KEYS.length; while (pick[side] === pick[1 - side]);
@@ -2075,6 +2322,7 @@ function render() {
   ents.push({ y: ball.y + 0.5, f: drawBall });
   for (const it of items) ents.push({ y: it.y, f: () => drawItem(it) });
   if (game.vespa) ents.push({ y: game.vespa.y, f: drawVespa });
+  if (game.critter) ents.push({ y: game.critter.y, f: drawCritter });
   ents.push({ y: Y1 + 0.1, f: () => ctx.drawImage(FRONT, -cam.x, -cam.y) });
   ents.push({ y: WID + 0.1, f: () => { for (const x of [0, LEN]) { const p = P(x, WID); drawFlag(ctx, { x: p.x - cam.x, y: p.y - cam.y }); } } });
   ents.sort((a, b) => a.y - b.y).forEach(e => e.f());
@@ -2086,8 +2334,10 @@ function render() {
   if (game.weather === 'storm') { ctx.fillStyle = 'rgba(10,12,40,.28)'; ctx.fillRect(0, 0, W, H); }
   if (chaosIs('moon')) { ctx.fillStyle = 'rgba(40,20,90,.3)'; ctx.fillRect(0, 0, W, H); }
   if (chaosIs('quake')) { ctx.fillStyle = 'rgba(255,60,20,.1)'; ctx.fillRect(0, 0, W, H); }
-  if (rain.length) { ctx.fillStyle = 'rgba(190,225,255,.6)'; const dx = (game.wind.x*1.2 - 40)/250;
+  if (rain.length && game.weather === 'snow') { ctx.fillStyle = '#ffffff'; for (const d of rain) ctx.fillRect(Math.round(d.x), Math.round(d.y), d.s > 30 ? 2 : 1, d.s > 30 ? 2 : 1); }
+  else if (rain.length) { ctx.fillStyle = 'rgba(190,225,255,.6)'; const dx = (game.wind.x*1.2 - 40)/250;
     for (const d of rain) for (let k = 0; k < 6; k++) ctx.fillRect(Math.round(d.x + dx*k), Math.round(d.y + k), 1, 1); }
+  if (TH.tint) { ctx.fillStyle = TH.tint; ctx.fillRect(0, 0, W, H); }
   drawBeam();
   drawBolt();
   drawOffscreen();
@@ -2118,6 +2368,7 @@ click('miOptsBack', () => menuPage('mMain'));
 click('miReal', () => { renderTeams(); showOv('ovTeams'); });
 click('miTeamsBack', () => { showOv('ovMenu'); menuPage('mMain'); });
 click('miKick', () => startMatch(11));
+click('miField', cycleField);
 for (const side of [0, 1]) { click('tPrev' + side, () => cycleTeam(side, -1)); click('tNext' + side, () => cycleTeam(side, 1)); }
 click('mi11', () => startMatch(1));
 click('mi22', () => startMatch(2));
