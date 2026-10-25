@@ -429,7 +429,7 @@ function setPitch(mode) {
 }
 const ball = { x:LEN/2, y:WID/2, z:0, vx:0, vy:0, vz:0, owner:null, superType:null, gs:1, lock:null, lockT:0, last:null, rot:0, drag:1,
   kick(dx, dy, pow, lift, by, type) {
-    this.owner = null; this.vx = dx*pow; this.vy = dy*pow; this.vz = lift; this.superType = type || null; this.gs = 1;
+    this.owner = null; this.vx = dx*pow; this.vy = dy*pow; this.vz = lift; this.superType = type || null; this.gs = 1; this.shot = false;
     this.lock = by; this.lockT = 0.3; this.last = by;
     this.beam = null;
     if (type === 'tiger') { this.vz = 18; this.gs = 0.12; }
@@ -628,6 +628,9 @@ function doKick(p) {
     const lead = Math.abs(gx - p.x), ty = clamp(p.y + (Math.abs(dx) > 0.05 ? dy/Math.abs(dx) : 0)*lead, Y0+8, Y1-8);
     const n = norm(gx - p.x, ty - p.y); dx = n.x; dy = n.y;
   }
+  shotKick(p, dx, dy);
+}
+function shotKick(p, dx, dy) {
   if (p.kickSuper) {
     game.fury[p.team] = 0;
     ball.kick(dx, dy, KPOW*1.45, KLIFT, p, p.superType); if (p.local) buzz(30);
@@ -640,6 +643,7 @@ function doKick(p) {
   } else if (p.strong) { // charged without FURIA: TIRO FORTE
     ball.kick(dx, dy, KPOW*1.22, KLIFT*0.7, p, null); sfx('kick'); game.shake = Math.max(game.shake, 0.1);
   } else { ball.kick(dx, dy, KPOW, KLIFT*rnd(0.5,1.2), p, null); sfx('kick'); }
+  ball.shot = true;   // a shot, not a pass: the shooter's teammates won't trap it (see possession)
 }
 // pass target: the teammate the player faces (humans) or p.passTo chosen by the AI
 function facingMate(p) {
@@ -812,7 +816,9 @@ function possession(dt) {
   if (b.owner) fury(b.owner.team, dt*4);
   if (!b.owner && !b.superType && b.z < 34) {
     let best = null, bd = 99;
+    const shot = b.shot && b.last && hyp(b.vx, b.vy) > 160;
     for (const p of players) { if (p.state > ST.RUN || (b.lock === p && b.lockT > 0)) continue;
+      if (shot && p.team === b.last.team) continue;   // your own shot flies past your teammates
       const gk = p.role === 'gk', reach = gk ? 15 : REACH*(giant() ? 1.9 : 1);
       if (b.z >= (gk ? 34 : giant() ? 22 : 10)) continue;   // keepers use their hands
       const d = dist(p, b); if (d < reach && d < bd) { bd = d; best = p; } }
@@ -1061,7 +1067,7 @@ const stickEnd = e => { if (e.pointerId !== stickId) return; stickId = null; tou
 zoneL.addEventListener('pointerup', stickEnd); zoneL.addEventListener('pointercancel', stickEnd); zoneL.addEventListener('lostpointercapture', stickEnd);
 const buzz = ms => { if (!TOUCH) return; try { navigator.vibrate && navigator.vibrate(ms); } catch (e) {} };
 function holdBtn(el, set) {
-  const on = e => { audioInit(); el.setPointerCapture(e.pointerId); set(true); el.classList.add('on'); buzz(8); e.preventDefault(); };
+  const on = e => { audioInit(); try { el.setPointerCapture(e.pointerId); } catch (err) {} set(true); el.classList.add('on'); buzz(8); e.preventDefault(); };
   const off = () => { set(false); el.classList.remove('on'); };
   el.addEventListener('pointerdown', on); el.addEventListener('pointerup', off); el.addEventListener('pointercancel', off);
   el.addEventListener('contextmenu', e => e.preventDefault());
@@ -1069,6 +1075,28 @@ function holdBtn(el, set) {
 holdBtn(document.getElementById('bA'), v => touchKick = v);
 holdBtn(document.getElementById('bB'), v => touchTackle = v);
 holdBtn(document.getElementById('bS'), v => touchSwitch = v);
+// the pad follows the game: KICK shows the charge and turns into SUPER with full FURIA, the second button
+// says what it will do (PASS with the ball, TACKLE without, ORA! when a super tackle is possible),
+// SWITCH only shows when it can do something
+const PAD = { root: document.getElementById('pad'), A: document.getElementById('bA'), B: document.getElementById('bB'), S: document.getElementById('bS'),
+  lbA: document.getElementById('lbA'), lbB: document.getElementById('lbB'), ring: document.querySelector('#bA .chg circle'), key: '' };
+function updPad() {
+  if (!TOUCH) return;
+  const p = players.find(q => q.local); if (!p || game.mode === 'title') return;
+  const holder = NET.role === 'guest' ? players.find(q => dist(q, ball) < 14 && ball.z < 6) : ball.owner;
+  const has = holder === p, fr = furyReady(p) && p.role !== 'gk';
+  const b = has ? 'pass' : fr && holder && holder.team !== p.team && dist(p, holder) < 70 ? 'ora' : 'tackle';
+  const sw = !has && NET.role === 'solo' && players.filter(q => q.team === p.team && q.role !== 'gk').length > 1;
+  const ch = Math.round(Math.min(1, p.charge/CHARGE)*20);
+  const key = b + (fr ? 1 : 0) + (sw ? 1 : 0) + ch + p.team + TEAMS[p.team].code;
+  if (key === PAD.key) return; PAD.key = key;
+  PAD.root.style.setProperty('--team', TEAMS[p.team].color);
+  for (const c of ['pass', 'ora', 'tackle']) PAD.B.classList.toggle(c, c === b);   // classList keeps the pressed state
+  PAD.lbB.textContent = b === 'pass' ? 'ПАС' : b === 'ora' ? 'ОРА!' : 'ПОДКАТ';
+  PAD.A.classList.toggle('super', fr); PAD.A.classList.toggle('full', ch >= 20); PAD.lbA.textContent = fr ? 'СУПЕР' : 'УДАР';
+  PAD.ring.style.strokeDashoffset = String(100 - ch*5);
+  PAD.S.classList.toggle('off', !sw);
+}
 
 // ================== field (pre-rendered) ==================
 const FCV = document.createElement('canvas');
@@ -1231,7 +1259,7 @@ function makeRain(w) { rain = []; if (w === 'rain' || w === 'storm') for (let i 
 // The host simulates everything; the guest sends its input and draws the host's snapshot.
 const NET = { role: 'solo', room: null, user: null, ready: false, myPeer: null, mode: null, code: null, guestPeer: null, hostPeer: null,
   ev: [], evId: 0, lastEv: -1, lastS: null, mid: 0, rK: -1, rT: -1, lastPres: 0, kr: 0, tc: 0, pk: false, pt: false, names: {}, msg: '',
-  hostReady: false, started: false, joining: null, lastCode: '', ui: 'idle', booted: false,
+  snapN: 0, ptPv: -1, ptLeft: 0, snapAt: 0, hostReady: false, started: false, joining: null, lastCode: '', ui: 'idle', booted: false,
   autoJoin: (new URLSearchParams(location.search).get('join') || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 5) || null };
 // game codes: 5 characters without look-alikes (no O/0, I/1/L)
 const CODE_ABC = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
@@ -1274,14 +1302,20 @@ function buildSnap() {
     an: game.announce ? [game.announce.text, game.announce.col, r2(game.announce.t)] : 0,
     bn: game.banner ? [game.banner.text, game.banner.col, r2(game.banner.t)] : 0,
     wx: game.weather, wd: [r1(game.wind.x), r1(game.wind.y)], pv: game.pv,
-    pt: patches.map(p => [p.type === 'puddle' ? 1 : 0, p.blobs.map(b => [r1(b.x), r1(b.y), r1(b.rx), r1(b.ry)])]),
+    // the puddle map is big and rarely changes: send it for a while after a change and now and then
+    pt: NET.ptPv !== game.pv || NET.ptLeft > 0 || NET.snapN % 60 === 0 ? patches.map(p => [p.type === 'puddle' ? 1 : 0, p.blobs.map(b => [Math.round(b.x), Math.round(b.y), Math.round(b.rx), Math.round(b.ry)])]) : 0,
     ch: game.chaos ? [CHAOS_KEYS.indexOf(game.chaos.type), r1(game.chaos.t)] : 0,
     ve: game.vespa ? [r1(game.vespa.x), r1(game.vespa.y), game.vespa.dir] : 0,
     it: items.map(i => [ITEMS.indexOf(i.type), r1(i.x), r1(i.y), r1(i.t)]),
     ev: NET.ev };
 }
 function hostBroadcast() {
-  const now = performance.now(); if (now - NET.lastPres < 50 || !NET.guestPeer) return; NET.lastPres = now;
+  // 20 snapshots/s on a direct link, 15 through the relay; if the link is still busy sending, skip this one
+  const now = performance.now(), relay = NET.room.linkKind && NET.room.linkKind() === 'relay';
+  if (now - NET.lastPres < (relay ? 66 : 50) || !NET.guestPeer) return;
+  if (NET.room.busy && NET.room.busy()) return;
+  NET.lastPres = now; NET.snapN++;
+  if (NET.ptPv !== game.pv) { NET.ptPv = game.pv; NET.ptLeft = 20; } else if (NET.ptLeft > 0) NET.ptLeft--;
   setPresence({ s: buildSnap() });
 }
 async function hostGame(mode) {
@@ -1347,7 +1381,7 @@ function onNetPeers() {
     if (!NET.guestPeer) {
       const g = peers.find(p => !p.isMe && p.presence && p.presence.app === 'azz' && p.presence.role === 'guest' && p.presence.code === NET.code);
       if (g) {
-        NET.guestPeer = g.peer; NET.rK = NET.rT = -1; setPresence({ open: false, gp: g.peer });
+        NET.guestPeer = g.peer; NET.rK = NET.rT = -1; NET.ptPv = -1; setPresence({ open: false, gp: g.peer });
         if (NET.started && game.mode !== 'title') {   // the friend came back (e.g. after locking the phone): same match goes on
           const f = friendPlayer(); if (f) Object.assign(f, { human: true, tag: 2 });
           game.announce = { text: '2P ВЕРНУЛСЯ', col: '#7fe0ff', t: 1.6 };
@@ -1430,7 +1464,8 @@ function applySnap(s) {
     s.P.forEach((a, i) => { if (players[i]) { players[i].x = a[0]; players[i].y = a[1]; } });
     ball.x = s.B[0]; ball.y = s.B[1]; updCamera(0, true);
   }
-  if (s.pv !== game.pv) {
+  NET.snapAt = performance.now();
+  if (s.pv !== game.pv && s.pt) {
     game.pv = s.pv; game.weather = s.wx;
     patches = (s.pt || []).map(([t, bl]) => ({ type: t ? 'puddle' : 'mud', blobs: bl.map(([x, y, rx, ry]) => ({ x, y, rx, ry })) }));
     buildField(); makeRain(s.wx);
@@ -1469,16 +1504,18 @@ function guestUpdate(dt) {
   updRain(dt); updParts(dt); chaosFx(dt);
   if (NET.mid < 0) return;
   guestSendInput();
-  // glide toward the host's positions (a little ahead, by velocity) so 20 updates a second look smooth
-  const k = Math.min(1, dt*14);
+  // between snapshots keep everything moving along its last velocity (up to 0.4 s), then glide toward it,
+  // so a late packet doesn't freeze the picture
+  const k = Math.min(1, dt*12), predict = (performance.now() - NET.snapAt) < 400;
   for (const p of players) { if (p.tx === undefined) continue;
-    p.x += (p.tx + p.vx*0.04 - p.x)*k; p.y += (p.ty + p.vy*0.04 - p.y)*k; p.z += ((p.tz || 0) - p.z)*k; p.st += dt;
+    if (predict && p.state <= ST.RUN) { p.tx += p.vx*dt; p.ty += p.vy*dt; }
+    p.x += (p.tx - p.x)*k; p.y += (p.ty - p.y)*k; p.z += ((p.tz || 0) - p.z)*k; p.st += dt;
     const spd = hyp(p.vx, p.vy), prev = Math.floor(p.anim/20); p.anim += spd*dt;
     if (p.state === ST.RUN && spd > 50 && Math.floor(p.anim/20) !== prev) { const q = P(p.x - p.fx*6, p.y); spawn(q.x-2, q.y-2, -p.fx*12, -8, 0.3, '#e8f4e0', 2, 0); }
     if (p.emote) { p.emote.t -= dt; p.emote.age += dt; if (p.emote.t <= 0) p.emote = null; } }
   const v = game.vespa; if (v && v.tx !== undefined) { v.t += dt; v.x += v.dir*VSPD*dt; v.x += (v.tx - v.x)*k*0.5; v.y += (v.ty - v.y)*k; }
   for (const it of items) it.t -= dt;
-  if (ball.tx !== undefined) { ball.x += (ball.tx + ball.vx*0.04 - ball.x)*k; ball.y += (ball.ty + ball.vy*0.04 - ball.y)*k; ball.z += (ball.tz - ball.z)*k; ball.rot += hyp(ball.vx, ball.vy)*dt; }
+  if (ball.tx !== undefined) { if (predict) { ball.tx += ball.vx*dt; ball.ty += ball.vy*dt; } ball.x += (ball.tx - ball.x)*k; ball.y += (ball.ty - ball.y)*k; ball.z += (ball.tz - ball.z)*k; ball.rot += hyp(ball.vx, ball.vy)*dt; }
   if (ball.superType) superFx(ball);
   if (game.bolt) { game.bolt.t -= dt; if (game.bolt.t <= 0) game.bolt = null; }
   if (game.banner) game.banner.t += dt;
@@ -1969,6 +2006,8 @@ function render() {
   cam.x = cx; cam.y = cy;
   if (game.flash > 0) { ctx.fillStyle = `rgba(255,255,255,${Math.min(REDUCED ? 0.3 : 0.85, game.flash)})`; ctx.fillRect(0, 0, W, H); }
   if (game.mode !== 'title') { drawHUD(); drawChaosBar(); }
+  if (NET.role === 'guest' && game.mode === 'play' && performance.now() - NET.snapAt > 600 && Math.floor(game.t*4) % 2)
+    ptext(ctx, 'СВЯЗЬ…', W/2, H - 34, 8, '#ff9a5a', 'center', '#100810');   // waiting for the host
   if (game.banner) { const t = game.banner.t, sc = t < 0.25 ? 8 + 16*(t/0.25) : 24, y = 78 + Math.sin(t*6)*3;
     const cyc = ['#ffffff', game.banner.col, '#f2c230', game.banner.col][Math.floor(t*12) % 4];
     ptext(ctx, game.banner.text, W/2, y, Math.round(sc), cyc, 'center', '#100810'); }
@@ -2085,7 +2124,7 @@ let last = 0, acc = 0; const STEP = 1/60;
 function frame(ts) {
   const dt = Math.min(0.1, (ts - (last || ts))/1000); last = ts; acc += dt;
   while (acc >= STEP) { update(STEP); acc -= STEP; }
-  render(); requestAnimationFrame(frame);
+  render(); updPad(); requestAnimationFrame(frame);
 }
 const fontReady = document.fonts && document.fonts.load ? document.fonts.load('8px "Press Start 2P"').catch(() => {}) : Promise.resolve();
 Promise.race([fontReady, new Promise(r => setTimeout(r, 1500))]).then(() => {

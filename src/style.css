@@ -34,24 +34,45 @@ html,body{overscroll-behavior:none;-webkit-tap-highlight-color:transparent}
 #pad{position:fixed;inset:0;pointer-events:none;z-index:3}
 body.no-touch #pad{display:none}
 #zoneL{position:absolute;left:0;bottom:0;width:52%;height:60%;pointer-events:auto;touch-action:none}
-#stick{position:absolute;width:118px;height:118px;margin:-59px 0 0 -59px;border-radius:50%;pointer-events:none;
-  border:3px solid rgba(244,241,230,.35);background:radial-gradient(circle,rgba(74,168,240,.16),rgba(74,168,240,.04) 70%);
-  opacity:.45;transition:opacity .15s}
-#stick.live{opacity:.95;transition:none}
-#knob{position:absolute;left:50%;top:50%;width:52px;height:52px;margin:-26px 0 0 -26px;border-radius:50%;
-  background:var(--azzurro);box-shadow:inset -4px -5px 0 var(--azzurro-deep),0 0 0 3px var(--ink)}
-#btns{position:absolute;right:max(16px, env(safe-area-inset-right, 0px));bottom:calc(16px + env(safe-area-inset-bottom, 0px));
-  width:200px;height:170px;pointer-events:none}
-.pb{position:absolute;pointer-events:auto;font-family:var(--f-pixel);color:var(--ink);border:0;border-radius:50%;display:grid;place-items:center;
-  text-align:center;line-height:1.5;touch-action:none;cursor:pointer;box-shadow:0 0 0 3px var(--ink),inset -5px -6px 0 rgba(0,0,0,.28);
-  -webkit-user-select:none;user-select:none}
-.pb small{display:block;font-size:7px;opacity:.8}
-#bA{right:0;bottom:24px;width:96px;height:96px;font-size:10px;background:var(--gold)}
-#bB{right:104px;bottom:0;width:78px;height:78px;font-size:8px;background:#e06a7a}
-#bS{right:112px;bottom:90px;width:64px;height:34px;border-radius:17px;font-size:7px;background:#c8cde0}
-.pb.on{transform:scale(.93);filter:brightness(1.25);box-shadow:0 0 0 3px var(--ink),0 0 18px rgba(255,255,255,.35)}
+/* joystick: dark glass disc with a team-coloured rim and knob; ticks mark the 4 main directions */
+#pad{--team:var(--azzurro)}
+#stick{position:absolute;width:120px;height:120px;margin:-60px 0 0 -60px;border-radius:50%;pointer-events:none;
+  background:radial-gradient(circle,rgba(10,14,32,.25) 0 55%,rgba(10,14,32,.55) 56% 100%);
+  box-shadow:0 0 0 2px rgba(6,9,18,.8),inset 0 0 0 3px color-mix(in srgb,var(--team) 55%,transparent);
+  opacity:.5;transition:opacity .15s}
+#stick.live{opacity:1;transition:none}
+#stick .tick{position:absolute;left:50%;top:50%;width:4px;height:10px;margin:-5px 0 0 -2px;background:rgba(244,241,230,.45)}
+#stick .t0{transform:translateY(-49px)} #stick .t1{transform:rotate(90deg) translateY(-49px)}
+#stick .t2{transform:rotate(180deg) translateY(-49px)} #stick .t3{transform:rotate(270deg) translateY(-49px)}
+#knob{position:absolute;left:50%;top:50%;width:50px;height:50px;margin:-25px 0 0 -25px;border-radius:50%;
+  background:var(--team);box-shadow:0 0 0 3px var(--ink),inset -4px -5px 0 rgba(0,0,0,.3),inset 3px 3px 0 rgba(255,255,255,.35)}
+/* buttons: thumb arc on the right. Big KICK with a charge ring, context button (pass / tackle / ORA), small switch */
+#btns{position:absolute;right:max(16px, env(safe-area-inset-right, 0px));bottom:calc(14px + env(safe-area-inset-bottom, 0px));
+  width:196px;height:168px;pointer-events:none}
+.pb{--rim:var(--gold);position:absolute;pointer-events:auto;font-family:var(--f-pixel);color:#fff;border:0;border-radius:50%;
+  display:grid;place-items:center;text-align:center;line-height:1.2;touch-action:none;cursor:pointer;padding:0;
+  background:radial-gradient(circle at 35% 30%,rgba(255,255,255,.14),rgba(10,14,32,.62) 60%);
+  box-shadow:0 0 0 3px var(--ink),inset 0 0 0 4px var(--rim),0 4px 0 var(--ink);
+  -webkit-user-select:none;user-select:none;transition:transform .06s}
+.pb .lb{position:relative;font-size:9px;letter-spacing:.04em;text-shadow:0 2px 0 var(--ink)}
+#bA{right:0;bottom:22px;width:98px;height:98px}
+#bA .lb{font-size:11px}
+#bA .chg{position:absolute;inset:0;width:100%;height:100%;transform:rotate(-90deg);pointer-events:none}
+#bA .chg circle{fill:none;stroke:#fff;stroke-width:8;stroke-dasharray:100;stroke-dashoffset:100;stroke-linecap:butt}
+#bA.full .chg circle{stroke:#ff6a3a}
+#bA.super{--rim:#ffe14a;animation:superGlow .5s steps(2) infinite}
+#bA.super .lb{color:#ffe14a}
+@keyframes superGlow{50%{box-shadow:0 0 0 3px var(--ink),inset 0 0 0 4px #ff9a1a,0 4px 0 var(--ink),0 0 22px rgba(255,210,60,.7)}}
+#bB{--rim:#ff6a7a;right:106px;bottom:0;width:76px;height:76px}
+#bB.pass{--rim:#7fe0ff}
+#bB.ora{--rim:#ffe14a}
+#bB.ora .lb{color:#ffe14a}
+#bS{--rim:#c8cde0;right:118px;bottom:92px;width:48px;height:48px}
+#bS svg{width:20px;height:20px;fill:#fff;filter:drop-shadow(0 2px 0 var(--ink))}
+#bS.off{visibility:hidden}
+.pb.on{transform:translateY(3px) scale(.95);box-shadow:0 0 0 3px var(--ink),inset 0 0 0 4px var(--rim),0 1px 0 var(--ink),inset 0 0 26px rgba(255,255,255,.25)}
 .pb:focus-visible{outline:3px solid var(--chalk);outline-offset:3px}
-body.landscape #pad .pb{opacity:.82}
+body.landscape #pad .pb{opacity:.9}
 body.landscape #screen{border-radius:6px;box-shadow:0 0 0 2px #000,0 0 0 4px #2a2a36}
 .rot{display:none;color:var(--gold)}
 body.portrait.touch .rot{display:block}

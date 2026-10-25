@@ -41,6 +41,7 @@
       const client = {
         publish(topic, text, retain) { if (ws.readyState !== 1) return; const body = [...str(topic), ...(text ? enc.encode(text) : [])]; ws.send(packet(0x30 | (retain ? 1 : 0), body)); },
         subscribe(topic) { const id = pid++; ws.send(packet(0x82, [id >> 8, id & 255, ...str(topic), 0])); },
+        busy() { return ws.bufferedAmount > 24000; },
         close() { closed = true; clearInterval(ping); try { ws.send(new Uint8Array([0xe0, 0])); ws.close(); } catch (e) {} },
         onclose: null,
       };
@@ -73,10 +74,10 @@
     });
   }
 
-  function makeConn(peer, sendFn, closeFn) {
+  function makeConn(peer, sendFn, closeFn, busyFn) {
     const ev = { data: [], close: [], open: [], error: [] };
     const c = {
-      peer, open: true,
+      peer, open: true, relay: true, busy: () => !!(busyFn && busyFn()),
       send(m) { if (c.open) sendFn(m); },
       close() { if (!c.open) return; c.open = false; closeFn && closeFn(); c.emit('close'); },
       on(name, fn) { (ev[name] || (ev[name] = [])).push(fn); },
@@ -98,7 +99,7 @@
         if (topic !== t + '/g' || !m || typeof m.from !== 'string') return;
         let c = e.conns.get(m.from);
         if (!c && m.full) {   // a new guest says hello
-          c = makeConn(m.from, msg => e.cl && e.cl.publish(t + '/h', JSON.stringify({ ...msg, from: myId(), to: m.from })), () => e.conns.delete(m.from));
+          c = makeConn(m.from, msg => e.cl && e.cl.publish(t + '/h', JSON.stringify({ ...msg, from: myId(), to: m.from })), () => e.conns.delete(m.from), () => !e.cl || e.cl.busy());
           e.conns.set(m.from, c); onGuest(c);
         }
         if (c) c.emit('data', m);
@@ -149,7 +150,7 @@
           if (topic === t + '/info') {
             if (done || !m || !m.id || Date.now() - (m.ts || 0) > 120000) return;
             const cl = box.cl;
-            conn = makeConn(m.id, msg => cl.publish(t + '/g', JSON.stringify({ ...msg, from: myId })), () => setTimeout(() => cl.close(), 200));
+            conn = makeConn(m.id, msg => cl.publish(t + '/g', JSON.stringify({ ...msg, from: myId })), () => setTimeout(() => cl.close(), 200), () => cl.busy());
             cl.onclose = () => conn.close();
             box.mine = true; finish(null, cl);
           } else if (topic === t + '/h' && box.mine && conn && m && m.to === myId) conn.emit('data', m);

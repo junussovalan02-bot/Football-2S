@@ -152,6 +152,9 @@
         setTimeout(() => { try { c && c.close(); } catch (e) {} try { p && p.destroy(); } catch (e) {} try { r && r.close(); } catch (e) {} }, 300);
       },
       connected() { return true; },
+      linkKind() { return conn ? (conn.relay ? 'relay' : 'direct') : null; },
+      // true while the link still has a lot queued: skip a snapshot instead of piling up latency
+      busy() { if (!conn) return false; if (conn.relay) return conn.busy(); const dc = conn.dataChannel; return (dc && dc.bufferedAmount > 48000) || (conn.bufferSize || 0) > 3; },
       // for the host's lobby: which links are up right now
       links() { return { direct: !!(peer && peer.open && !peer.disconnected && !peer.destroyed), relay: relay ? relay.ok() : 0 }; },
     };

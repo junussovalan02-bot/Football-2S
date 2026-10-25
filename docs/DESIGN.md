@@ -44,6 +44,14 @@ win is void «такой страны нет с 1980 года» (`derbyLine`, `e
 
 In 1v1 "pass" becomes a lob over the opponent.
 
+Touch pad (v0.13, `updPad`): joystick = dark glass disc with a team-coloured rim and knob; **УДАР** (big, gold rim)
+fills a charge ring while held and turns into a glowing **СУПЕР** with full FURIA; the second button names what it
+will do — **ПАС** (blue rim) with the ball, **ПОДКАТ** (red) without, **ОРА!** (gold) when a super tackle is possible;
+the switch button (arrows) only shows when switching can do something (no ball, 2+ outfield players, offline).
+
+A shot is not a pass: after `doKick` the ball is marked `shot`; while it is faster than 160 u/s the shooter's
+teammates (keeper included) don't trap it, it flies past them (`possession`).
+
 Responsiveness (v0.11): humans accelerate with `ACCH 1600` (AI 1050), the touch stick is analog with a
 0.16 dead zone and full speed at half deflection, the kick connects after 0.045 s (was 0.07), kick
 animation 0.18 s, charge time 0.42 s. The ball carrier has a blinking ring in the team colour and their

@@ -30,6 +30,16 @@ room.onPeers(fn, onError) -> unsubscribe
 ```
 Any transport that provides this works. `src/net/local.js` is a 60-line example over BroadcastChannel.
 
+## Smoothness (v0.13)
+- Snapshot ~0.6 KB instead of 1.3 KB: the puddle map is sent only for 20 snapshots after it changes, when a
+  guest (re)joins and every 60th snapshot.
+- 20 snapshots/s on the direct link, 15 through the relay; if the link still has data queued
+  (`room.busy()`: data channel `bufferedAmount` / PeerJS queue / WebSocket `bufferedAmount`) the snapshot is
+  skipped instead of piling up delay.
+- The guest keeps players and the ball moving along their last velocity for up to 0.4 s between snapshots and
+  glides toward each new one, so a late packet doesn't freeze the picture. If nothing arrives for 0.6 s the
+  guest sees a blinking «СВЯЗЬ…».
+
 ## Relay fallback (v0.12)
 Real phones often can't open a direct WebRTC link (Wi-Fi <-> 4G, carrier-grade NAT), and the free PeerJS
 broker/TURN servers are not always up. So the transport now has a second link with the same messages:
