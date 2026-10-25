@@ -59,6 +59,10 @@
       c.on('close', gone); c.on('error', gone);
     }
 
+    // back from the background (iOS froze the page): re-register the code on the PeerJS server right away
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible' && peer && !peer.destroyed && peer.disconnected) { try { peer.reconnect(); } catch (e) {} }
+    });
     setInterval(() => {
       if (!conn) return;
       if (conn.open && Date.now() - heard > DEAD) { hangUp(conn); return; }
@@ -109,14 +113,14 @@
           let done = false, p;
           try { p = new window.Peer(PREFIX + code, options()); } catch (e) { reject(new Error('network')); return; }
           peer = p;
-          p.on('open', () => { if (peer !== p) return; done = true; resolve(); });
+          p.on('open', () => { if (peer !== p) return; done = true; rebuild(); resolve(); });
           p.on('connection', c => { if (peer !== p) { c.close(); return; } attach(c); });
           // lost the broker (phone slept): keep talking to the friend, re-register the code in the background
-          p.on('disconnected', () => setTimeout(() => { if (peer === p && !p.destroyed && p.disconnected) p.reconnect(); }, 1500));
+          p.on('disconnected', () => { rebuild(); setTimeout(() => { if (peer === p && !p.destroyed && p.disconnected) p.reconnect(); }, 1500); });
           p.on('error', e => { if (done || peer !== p) return; done = true; reject(new Error(e && e.type === 'unavailable-id' ? 'taken' : 'network')); });
         });
-        const viaRelay = window.AzzRelay ? window.AzzRelay.host(code, () => myId, c => { if (gen === g) attach(c); })
-          .then(r => { if (gen !== g) { r.close(); throw new Error('stale'); } relay = r; }) : Promise.reject(new Error('network'));
+        const viaRelay = window.AzzRelay ? window.AzzRelay.host(code, () => myId, c => { if (gen === g) attach(c); }, () => { if (gen === g) rebuild(); })
+          .then(r => { if (gen !== g) { r.close(); throw new Error('stale'); } relay = r; rebuild(); }) : Promise.reject(new Error('network'));
         return new Promise((resolve, reject) => {
           let fails = 0, taken = false;
           const no = e => { if (e && e.message === 'taken') taken = true; if (++fails === 2) { if (gen === g) reset(); reject(new Error(taken ? 'taken' : 'network')); } };
@@ -148,6 +152,8 @@
         setTimeout(() => { try { c && c.close(); } catch (e) {} try { p && p.destroy(); } catch (e) {} try { r && r.close(); } catch (e) {} }, 300);
       },
       connected() { return true; },
+      // for the host's lobby: which links are up right now
+      links() { return { direct: !!(peer && peer.open && !peer.disconnected && !peer.destroyed), relay: relay ? relay.ok() : 0 }; },
     };
   }
   window.AzzNetPeer = { create, PREFIX };

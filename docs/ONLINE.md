@@ -34,7 +34,14 @@ Any transport that provides this works. `src/net/local.js` is a 60-line example 
 Real phones often can't open a direct WebRTC link (Wi-Fi <-> 4G, carrier-grade NAT), and the free PeerJS
 broker/TURN servers are not always up. So the transport now has a second link with the same messages:
 a public **MQTT broker over secure WebSocket** (`src/net/relay.js`, a ~100-line MQTT 3.1.1 client, QoS 0).
-Brokers tried in order: `broker.emqx.io:8084`, `broker.hivemq.com:8884`, `test.mosquitto.org:8081`.
+Brokers: `broker.emqx.io:8084`, `broker.hivemq.com:8884`, `test.mosquitto.org:8081`, `public.cloud.shiftr.io:443`
+(user/pass `public`) — different ports, so a mobile network that blocks some still reaches one.
+- The host stays connected to **every** reachable broker and announces on each; the guest asks all of them in
+  parallel and takes the first one with a fresh announcement (so host and guest can't end up on different
+  brokers).
+- iOS freezes a Safari tab in the background (e.g. while you send the link in a messenger) and drops its
+  sockets. The host reconnects to the brokers and re-registers on PeerJS as soon as the page is visible again
+  (and retries with backoff anyway). The host lobby shows «СВЯЗЬ: НАПРЯМУЮ ОК/НЕТ · СЕРВЕР ОК/НЕТ».
 - Host: listens on PeerJS **and** the relay; ready when either is up. Announces itself on the retained topic
   `azzurri-arcade/v1/CODE/info` every 15 s (cleared on leave). Guest messages arrive on `.../g`, host sends on
   `.../h` with `to` = guest id.

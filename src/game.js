@@ -1383,8 +1383,11 @@ function renderLobby() {
   if (NET.role === 'host') {
     const what = NET.mode === 'vs' ? 'ДРУГ ПРОТИВ ДРУГА' : 'ВМЕСТЕ ПРОТИВ РОМЫ';
     if (!NET.hostReady) { view(null); st.textContent = what + ' · СОЗДАЁМ ИГРУ…'; return; }
-    view('nCode'); $('codeBig').textContent = NET.code; st.textContent = what + ' · ЖДЁМ ДРУГА…';
-    hint.textContent = 'Отправь другу ссылку или продиктуй код. Друг: ИГРАТЬ > С ДРУГОМ > ВОЙТИ ПО КОДУ.';
+    view('nCode'); $('codeBig').textContent = NET.code;
+    const L = NET.room.links ? NET.room.links() : null, up = !L || L.direct || L.relay;
+    st.textContent = what + (up ? ' · ЖДЁМ ДРУГА…' : ' · НЕТ СВЯЗИ, ПЕРЕПОДКЛЮЧАЕМСЯ…');
+    hint.textContent = (L ? 'СВЯЗЬ: НАПРЯМУЮ ' + (L.direct ? 'ОК' : 'НЕТ') + ' · СЕРВЕР ' + (L.relay ? 'ОК' : 'НЕТ') + '. ' : '') +
+      'Отправь другу ссылку или продиктуй код. Друг: С ДРУГОМ > ВОЙТИ ПО КОДУ.';
     return;
   }
   if (NET.role === 'guest' || NET.joining) { view(null); st.textContent = 'ПОДКЛЮЧАЕМСЯ К ' + (NET.joining || NET.code) + '…';
