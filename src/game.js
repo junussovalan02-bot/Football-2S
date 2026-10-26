@@ -813,7 +813,7 @@ function careerLevel() {
 }
 const D = () => DIFFS[careerLevel()];
 // the right side is played by the computer unless a friend plays it online
-const cpuSide = team => team === 1 && !(NET.role === 'host' && NET.mode === 'vs') && NET.role !== 'guest';
+const cpuSide = team => team === 1 && !(NET.role === 'host' && NET.mode === 'vs') && NET.role !== 'guest' && game.local2 !== 'vs';
 const CURSED_GK = { react:0.45, dive:150, catch:0.2, err:40 };   // career: the shaman's curse
 const TUT_GK = { react:1, dive:0, catch:0, err:99, fumble:1, selfie:0 };   // the tutorial keeper is asleep
 const keeperSkill = p => game.tut && p.team === 1 ? TUT_GK : game.curse && p.team === 1 ? CURSED_GK : cpuSide(p.team) ? D().gk : GK_MATE;
@@ -1587,24 +1587,24 @@ function readStick() {
 }
 function humanInput() {
   const p = players.find(q => q.local); if (!p) return;
-  const s = readStick(), i = p.inp;
+  const g1 = padNow(0), s = readStick() || (g1 && g1.l > 0 ? { x: g1.x, y: g1.y } : null), i = p.inp;
   i.mx = s ? s.x : 0; i.my = s ? s.y : 0;
   if (!s && ball.passTo === p && !ball.owner && ball.passAt) {   // a pass is coming and you're not steering: step to it
     const dx = ball.passAt.x - p.x, dy = ball.passAt.y - p.y, l = hyp(dx, dy); if (l > 5) { i.mx = dx/l; i.my = dy/l; } }
-  i.sprint = keys.has('shift') || keys.has('u') || edgeSprint();
-  const k = keys.has('j') || keys.has(' ') || keys.has('z') || touchKick;
-  const t = keys.has('k') || keys.has('x') || touchTackle;
+  i.sprint = keys.has('shift') || keys.has('u') || edgeSprint() || !!(g1 && g1.sprint);
+  const k = keys.has('j') || keys.has(' ') || keys.has('z') || touchKick || !!(g1 && g1.kick);
+  const t = keys.has('k') || keys.has('x') || touchTackle || !!(g1 && g1.tackle);
   i.kickHeld = k; if (prevKick && !k) i.kickReleased = true; if (t && !prevTackle) i.tacklePressed = true;
   if (game.block && game.block.team === p.team) {   // a super is coming at us: УДАР = БЛОК!
     if (k && !prevKick) { game.block.taps++; buzz(10); }
     i.kickHeld = false; i.kickReleased = false; p.charge = 0;
   }
   prevKick = k; prevTackle = t;
-  const sk = keys.has('i') || touchSkill;
+  const sk = keys.has('i') || touchSkill || !!(g1 && g1.skill);
   if (sk && !prevSkill) humanSkill(p);
-  const tt = keys.has('t') || touchTaunt; if (tt && !prevTaunt) taunt(p); prevTaunt = tt;
+  const tt = keys.has('t') || touchTaunt || !!(g1 && g1.taunt); if (tt && !prevTaunt) taunt(p); prevTaunt = tt;
   prevSkill = sk;
-  const sw = keys.has('l') || keys.has('c') || touchSwitch;
+  const sw = keys.has('l') || keys.has('c') || touchSwitch || !!(g1 && g1.sw);
   if (sw && !prevSwitch && !(ball.owner && ball.owner.team === 0)) game.wantSwitch = true;
   prevSwitch = sw;
 }
@@ -1613,7 +1613,7 @@ let touchSwitch = false, prevSwitch = false, touchTaunt = false, prevTaunt = fal
 let edgeT = 0;
 function edgeSprint() { const l = touchStick ? hyp(touchStick.x, touchStick.y) : 0; edgeT = l >= 0.92 ? edgeT + STEP : 0; return edgeT >= 0.2; }
 function setHuman(p) {
-  for (const q of players) if (q.team === 0) {
+  for (const q of players) if (q.team === 0 && !(q.tag === 2 && game.local2)) {
     if (q.human && q !== p) { q.charge = 0; q.inp.mx = q.inp.my = 0; }
     if (!q.human && q === p) game.switchFlash = 0.45;
     q.human = q.local = q === p; q.tag = q === p ? 1 : 0;
@@ -1629,6 +1629,7 @@ function reachTime(p) {
 }
 function updControl(dt) {
   game.ctrlCd -= dt;
+  if (game.local2 === 'coop') return;   // two people on one team: nobody switches
   if (meLocked()) { const me = players.find(q => q.me); if (me && !me.human) setHuman(me); game.wantSwitch = false; return; }
   const team = players.filter(p => p.team === 0 && p.role !== 'gk'), cur = team.find(p => p.human) || team[0];
   let other = null, to = 99;
@@ -2040,7 +2041,10 @@ function assignControl(na, nd, ra) {
     Object.assign(na, { human: true, local: true, tag: 1 });
     const friend = friendPlayer();
     if (friend && NET.guestPeer) Object.assign(friend, { human: true, tag: 2 });
-  } else setHuman(na);
+  } else {
+    setHuman(na);
+    if (game.local2 && NET.role === 'solo') { const f = game.local2 === 'vs' ? ra : nd; if (f) Object.assign(f, { human: true, local: false, tag: 2 }); }
+  }
 }
 function remoteInput() {
   if (NET.role !== 'host' || !NET.room) return;
@@ -2225,10 +2229,10 @@ function renderLobby() {
 }
 // ---- guest side
 function guestSendInput() {
-  const s = readStick();
-  const k = keys.has('j') || keys.has(' ') || keys.has('z') || touchKick, t = keys.has('k') || keys.has('x') || touchTackle;
+  const g1 = padNow(0), s = readStick() || (g1 && g1.l > 0 ? { x: g1.x, y: g1.y } : null);
+  const k = keys.has('j') || keys.has(' ') || keys.has('z') || touchKick || !!(g1 && g1.kick), t = keys.has('k') || keys.has('x') || touchTackle || !!(g1 && g1.tackle);
   if (NET.pk && !k) NET.kr++; if (t && !NET.pt) NET.tc++; NET.pk = k; NET.pt = t;
-  const sp = keys.has('shift') || keys.has('u') || edgeSprint(), skb = keys.has('i') || touchSkill, tt = keys.has('t') || touchTaunt;
+  const sp = keys.has('shift') || keys.has('u') || edgeSprint() || !!(g1 && g1.sprint), skb = keys.has('i') || touchSkill || !!(g1 && g1.skill), tt = keys.has('t') || touchTaunt || !!(g1 && g1.taunt);
   if (tt && !NET.ptt) NET.tt = (NET.tt || 0) + 1; NET.ptt = tt;
   if (skb && !NET.psk) NET.sk = (NET.sk || 0) + 1; NET.psk = skb;
   const inp = { mx: s ? r2(s.x) : 0, my: s ? r2(s.y) : 0, k: k ? 1 : 0, kr: NET.kr, tc: NET.tc, sp: sp ? 1 : 0, sk: NET.sk || 0, tt: NET.tt || 0 };
@@ -2386,7 +2390,7 @@ function updShow(dt) {
   if (NET.role === 'guest') return;
   for (const p of players) { const i = p.inp; i.mx = i.my = 0; i.kickHeld = i.kickReleased = i.tacklePressed = i.sprint = false; updPlayer(p, dt); }
   separate(); updBall(dt);
-  const skip = NET.role === 'solo' && sh.t > 0.6 && (keys.has('j') || keys.has(' ') || keys.has('enter') || touchKick || showTap);
+  const g1s = padNow(0), skip = NET.role === 'solo' && sh.t > 0.6 && (keys.has('j') || keys.has(' ') || keys.has('enter') || touchKick || showTap || !!(g1s && g1s.kick));
   showTap = false;
   if (sh.t < SHOW_LEN[sh.kind] && !skip) return;
   game.show = null; game.banner = null; touchKick = false; keys.delete('j'); keys.delete(' '); keys.delete('enter');
@@ -2768,6 +2772,8 @@ function startMatch(mode, opt) {
   MODE = mode; setPitch(mode); buildTeams(mode); if (game.career) { placeMe(); applySquad(); } NET.mid = (NET.mid + 1) % 100000; NET.rK = NET.rT = -1;
   game.len = mode === 11 ? MATCH11 : MATCH;
   game.score = [0,0]; game.fury = [0, 0]; game.furyFlash = [0, 0]; game.time = game.len; parts = []; game.banner = null; game.bolt = null; game.paused = false;
+  game.local2 = NET.role === 'solo' && !(opt && opt.career) && mode !== 11 && padsNow().length >= 2 ? (mode === 1 ? 'vs' : store.get('local2', 'vs')) : null;
+  if (game.local2 === 'off') game.local2 = null;
   game.half = 1; game.flip = 0; game.show = null; game.tip = null; game.tut = null; game.net = null; game.slowmo = 0; tears = []; craters = []; game.space = null; game.meteor = false; if (goalDown[0] || goalDown[1]) { goalDown = [0, 0]; buildField(); } newTasks(); game.tauntT = rnd(5, 9); game.emoCd = 0;
   game.chaos = null; game.vespa = null; game.lastChaos = null; game.chaosT = rnd(...PACE().first); game.itemT = rnd(5, 8); game.x2 = false; items = []; pops = [];
   game.runners = []; pees = []; game.skillCd = [12, 12]; game.miracle = [0, 0]; game.gagT = rnd(...PACE().gag)*0.6; NET.rS = -1; NET.rTT = -1;
@@ -2829,6 +2835,8 @@ function syncOpts() {
 }
 function nextDiff() { diff = (diff + 1) % DIFFS.length; store.set('diff', diff); syncOpts(); }
 function renderTeams() {
+  { const b = $('miLocal2'), m = store.get('local2', 'vs'); b.hidden = GPAD.count < 2 || teamMode === 11;
+    b.innerHTML = '2-Й ГЕЙМПАД <b>' + (teamMode === 1 ? 'СОПЕРНИК' : m === 'coop' ? 'ПАРТНЁР' : m === 'off' ? 'ВЫКЛ' : 'СОПЕРНИК') + '</b>'; }
   for (const side of [0, 1]) {
     const c = CLUBS[CLUB_KEYS[pick[side]]], g = $('kit' + side).getContext('2d');
     $('club' + side).textContent = c.name; $('star' + side).textContent = 'СКИЛЛ: ' + (SKILLS[c.skill] || SKILLS.herd).name;
@@ -3033,7 +3041,7 @@ const rdt = dt;
     if (game.time <= 0) { game.time = 0; endMatch(); }
     else if (game.half === 1 && game.time <= game.len/2) { game.time = game.len/2; startShow('half'); }
     else { if (game.block && !players.some(q => q.team === game.block.team && q.human)) game.block.taps += dt*(cpuSide(game.block.team) ? D().block : 4);
-      if (NET.role === 'solo') updControl(dt); humanInput(); remoteInput(); if (MODE === 11) computeChasers(); for (const p of players) if (!p.human && !(game.tut && tutIdle(p))) ai(p, dt); }
+      if (NET.role === 'solo') updControl(dt); humanInput(); remoteInput(); localP2Input(); if (MODE === 11) computeChasers(); for (const p of players) if (!p.human && !(game.tut && tutIdle(p))) ai(p, dt); }
   } else if (game.mode === 'goal') {
     game.goalT -= dt; if (game.banner) game.banner.t += dt; if (game.net) game.net.t += dt;
     if (game.goalT <= 0) { game.banner = null; kickoff(game.kickoffTeam); }
@@ -3281,6 +3289,7 @@ function pellipseRing(cx, cy, rx, ry, col) {
 function drawOffscreen() {
   const h = players.find(p => p.local); if (!h || game.mode !== 'play') return;
   edgeArrow(S(h.x, h.y, 20), Math.floor(game.t*6) % 2 ? '#f2c230' : '#ffffff');
+  if (game.local2) { const p2 = players.find(q => q.tag === 2); if (p2) edgeArrow(S(p2.x, p2.y, 20), Math.floor(game.t*6) % 2 ? '#7fe0ff' : '#ffffff'); }
   if (!ball.owner || !ball.owner.local) edgeArrow(S(ball.x, ball.y, ball.z + 6), Math.floor(game.t*6) % 2 ? '#4aa8f0' : '#2a74c4', true);
 }
 // a blinking square with an arrow at the screen edge pointing at something off camera (your player, the ball)
@@ -3451,7 +3460,7 @@ function render() {
   if (game.flash > 0) { ctx.fillStyle = `rgba(255,255,255,${Math.min(REDUCED ? 0.3 : 0.85, game.flash)})`; ctx.fillRect(0, 0, W, H); }
   if (game.mode === 'space') { drawSpace(); cam.x = cx; cam.y = cy; return; }
   if (game.mode !== 'title') { drawHUD(); drawChaosBar(); drawHalfBoard(); drawCount(); drawBlock(); drawTip(); drawTasks(); drawTut(); }
-  if (game.show && NET.role === 'solo' && game.show.t > 0.6 && Math.floor(game.t*2) % 2) ptext(ctx, 'ТАП - ПРОПУСТИТЬ', W/2, H - 12, 8, '#ffffff', 'center', '#100810');
+  if (game.show && NET.role === 'solo' && game.show.t > 0.6 && Math.floor(game.t*2) % 2) ptext(ctx, GPAD.on ? 'A - ПРОПУСТИТЬ' : 'ТАП - ПРОПУСТИТЬ', W/2, H - 12, 8, '#ffffff', 'center', '#100810');
   if (NET.role === 'guest' && game.mode === 'play' && performance.now() - NET.snapAt > 600 && Math.floor(game.t*4) % 2)
     ptext(ctx, 'СВЯЗЬ…', W/2, H - 34, 8, '#ff9a5a', 'center', '#100810');   // waiting for the host
   if (game.banner) { const t = game.banner.t, L = game.banner.text.length, mx = L*16 <= W - 8 ? 16 : 8, sc = t < 0.25 ? 8 + (mx - 8)*(t/0.25) : mx, y = 78 + Math.sin(t*6)*3;
@@ -3902,6 +3911,12 @@ const HELP = (() => {
       put(g, getSprite(CLUBS.eng, t > 0.8 && t < 1.6 ? 'cheer' : 'idle', 'grit', 0, 'side', { gk: true }), 64, 44, true);
       if (t < 0.9) { for (let j = 0; j < 5; j++) dot(g, bx - j*5, 37 + (j % 2), j % 2 ? '#100810' : '#ff9a1a', 3); ballAt(g, bx, 43, t); ptext(g, 'ЖМИ!', 40, 2, 8, Math.floor(t*10) % 2 ? '#7fe0ff' : '#ffffff', 'center', '#100810'); }
       else { ballAt(g, 60 - (t - 0.9)*50, 40 - Math.sin(Math.min(1, t - 0.9)*Math.PI)*20, t); if (Math.floor(t*6) % 2) ptext(g, 'БЛОК!', 34, 2, 8, '#7fe0ff', 'center', '#100810'); } },
+    pad(g, t) { g.fillStyle = '#16224a'; g.fillRect(0, 0, 80, 48);
+      g.fillStyle = '#100810'; g.fillRect(10, 12, 60, 26); g.fillRect(6, 18, 8, 22); g.fillRect(66, 18, 8, 22); g.fillStyle = '#3a3a48'; g.fillRect(11, 13, 58, 24); g.fillRect(7, 19, 6, 20); g.fillRect(67, 19, 6, 20);
+      g.fillStyle = '#100810'; g.fillRect(19, 18, 8, 8); g.fillStyle = '#6a6a7a'; g.fillRect(20 + Math.round(Math.sin(t*4)*2), 19 + Math.round(Math.cos(t*4)*2), 6, 6);
+      const lit = Math.floor(t*2.5) % 4, bt = [[60, 22, 'A', '#ffd23a'], [55, 27, 'B', '#d8243a'], [50, 22, 'Y', '#b86aff'], [55, 17, 'X', '#ff6a9a']];
+      bt.forEach(([x, y, l, c], k) => { g.fillStyle = k === lit ? c : '#202030'; g.fillRect(x - 2, y - 2, 5, 5); });
+      ptext(g, ['УДАР', 'ПАС', 'СКИЛЛ', 'ХА!'][lit], 40, 40, 8, bt[lit][3], 'center', '#100810'); },
     sky(g, t) { const up = t < 1.2; g.fillStyle = up ? '#4ab0ec' : '#05050f'; g.fillRect(0, 0, 80, 48);
       if (!up) for (let k = 0; k < 12; k++) dot(g, (k*29) % 80, (k*17) % 40, '#ffffff', 1);
       if (up) { grass(g); g.fillStyle = '#4ab0ec'; g.fillRect(0, 0, 80, 24); put(g, sp(0, t < 0.3 ? 'kick' : 'cheer', 'shout', 0), 20, 44); ballAt(g, 30, 40 - t*40, t); }
@@ -3957,6 +3972,8 @@ click('miOptsBack', () => menuPage('mMain'));
 click('miReal', () => openTeams(11));
 click('miTeamsBack', () => { showOv('ovMenu'); menuPage('mPlay'); });
 click('miKick', () => startMatch(teamMode));
+click('miLocal2', () => { const order = ['vs', 'coop', 'off'], m = store.get('local2', 'vs'); store.set('local2', order[(order.indexOf(m) + 1) % 3]); renderTeams(); });
+addEventListener('touchstart', () => { if (GPAD.on) { GPAD.on = false; document.body.classList.remove('gamepad'); } }, { passive: true });
 click('miCareer', openCareer);
 click('miCarGo', openTour);
 click('miCarCoach', () => openCareerHub('team'));
@@ -4069,10 +4086,70 @@ if (TOUCH && document.fullscreenEnabled) {
       .finally(() => setTimeout(fit, 200)); });
 }
 
+
+// ================== gamepads (Switch Pro Controller, Joy-Cons, any standard pad) ==================
+// For a big TV: the phone or a computer on the TV, controllers over Bluetooth. Pad 1 plays like the touch
+// controls (and drives the menus), pad 2 can join on the same screen as the rival or as your teammate (2 on 2).
+// Buttons by position (Nintendo labels): A (right) = УДАР, B (bottom) = ПАС/ПОДКАТ, Y (left) = СКИЛЛ/БУ!,
+// X (top) = ХА!, R/ZR = sprint, L/ZL = switch player, + or − = pause. In menus: stick/D-pad to move, A = choose, B = back.
+const GPAD = { on: false, prev: [{}, {}], menuT: 0, count: 0 };
+function padsNow() { try { return navigator.getGamepads ? [...navigator.getGamepads()].filter(g => g && g.connected) : []; } catch (e) { return []; } }
+function padState(gp) {
+  if (!gp) return null;
+  const b = i => !!(gp.buttons[i] && (gp.buttons[i].pressed || gp.buttons[i].value > 0.5)), ax = i => gp.axes[i] || 0;
+  let x = ax(0), y = ax(1);
+  // a single Joy-Con held sideways reports its stick rotated
+  if (gp.mapping !== 'standard' && /joy-con \(l\)/i.test(gp.id)) [x, y] = [-y, x];
+  else if (gp.mapping !== 'standard' && /joy-con \(r\)/i.test(gp.id)) [x, y] = [y, -x];
+  if (b(12)) y = -1; if (b(13)) y = 1; if (b(14)) x = -1; if (b(15)) x = 1;
+  const l = hyp(x, y); if (l < 0.22) { x = 0; y = 0; } else if (l > 1) { x /= l; y /= l; }
+  return { x, y, l: hyp(x, y), kick: b(1), tackle: b(0), skill: b(2), taunt: b(3), sprint: b(5) || b(7), sw: b(4) || b(6), pause: b(9) || b(8),
+    any: gp.buttons.some(bt => bt && bt.pressed) || hyp(ax(0), ax(1)) > 0.5 };
+}
+const padNow = i => padState(padsNow()[i]);
+function pollPads(dt) {
+  const list = padsNow();
+  if (list.length !== GPAD.count) { GPAD.count = list.length; if (!$('ovTeams').hidden) renderTeams(); }
+  const p0 = padState(list[0]);
+  if (p0 && p0.any && !GPAD.on) { GPAD.on = true; document.body.classList.add('gamepad'); }
+  if (!p0) return;
+  const pr = GPAD.prev[0];
+  if (p0.pause && !pr.pause && ['play', 'goal', 'show', 'count'].includes(game.mode)) setPaused(!game.paused);
+  if (document.body.classList.contains('in-menu')) padMenu(p0, pr, dt);
+  GPAD.prev[0] = p0;
+}
+// menus with a controller: move the focus through the visible buttons, A presses, B goes back
+function padMenu(st, pr, dt) {
+  const ov = OVS.map(id => $(id)).find(o => !o.hidden); if (!ov) return;
+  const btns = [...ov.querySelectorAll('button')].filter(b => b.offsetParent && !b.disabled);
+  if (!btns.length) return;
+  let i = btns.indexOf(document.activeElement);
+  const dir = Math.abs(st.y) > 0.5 ? Math.sign(st.y) : Math.abs(st.x) > 0.5 ? Math.sign(st.x) : 0;
+  GPAD.menuT -= dt;
+  if (dir && (GPAD.menuT <= 0 || !GPAD.lastDir)) { i = i < 0 ? 0 : (i + dir + btns.length) % btns.length; btns[i].focus({ preventScroll: false }); GPAD.menuT = GPAD.lastDir ? 0.12 : 0.35; }
+  GPAD.lastDir = dir;
+  if (st.kick && !pr.kick) { audioInit(); (i >= 0 ? btns[i] : btns[0]).click(); }
+  if (st.tackle && !pr.tackle) { const back = btns.slice().reverse().find(b => /back|Back|Quit|Resume/.test(b.id) || b.classList.contains('dim')); if (back) back.click(); }
+}
+// the second controller's player on the same screen
+let p2prev = {};
+function localP2Input() {
+  if (!game.local2 || NET.role !== 'solo') return;
+  const p = players.find(q => q.tag === 2 && q.human); if (!p) return;
+  const st = padNow(1), i = p.inp; if (!st) { i.mx = i.my = 0; i.kickHeld = false; return; }
+  i.mx = st.x; i.my = st.y; i.sprint = st.sprint;
+  i.kickHeld = st.kick; if (p2prev.kick && !st.kick) i.kickReleased = true; if (st.tackle && !p2prev.tackle) i.tacklePressed = true;
+  if (game.block && game.block.team === p.team) { if (st.kick && !p2prev.kick) game.block.taps++; i.kickHeld = i.kickReleased = false; p.charge = 0; }
+  if (st.skill && !p2prev.skill) humanSkill(p);
+  if (st.taunt && !p2prev.taunt) taunt(p);
+  p2prev = st;
+}
+
 // ================== boot ==================
 let last = 0, acc = 0; const STEP = 1/60;
 function frame(ts) {
   const dt = Math.min(0.1, (ts - (last || ts))/1000); last = ts; acc += dt;
+  pollPads(dt);
   while (acc >= STEP) { update(STEP); acc -= STEP; }
   render(); updPad(); requestAnimationFrame(frame);
 }

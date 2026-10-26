@@ -230,3 +230,7 @@ body.in-menu #pad{visibility:hidden}
 .sqmarket{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:6px;width:100%}
 .sqmarket .card{min-width:0;font-size:8px;line-height:1.6;align-items:stretch;text-align:left}
 .sqmarket .card b{color:var(--gold);font-weight:400}
+/* playing with controllers on a TV: no touch pad, a visible menu focus */
+body.gamepad #pad{display:none}
+body.gamepad .mi:focus,body.gamepad .arr:focus,body.gamepad button:focus{outline:3px solid var(--gold);outline-offset:2px}
+body.gamepad .mi:focus{background:var(--gold);color:var(--ink)}

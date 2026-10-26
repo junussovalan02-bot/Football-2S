@@ -32,6 +32,25 @@ Main menu (v0.18.1): **КАРЬЕРА · АРКАДА · С ДРУГОМ · НА
   Everything that used to assume «team 0 attacks right» goes through `dirOf` (AI, keepers, skills, kickoffs, scoring).
 - Online: `ho: [half, flip, showKind, showT, joke, weather]` in the snapshot; the guest draws the show itself.
 
+## v0.23: controllers and the TV
+Gamepad API (`pollPads`, `padState`, `padMenu`, `localP2Input`): Switch Pro Controller, a Joy-Con pair, a single
+Joy-Con held sideways (stick rotated), any standard pad; on a phone mirrored to a TV or a computer on HDMI.
+| Action | Button (Nintendo position) |
+|---|---|
+| Move | left stick / D-pad |
+| УДАР / БЛОК! / skip the show | A (right) |
+| ПАС / ПОДКАТ / НА-НА | B (bottom) |
+| СКИЛЛ / БУ! | Y (left) |
+| ХА! (taunt) | X (top) |
+| Sprint | R / ZR (or the stick at the edge) |
+| Switch player | L / ZL |
+| Pause | + / − |
+Menus: stick/D-pad moves a gold focus, A presses, B goes back. The touch pad hides while a controller is in use
+(comes back on the next touch). **Two controllers on one screen** (arcade): the team screen shows «2-Й ГЕЙМПАД» —
+СОПЕРНИК (1v1 and 2v2: pad 2 plays the rival's forward, no CPU skills on that side) / ПАРТНЁР (2v2: pad 2 plays
+your defender, no auto-switching) / ВЫКЛ; saved as `local2`. The second player has a cyan ring, «2P» and an
+edge arrow. Online, a controller works for both the host and the guest.
+
 ## v0.22: wrecked goals, candle to space
 - **Wrecking the goal**: a super shot (or a > 430 u/s shot, 30 %) hitting a post or the crossbar brings the whole goal
   down (`wreckGoal`, `goalDown`): «ВОРОТА СНЕСЕНЫ!», debris, it counts as a goal, the ball goes through. During the

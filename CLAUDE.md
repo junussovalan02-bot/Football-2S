@@ -90,6 +90,9 @@ All graphics are drawn by code (sprites built pixel by pixel in `getSprite`, fie
 - **v0.20** — coach management `ensureSquad`/`renderSquad`/`applySquad`/`TACTICS`/`newMarket` (overlay `ovSquad`), separate saves
   `CAREERS`/`saveCareer`/`openCareerHub`, stories by kind `storyOf()`, music `SONGS`/`songNow`, tutorial `TUT`/`updTut`,
   `careerLevel`, keeper `fumble`/`selfie`, skills `bus`/`warcry`, `drama` falls.
+- **v0.21–0.23** — nets `game.net`/`drawNetFx`/`tears`, slow motion `game.slowmo`, cartoon sounds (`slide`/`wah`/`buzzNote`),
+  wrecked goals `goalDown`/`wreckGoal`/`drawRepair`, space shot `skyAim`/`startSpace`/`drawSpace`/`game.meteor`/`craters`,
+  gamepads `GPAD`/`pollPads`/`padState`/`padMenu`, local 2P `game.local2`/`localP2Input`.
 - **Skills & silliness** — `SKILLS`, `useSkill`, runners `game.runners`/`updRunners`/`drawRunner`, `freeze`, `scare`, `boo`,
   `pee`/`pees`, gags `updGags`, words `say` (TXTS). Pad button `bK`.
 - **Rules screen** — `HELP` scene painters + `helpLoop`.
